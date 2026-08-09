@@ -1,0 +1,1318 @@
+{
+    "schema":  "simcity-source-manifest-v1",
+    "platform":  "Windows",
+    "file_count":  262,
+    "total_bytes":  32240279,
+    "files":  [
+                  {
+                      "path":  "CMakeLists.txt",
+                      "size":  1644,
+                      "sha256":  "bba8b95cf1a601334813ee12fd3984fc0ffe88222eba463055ad1ae1a8cadbf7"
+                  },
+                  {
+                      "path":  "frontend/windows/audio_output_winmm.c",
+                      "size":  16963,
+                      "sha256":  "832b92288ba500d135f9a400f23557029a9816608767785092988c55783baf36"
+                  },
+                  {
+                      "path":  "frontend/windows/audio_output_winmm.h",
+                      "size":  2496,
+                      "sha256":  "79ad30c9271a76f826b1a36ffb14071275c015057688980c2e63e8027bb4ec71"
+                  },
+                  {
+                      "path":  "frontend/windows/audio_recorder_win32.c",
+                      "size":  3344,
+                      "sha256":  "69381f9e09c48bef6603fb7727bb897c0fd688baac5cbe6388de9d4ba053537d"
+                  },
+                  {
+                      "path":  "frontend/windows/audio_recorder_win32.h",
+                      "size":  860,
+                      "sha256":  "b13dd11c4db7e39d70ac1e52d750bde208f554d1ced702ab0c22b0ac8118cc62"
+                  },
+                  {
+                      "path":  "frontend/windows/CMakeLists.txt",
+                      "size":  2753,
+                      "sha256":  "1f06c7be9a636f1388b44812c7ee6e80a3364df4b16f45245f9b2893d38b3aca"
+                  },
+                  {
+                      "path":  "frontend/windows/frontend_settings_win32.c",
+                      "size":  33278,
+                      "sha256":  "3669f402d4eef86a101c3f849c19459983354d3d257da69c673c9bcb78992171"
+                  },
+                  {
+                      "path":  "frontend/windows/frontend_settings_win32.h",
+                      "size":  2167,
+                      "sha256":  "7489087c8453c6ddad4dadabb4a2d79d6b1d8388c752f1b70cbb357590c35703"
+                  },
+                  {
+                      "path":  "frontend/windows/launcher_version.rc",
+                      "size":  823,
+                      "sha256":  "6eaacf033f677275e0c0583183fa70c30b2db2d430fbe0f2206b8ce0e3f2741c"
+                  },
+                  {
+                      "path":  "frontend/windows/simcity_launcher_win32.c",
+                      "size":  130818,
+                      "sha256":  "edb84ddac1cb373530b8ca5083e9ff22dfa637c46be0292f43ba89b10aeceee9"
+                  },
+                  {
+                      "path":  "README.md",
+                      "size":  900,
+                      "sha256":  "8321ec63bfcfff063ed8e4181c312070fc0579777b1993b890898977aa7ace59"
+                  },
+                  {
+                      "path":  "README-FIRST.txt",
+                      "size":  669,
+                      "sha256":  "618bd718f9f3de9ee0d2fcb2868063f43cbdd31ea52b6d187cc59c6f2a518d60"
+                  },
+                  {
+                      "path":  "Rom/readme.txt",
+                      "size":  164,
+                      "sha256":  "65d65c49b31e79863cf3a11193f2381e33a73f85b8d5c8b5144ad4e395057604"
+                  },
+                  {
+                      "path":  "ROM-REQUIREMENTS.txt",
+                      "size":  266,
+                      "sha256":  "47b9e9f4e5659c97ea6c6f1657122dda4360f18cc0e67a12e1cf7d5e65b0c19d"
+                  },
+                  {
+                      "path":  "static-recomp/CMakeLists.txt",
+                      "size":  6215,
+                      "sha256":  "2212cc73a3fecd3035a4f595624a3ff8277c7cf20da8658511b004208854d722"
+                  },
+                  {
+                      "path":  "static-recomp/generated/audio/epoch-topology/sc_audio_epoch_registry.c",
+                      "size":  52660,
+                      "sha256":  "0c14cd70a694f218f860ef07e4b28a31c98ee2a82b2119247ce1a4680b72a6ba"
+                  },
+                  {
+                      "path":  "static-recomp/generated/audio/epoch-topology/sc_audio_epoch_registry.h",
+                      "size":  716,
+                      "sha256":  "ff48da0a8633cf1c777c2254edc140596d0d4d9650593aeaeae1e5f2f9e29d8d"
+                  },
+                  {
+                      "path":  "static-recomp/generated/audio/initial-smp-aot/sc_initial_smp_aot_authority.h",
+                      "size":  611,
+                      "sha256":  "7665cec905d492b589bb3fdce2a7a50a560afcaa030360a3ead1fd315007ce9d"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_audio_scpu_access_manifest.c",
+                      "size":  1835,
+                      "sha256":  "72d49c3b56a114e5d7dc9d6a73c6b2752fe21e8004e10f1e1a7103536381ecc7"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_audio_scpu_access_manifest.h",
+                      "size":  763,
+                      "sha256":  "e2267e8c31243f49e29d8566b6be0b94709bf998915b8c8c866a9986e0ca4c49"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v11_audio_epoch_manifest.c",
+                      "size":  80998,
+                      "sha256":  "338890ceeee4810e704a5ecbfacf9c7607196ed6ce800a4616f8ca5b25f99be3"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v11_audio_epoch_manifest.h",
+                      "size":  778,
+                      "sha256":  "0b555ab592477948a6a499142eeb0500dfd3e7cce9c64c0c69037542e32c3a34"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v11_bootstrap_dispatch.c",
+                      "size":  75330,
+                      "sha256":  "bae8f453893122f0332a228f5a9bed58b24e2cd5a248d9441d9a239f630f059a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v11_cpu_dispatch_index.c",
+                      "size":  3138,
+                      "sha256":  "f7bf56d6ad0b3912206e76f2c08370f60b1afef33f94317c2c717528c151fa54"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v11_smp_dispatch.inc",
+                      "size":  343582,
+                      "sha256":  "b4d931edde80c48d507679549ba562d333e8ad5aec43bb8d3887efe14cc5718d"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v23_static_dispatch.c",
+                      "size":  237877,
+                      "sha256":  "257b699da1cf33a4d0527d4ace75ac19461a6f91696f3de2b5be691d094656aa"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v24_static_dispatch.c",
+                      "size":  826,
+                      "sha256":  "f221a4b166231d538ddfac995ada207c805561a0280a585dda78af5b8388af2a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v25_static_dispatch.c",
+                      "size":  2023,
+                      "sha256":  "7ec86f85501d8618ad384f48ba4e86f502ed9858ea1c05064d7b5993c08dd1ad"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v26_static_dispatch.c",
+                      "size":  293485,
+                      "sha256":  "ac56b4d26be43a2ddb2aa15fe96bca58e9edf81d7201568e58fec1f4d7fdd44b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v34_static_dispatch_index.c",
+                      "size":  9191,
+                      "sha256":  "bc8e1a3361c896bb0c837c0978be6e1d409560d82b25225433ae1b31c722c305"
+                  },
+                  {
+                      "path":  "static-recomp/generated/sc_v35_town_route_index.c",
+                      "size":  13803,
+                      "sha256":  "0d01c57c1f0fce7441a395f3d56cb350350972ccec08dc1c3f19fa80122c30a9"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00020.c",
+                      "size":  137380,
+                      "sha256":  "5a62358f3e34133844fce45452b38e312aeda37de1d66a910763c87fd9d73212"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00021.c",
+                      "size":  13820,
+                      "sha256":  "26b6cb5659029bcb5de676f52543fc50f4e027ecfda1cae69482180537825b44"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00023.c",
+                      "size":  133054,
+                      "sha256":  "935d1bf8728b170a360a70052c405bbddc6b1c05c8f2bcda630c0d446d0fa82a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00024.c",
+                      "size":  127631,
+                      "sha256":  "3c0038b93d238e26fa5a3f59cb2896ebab1eea4ec0da190005c77dc82ea1d061"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00025.c",
+                      "size":  81822,
+                      "sha256":  "52331b85f622b3b5ff2ac889389b99957f4e55e5a8e1e359c9f01582207c44cb"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00026.c",
+                      "size":  12601,
+                      "sha256":  "514b4ea3a9388f3b294dc4e552c76d048b5e1c440d8ad7558216e5b1bb43add6"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000AE.c",
+                      "size":  55532,
+                      "sha256":  "fba013e4293190ca814db760729a898f0a067fba67670d21f9b33b1da90ee121"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000AF.c",
+                      "size":  67645,
+                      "sha256":  "5d0b6b4953f650509559aab0e9dc4ea0a97b7765faad00c2906673055e3eb8e7"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000ED.c",
+                      "size":  11031,
+                      "sha256":  "c6547aca1ab0fd0a9372daf0a9c6b5df2ff2b9b834d140e57293745081dae572"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F1.c",
+                      "size":  89737,
+                      "sha256":  "12be7ee566f99d27f7a87ba1b6ee2d0abf1986fc9398afb7feb67d3a8d3ddb85"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F2.c",
+                      "size":  29164,
+                      "sha256":  "383a8055933948ecf473f2843862105a8ee68a0011ddcf75bf5d2c59f11466ca"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F3.c",
+                      "size":  21007,
+                      "sha256":  "f2730447fe864d52dc9bb45d8962b3afc686268151948290a998dfa1dd4fbcb2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F4.c",
+                      "size":  120952,
+                      "sha256":  "43605bd923ed28ed83efe79ee2ddc7261b343d5e8a3ec0ea5886f147cf47c827"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F7.c",
+                      "size":  47504,
+                      "sha256":  "47fc596d4bcf327b4583bace25c6a289ce9c67e0fbd4d3920f47d7fbe9442dfd"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F8.c",
+                      "size":  169495,
+                      "sha256":  "5efa4cfd2567398e4685c97c94b9dc4117f71721cb3cd80a9f718fec1d3d52df"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_000F9.c",
+                      "size":  44831,
+                      "sha256":  "3edadb9b95708a8a3d081e8939a9b7e2a831a28e315eac57a5a5b8efea032c8b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00164.c",
+                      "size":  204580,
+                      "sha256":  "8592553aca623495bc961e08f6ffab70842de4be7a4d2de0f5592d5e97dd1de9"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v11-shards/sc_v11_cpu_group_00165.c",
+                      "size":  114406,
+                      "sha256":  "0841bd96ecdaad87ff8d72843839ff714a7cafef8bab632b7d7afe065ea5b84d"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00020.c",
+                      "size":  218059,
+                      "sha256":  "83bae896f6a67192f15ec191731d09f3be56e5e977f160043efb3c554e776415"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00021.c",
+                      "size":  147731,
+                      "sha256":  "d5e4896c3e383c5ddbce4648a476c9c726c19c101b9a40eaf531700d3d69a3e2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00022.c",
+                      "size":  54215,
+                      "sha256":  "f85c98b934a08436e02ced271184fd2a4cb55a281c4ab2ec4bd689eef3913a69"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00023.c",
+                      "size":  176644,
+                      "sha256":  "9b768e9e29104431606f1c07a85dddb1589ee7973dde8a66f51d4b0011ed1ee1"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00024.c",
+                      "size":  174332,
+                      "sha256":  "5d7cb082e9485a5e99c6defa93fb03bcd1bdf4c2650ddf482492d1da99b6ed43"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00025.c",
+                      "size":  212766,
+                      "sha256":  "d586580fc0eaef0f788ebb9fbdd018553c0ee7f014a91461e655479c66d9b149"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00026.c",
+                      "size":  24665,
+                      "sha256":  "fff8bb9603cb4caff791f7ba6350436f10601c6719b5806d1ba000176eca5af2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0002A.c",
+                      "size":  3102,
+                      "sha256":  "5a80d0ff54b72442f3f2b1f4450d2f6fc5ebeb2176b7987efd40181cc7a1099f"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0002B.c",
+                      "size":  2566,
+                      "sha256":  "83d8bb9486128bf5dd74808d2f19fe572eb9f38998b4bd49a1adf602ca6894b8"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0002C.c",
+                      "size":  5382,
+                      "sha256":  "d2b54e37274d633a9788fe3d19c79d54dd11a29e6793e08c5a1777a338d94b85"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0002D.c",
+                      "size":  8320,
+                      "sha256":  "130cc266a2a224015badf32b4c3e3251a2d38837d49401f47c86204ee8b72221"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0002E.c",
+                      "size":  4290,
+                      "sha256":  "b00cb5e66b4f78b09f28673e9c0d824915212e7d3ec5cf682c309cd2333cbec8"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0002F.c",
+                      "size":  39320,
+                      "sha256":  "1f32c5e02cd10590a477bb861b6d62df2ff899cf099e8bbe0182134a2a2dcd33"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00030.c",
+                      "size":  39249,
+                      "sha256":  "10ba180b94150e84eb745b93bd58e60ac04e1c105e9766ebc2174ca836e2f121"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00032.c",
+                      "size":  13501,
+                      "sha256":  "2b8f0d85624e19db0bec9073ac929183522fbaecca682b6a5636b34bedd10b85"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00033.c",
+                      "size":  31193,
+                      "sha256":  "e3406dd69444b145a2e39579365c4b271f5a09bed4a984b5ddd530a70886b2d0"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00062.c",
+                      "size":  130789,
+                      "sha256":  "1695073599106b091d3e399f96ba06eb9089516190966df8222d6eec649a1fba"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00063.c",
+                      "size":  117249,
+                      "sha256":  "1b0723866a81703dd49d8f5ae4b1fc0bb82f25f3d0abf616bf6e6077ba918918"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00065.c",
+                      "size":  52888,
+                      "sha256":  "4055cdd6ff0e9a8dcdc0401758b0626dc7372e1c45bbab5d5a3db7b38c2464b2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00067.c",
+                      "size":  24623,
+                      "sha256":  "4c417d2e0aa4ef964a1d1aea35b62edc121ef44dd2b87142b5f160a57cbdb7b0"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00068.c",
+                      "size":  15702,
+                      "sha256":  "848179a1c7b4f7b5dd59b661f650ccaaf91a16c6ca3a37fc9a266518b340d2d6"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0006A.c",
+                      "size":  6903,
+                      "sha256":  "d20b3ec3cd56df2f38607cc9193512663102b33bca57478bab40fc47c6c27608"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0006C.c",
+                      "size":  46569,
+                      "sha256":  "8c3ddd587d4395d7802f6acbfe457b01e40ab90f19eadc9d3ed757832cebe398"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0006D.c",
+                      "size":  117195,
+                      "sha256":  "d970aac595cd8a282ecd7c164588decd545912f6f9abdb93116ebff359dbba25"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0006E.c",
+                      "size":  104050,
+                      "sha256":  "e5ad8b07be41ac7d7a44c2ec9c51caeae763a7b7cc5cc19e51e0f45d99ce86ef"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0006F.c",
+                      "size":  116828,
+                      "sha256":  "5d58a6aed53e179b25f33e0f188d46a888d367a03dd1c5d3a1bf9a11297a4c3e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00070.c",
+                      "size":  162636,
+                      "sha256":  "6430e796e0358f48be76ed88c12b6e005846a9f836a564134b68da895bebb663"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00071.c",
+                      "size":  166097,
+                      "sha256":  "922155cb3779a2ff9553fdada63c3b1a87c1bb2ff3fd3cc5f5e4b3fcc354667b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00072.c",
+                      "size":  148448,
+                      "sha256":  "de5403366ced3da372fefb5e282eacc5b0bdb4b4594deba8aac7f4a373669e01"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00077.c",
+                      "size":  33046,
+                      "sha256":  "1dc071e23f510a56f952d576e157921aa6f0d68858bdcaf6eb6517811ac8fb40"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00078.c",
+                      "size":  123886,
+                      "sha256":  "b3f3fb0da0805d911ac93f5a16e33ef63e7538bdb6aef6dbcb0417f077b023b0"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0007B.c",
+                      "size":  6445,
+                      "sha256":  "50a83df66074837e04224f5e9c79dbbfd322704f3f060943598204d72ff4d9bd"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0007C.c",
+                      "size":  75790,
+                      "sha256":  "a840436f30c6ddd9de3a717f0fc4c92cfe3e4f6b89d85ae2d170c221467f4b9a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0007D.c",
+                      "size":  178175,
+                      "sha256":  "6ab2ace17a3b513a8a7d902f43a2d60581ba4477b3c98f164ebbf9ff25baa79b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_0007E.c",
+                      "size":  71412,
+                      "sha256":  "876eaf26631082543a2d87bd8c63267deb644253ed692bba659a3de677e09e96"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000A2.c",
+                      "size":  29497,
+                      "sha256":  "9791982877393aa62253c296f039615ce774e377068435a9d77842c8e9a1396b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000A4.c",
+                      "size":  143090,
+                      "sha256":  "b337962b80f8f0ecce0b54e5f847b2e6af69e872aca53e2f56b2a7b7501f7588"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000AF.c",
+                      "size":  26087,
+                      "sha256":  "8a574dde5cc0be9b8ca0b40c831b61f9d200bfe97f3af0e7196d39885719e3ba"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E0.c",
+                      "size":  184481,
+                      "sha256":  "bdf4d86f15f5597c5a1ac4e6da86d0f8752a53b9879bfcd12e451014c3b0d2ae"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E1.c",
+                      "size":  22226,
+                      "sha256":  "39b182d062293c632b61c5c0422e72b24300f7476744f35dcf8ce7b22c064c01"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E2.c",
+                      "size":  120622,
+                      "sha256":  "a692ef03028e636665f47a394da72033a9c55bc25567cdcb22c5e022797ed41c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E3.c",
+                      "size":  61086,
+                      "sha256":  "7bb13b2fe94cc0701eb4dc38b7c7fa391dffe411ea8eda63eb3a031c1bae2231"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E4.c",
+                      "size":  93758,
+                      "sha256":  "f21499e3e530ef81a81640a1762632efe6d31ff87e8fa99b05cc1022372907a9"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E5.c",
+                      "size":  19083,
+                      "sha256":  "ccaec74530fff32cd47281de4661b1800da8624bc772955eda24385ce576beeb"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E6.c",
+                      "size":  119543,
+                      "sha256":  "039d7ef5d56d2c01eaafe9ba4a3c15715888798464b1e055704dac481f0c2357"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E7.c",
+                      "size":  248729,
+                      "sha256":  "d3b121e98458144107ac2b1efbdb9fe6e013d822eb8cb1f732024ead454072e1"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E8.c",
+                      "size":  251707,
+                      "sha256":  "91fc0b8445a28750e09509c90664e31715a320a524c8cf7716633a82326a69a4"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000E9.c",
+                      "size":  46071,
+                      "sha256":  "afeece638e77c722c277c6d0b9e852d3097d970f2bf399f8550d7ecc1f336457"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000EA.c",
+                      "size":  5689,
+                      "sha256":  "166a5d9713b7d860ef4e90dfedef7558a49ec7695563ade6968aba89b844f438"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000EB.c",
+                      "size":  38253,
+                      "sha256":  "6e58c67736b370137b93a06bbddf2e194e546c1ced5c897ada6fb5d94509fbb2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000EC.c",
+                      "size":  97315,
+                      "sha256":  "dc632548f9e8dd5547206183fd260001219576c41b653c42ff8dfccea9b24d2b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000ED.c",
+                      "size":  182683,
+                      "sha256":  "00a608554d8fa040c35d349fb6c77a7a1ce00f7de72093f670ffa79eb5e9db9e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000EE.c",
+                      "size":  37268,
+                      "sha256":  "3ed6a29aa356eab7cbaff2c5a6bb4c78995e22e82752b5770ae61e3f438f4a5a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000EF.c",
+                      "size":  64114,
+                      "sha256":  "e1502b7b7e74e447bde8f92aced401d8e6cd84762377b98547bd62c0cd48d968"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F0.c",
+                      "size":  116221,
+                      "sha256":  "4c7049ae3485a55d9f7b80befdba13dc8bab61438f14fa5b450c5d291fbc83e2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F1.c",
+                      "size":  90989,
+                      "sha256":  "b3adf766556cc97137dd1144b1be0ee427df034139273dfbc64dad1aa8f7684c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F2.c",
+                      "size":  30474,
+                      "sha256":  "cd4195a597e6b313eb4ed723d3dd3725ea32291b88dc8fe0a880e2714e61da55"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F4.c",
+                      "size":  53926,
+                      "sha256":  "8c3a09df90020683b40274db5264288b020ac917f92e9d7314db7d43389ec792"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F5.c",
+                      "size":  63075,
+                      "sha256":  "47408a4312d93fd08f7080106c939a5584134e6d6ae504bd7d5cfbd8c6d553a3"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F6.c",
+                      "size":  184963,
+                      "sha256":  "3e31cd954cb99f8cf8cedf37a94fa7fa50516e347521dcb3545ff6dd97576b5a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F7.c",
+                      "size":  29754,
+                      "sha256":  "03801c3a068ad7c9dbf433c571d1a3a9ec1ab974bbc52055cc87ac7ed50d61e7"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_000F9.c",
+                      "size":  10312,
+                      "sha256":  "7211d2b8dc567950dd54f8d2ee61c76bd632b4c9907a30d7e20e2c64e384db52"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00166.c",
+                      "size":  141062,
+                      "sha256":  "67fc3f285f961010104ff1dd55f03cce1bfe564f284b2fdc685fd92e6e0b37f0"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v34-shards/sc_v34_group_00167.c",
+                      "size":  52749,
+                      "sha256":  "69e974f75db6d3d1bcfa889555b7f3f54e4ccb3908c1da9904735b306b2a5176"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00020.c",
+                      "size":  232058,
+                      "sha256":  "566cc9e93d6b3eb156d18243ab10835cbf1fc6378e472544d5177741dc96c55e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00021.c",
+                      "size":  166748,
+                      "sha256":  "9abc3b69d4b72e7cf7134d6bb18c764dce877a78635db6562757ee6e60ff2570"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00022.c",
+                      "size":  114336,
+                      "sha256":  "4d437fdd9d32dc7273d81094959c05f37af706500566d3caeb52850c221c5216"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00023.c",
+                      "size":  163950,
+                      "sha256":  "f95dd00ef16286cab4fd7426dee1d0632cb13eb6fb03536334ba21cd93577011"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00024.c",
+                      "size":  315014,
+                      "sha256":  "ce2c88b64ccaf28d80d7a6473f96cf19480535cb752e2d5b608fa5d33fcb567f"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00025.c",
+                      "size":  191442,
+                      "sha256":  "0d779ab8711007d7d1f695eee5a23297b44ee4153e3c2792b15b20374a3c603e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00026.c",
+                      "size":  38740,
+                      "sha256":  "dc523e81b6df0c2419b67ff8ed588dbd75018879e89019dc07ca5ffb40dbd8ec"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0002A.c",
+                      "size":  32625,
+                      "sha256":  "62708931773671c419129f92967d5634140809b28419e572fc0b9fd203b9a545"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0002B.c",
+                      "size":  234699,
+                      "sha256":  "37c0c52498213e6f07ef7db544b50fbec0a685737dfaf837c8a0ce4b0db46e58"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0002C.c",
+                      "size":  290466,
+                      "sha256":  "9db7e6a05aa61cb8b83810064c7469cf25a1fb56e64c78e3b92a9d67c19a5574"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0002D.c",
+                      "size":  305192,
+                      "sha256":  "0aa23758f5dad99fac3bf7a4047ecd4c7b15064e2fb996ff6d6ed94b5371e03e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0002E.c",
+                      "size":  251657,
+                      "sha256":  "e9fde9787a0531e39e90aaa95ea84a14f8caba30c6b4a26ec72850a586845f0f"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0002F.c",
+                      "size":  269020,
+                      "sha256":  "51c86d32abe9ca296c31c4454766c4f89af61be711ea1a9a61341ae06f3b3660"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00030.c",
+                      "size":  157634,
+                      "sha256":  "68b6c6f734fcef6363be49b2543f028cb55c2d649ec801cfad525cce14e4feed"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00031.c",
+                      "size":  353501,
+                      "sha256":  "2cafdd9929530429d0ef73457c173066d378a954fadf5fbd176db0c1fd7a2279"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00032.c",
+                      "size":  440910,
+                      "sha256":  "07d3ca9bf4294a410042916fb0dba57a4eccc3d8bbc4d25416897dc1d10cac4e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00033.c",
+                      "size":  159327,
+                      "sha256":  "2dced1b604823afdefe34bbd3b6ef019effa5a17d38d8b6016ab6baa0d632099"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00034.c",
+                      "size":  200356,
+                      "sha256":  "ca45ab595257f6c7afc45ac05374de204c7c2671c5888c3e7d146317234ec53c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00036.c",
+                      "size":  2266,
+                      "sha256":  "6819183dd5ee2f26b984755381a255253843e55870f92b824e6fae49cfe90397"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00039.c",
+                      "size":  1220,
+                      "sha256":  "71f68cfb277e49dfec150093c51c0f67754b4a3819578febc83fbe5e5478bdb9"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00062.c",
+                      "size":  221846,
+                      "sha256":  "b1695134c605e984af3b041eff42a94be72e5c51564cc55f9ff85d25430b4649"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00063.c",
+                      "size":  326838,
+                      "sha256":  "67f1d798549e37359a0892e304bfd5b97e291d72cd0b06d6331a197aafd04f8c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00064.c",
+                      "size":  33045,
+                      "sha256":  "53a9dd7f620fc8df955dbb51448d5e40fc0d653aff39996476e1244a67ac9449"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00065.c",
+                      "size":  77492,
+                      "sha256":  "918d0d78dbb6d7814c28aff42ed2aa48cdea9403872542e1be87fbde15ed32b9"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00067.c",
+                      "size":  221172,
+                      "sha256":  "51f350d8e496ef0ec12020de5a92dd0f964f1039eb50dd09ffe19374fb2830e1"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00068.c",
+                      "size":  302889,
+                      "sha256":  "fd0afd68841101574faf8c8f1e4884c3741dc66c2fb49702e068469a44ef405a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00069.c",
+                      "size":  391020,
+                      "sha256":  "9d979965b617a8d0af670a8ad75534785e0ca7c729b25d3f334e795cee21e714"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0006A.c",
+                      "size":  411895,
+                      "sha256":  "0c564b26183d7ce0fd5274df0b87f2ac8d3553f9c95664e17f91573d165b6921"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0006B.c",
+                      "size":  503179,
+                      "sha256":  "7c452da3e709a67c58a30ade843bf81c581ec6878df9903553bc1ea9c2ef9ee1"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0006C.c",
+                      "size":  319931,
+                      "sha256":  "40444c2922a46ec379437011cea5d6db0387395542e0434471ecba1338720e9a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0006D.c",
+                      "size":  383937,
+                      "sha256":  "b22654eea0f531a4f33c6561d18262a008a445588df4c172dc62ba2e13918480"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0006E.c",
+                      "size":  313213,
+                      "sha256":  "e010de1c04510e6e9cf58e37e427f6313dc704fc5e65659d3f006b61427152ad"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0006F.c",
+                      "size":  340026,
+                      "sha256":  "c4a407aae9fb1d218b0074b7f474905c37529a55e963fb31a0122f3cd0a25a8e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00070.c",
+                      "size":  220074,
+                      "sha256":  "4a8a39a73396092d51d6b9b2a1700217c7e4716e0d674366443f13cf17a88269"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00071.c",
+                      "size":  228083,
+                      "sha256":  "369c6ef5cfeef69b69bc954aed8c01de4075cb3b79a1dc4e7b185a39f03c38c6"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00072.c",
+                      "size":  206704,
+                      "sha256":  "bfdbd23ef27660ef25f82bcedcfeb59f1869aecb65caad8a4f0926161e32c941"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00073.c",
+                      "size":  201920,
+                      "sha256":  "0b5dfa1d9d02fa6ca86833a670cb8070d04921042d85836a1312adc39bcf537e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00074.c",
+                      "size":  90468,
+                      "sha256":  "a3bd61b2f5305f023c4129c212b3d66c16c5d144a8b3fec87a73dff1673596ab"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00075.c",
+                      "size":  97393,
+                      "sha256":  "8f7f442a981b8281d18d4a2a4018fa2e7e9ea1af5155b45103c06e564bc68085"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00076.c",
+                      "size":  144640,
+                      "sha256":  "77321fdde3a690ab6401b63be521a9ddfa48974a06349992badfb6b0d71d509c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00077.c",
+                      "size":  164465,
+                      "sha256":  "45ab4c9da17264ebd5b4c2c2a3fca66c0f4d7e08fd94b25209efd158e6a4c7a0"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00078.c",
+                      "size":  87349,
+                      "sha256":  "864b17a49ba05e53921462f15b08a164155b20d0a5a496f1771c2bbe69b43a97"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00079.c",
+                      "size":  252184,
+                      "sha256":  "3cb341d6cfc4b96abce6c3ee58bf0bdaed74e2e37fd38de90549a57aad93354a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0007A.c",
+                      "size":  335709,
+                      "sha256":  "fa969fc6d690dc3ea26b765db703b1ff42604bb0edef5a6e8cbdc57cdb9df866"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0007B.c",
+                      "size":  250848,
+                      "sha256":  "f1ff82f8f000abf9cc0abf205e58c3c03c3a84a45d9b1316ccd89d70e2f83788"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0007C.c",
+                      "size":  379859,
+                      "sha256":  "ba69f3a48199187d1cf4eab60dfe2625486ab644dce682113c5b6b0045c60b8f"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0007D.c",
+                      "size":  310810,
+                      "sha256":  "d54b64282046a2fc3392b61d22ad04cb27c4e4a1ac1201aede7a5d3d0e0d56bc"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_0007E.c",
+                      "size":  62785,
+                      "sha256":  "1a7c924c6761fc9ea77e157d8e240dc9d41fda0bfd758e4294e2df7a072ab79f"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A0.c",
+                      "size":  353802,
+                      "sha256":  "bc5a87d7ce71b4bc7863fee95d3a0110169ac73afd2326ccb1e1aab8fb2443ed"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A1.c",
+                      "size":  470869,
+                      "sha256":  "f2e28ba73ecc8f2d8dddf959b9bc9224454881618f00a2a8b6fad9a46f5c169b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A2.c",
+                      "size":  291141,
+                      "sha256":  "7635d9f578178f546d446c612ffccdd76c2f1cebaf21ad7f7d0d583e596c7dd7"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A3.c",
+                      "size":  300745,
+                      "sha256":  "24b8dd1e8597945da0ec62e20d76beb27cc83fd814eed409353afd905d10000b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A4.c",
+                      "size":  120296,
+                      "sha256":  "76c11e05eb315d75e8d1d8355be5c5fd4e9c4d711f11c81c765ee2d2657ea507"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A5.c",
+                      "size":  200105,
+                      "sha256":  "c8f7aca1da3659da9b3858b10bd858165e41af38d532d3b8eac20304d539b32d"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A6.c",
+                      "size":  382399,
+                      "sha256":  "d477b9b3bac960b8769e824df2ce9e7c420174503e768246a532a87409c0a690"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A7.c",
+                      "size":  316692,
+                      "sha256":  "1e2c738787f6fc1c1dadf81c42725d5114b00b0439d8bda80eb419e1747ffca1"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A8.c",
+                      "size":  316791,
+                      "sha256":  "b66fed9c5305dea1e86f608dd7d88b28f16afaef31ba4c30e88ff107a4a2b56e"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000A9.c",
+                      "size":  336294,
+                      "sha256":  "dc023424a7c64ff2abd5bcb58c8c52a056f818611d3735657b246ccf933cd087"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000AA.c",
+                      "size":  329415,
+                      "sha256":  "191e5df9f59765b39ed5d54b94f089a64ec66ff31298b46802fc9a2c39f7e589"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000AB.c",
+                      "size":  420698,
+                      "sha256":  "432a795e7506346cddfd1e00ce1160376c1718358113d737c9545360e93bc061"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000AC.c",
+                      "size":  375423,
+                      "sha256":  "e53839801fc5e885a89524139a17a6ab40e49c0e013f403c255a6aa3e7136daa"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000AD.c",
+                      "size":  209887,
+                      "sha256":  "7ef9e2f64a1f471e19ed75551915dd6cfa3bdd6fa8f91ae09fd20a2e082d32a2"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000AE.c",
+                      "size":  6082,
+                      "sha256":  "6921d1c7b0d1f84c99ba8cad54bd2d75c45093ee8e2182228923273834b20348"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000AF.c",
+                      "size":  159388,
+                      "sha256":  "6d4d2701bcca75f71823e9e3f0308270292927f9c4ddc74047210ffa0ee2a164"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000B8.c",
+                      "size":  33150,
+                      "sha256":  "d0f1cf93526b8b147f206da3290ae24cfbb94a3634c5b72aa85ee705a487dfa7"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E0.c",
+                      "size":  219160,
+                      "sha256":  "b234a926a23e3cd987c0998693ea826c694f926fad7013e71699bf6382df62ca"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E1.c",
+                      "size":  96836,
+                      "sha256":  "9ee6ad2de0a7e443fce5672186db5ff814ba86e09faf74cd22744ba681ef00eb"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E2.c",
+                      "size":  148967,
+                      "sha256":  "33c24b297b449f76f6476fbc5dd5b438371a03108856d4c6b0d1b2b0fc4350e5"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E3.c",
+                      "size":  144619,
+                      "sha256":  "b8ccf6baacc81f4491f7ea8d981bfa73c71389d0dc9434979db1ae3d6303ce52"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E4.c",
+                      "size":  423510,
+                      "sha256":  "07a157cca2add59d844026bcd2d9e1abe95817b2c33e45d45537d36dceea770a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E5.c",
+                      "size":  552377,
+                      "sha256":  "4e780ad3c069b0ec3e2810c360c515ef113ef6726c6535f48c194c01b88656fe"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E6.c",
+                      "size":  385617,
+                      "sha256":  "69eae9932e4fc1bfc7e2fdd94bf2192bc7895dab6e1cb18e227d60979e246f4b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E7.c",
+                      "size":  292327,
+                      "sha256":  "d8124bf005fe887ae010217f477b200249e1fbdee7956f18c6d77189b41f3311"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E8.c",
+                      "size":  215017,
+                      "sha256":  "63d94f47cee20e2152f06d70cb8bf307abaeb6909838bae59eee72ae05cbcf20"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000E9.c",
+                      "size":  313642,
+                      "sha256":  "e45a6042b41a4e6cf79cba0a131f8958d8dafe90debddbd853bec761287447db"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000EA.c",
+                      "size":  464523,
+                      "sha256":  "cafd8e598c237bad081531ae850c9f9890ff70ea36f442b8b780a58b7c239cbf"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000EB.c",
+                      "size":  314051,
+                      "sha256":  "6bed13d5c9d79016b1455b80fbb3ba2595a3ad7a49a5440273e06dedd027efd5"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000EC.c",
+                      "size":  480662,
+                      "sha256":  "9681574d7d261871350425f33bb1d7755a3a111f8b0c0106d1887c53a9729d04"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000ED.c",
+                      "size":  191241,
+                      "sha256":  "018b54b4cb2ceb554b62bfe81cbb90c38dce262cc29c33cb1618f3c4b0663c40"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000EE.c",
+                      "size":  392213,
+                      "sha256":  "00041e2938843260631a1a856f65f04525ce165a67857eb9f9bae88923166e25"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000EF.c",
+                      "size":  301471,
+                      "sha256":  "7e1312d77aab1066c7cf04e086d30547b9dc368aee7c30534c63af255024425b"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F0.c",
+                      "size":  344785,
+                      "sha256":  "8005bcd4e480634e8b900ec72b5f995e54598a08788c3dd607ec85df649281ee"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F1.c",
+                      "size":  135200,
+                      "sha256":  "26b5d4f80b9d2c0af989f62044fe4929e14dc70c900691c7225f86418ed8a890"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F2.c",
+                      "size":  255480,
+                      "sha256":  "1b4439f4cc0009fcd5705e7e4b7d28eb736f5c7c5703b9165d4bc50fa449530f"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F3.c",
+                      "size":  141735,
+                      "sha256":  "65e1d89d4f560f2846dc3ade2adefe0fde6aaa022d94bae7aaa3022656a1ec73"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F4.c",
+                      "size":  149196,
+                      "sha256":  "5a7aab2731a85a6f91104c781f364a14a676645a1810ae31bc53e74991c30050"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F5.c",
+                      "size":  245688,
+                      "sha256":  "08dab398eb68ec2139c971dfa7a0b6535d4ccb5c663886d3298126c43e6eeb4c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F6.c",
+                      "size":  188352,
+                      "sha256":  "502f7a8c1ebb8949477e72a74b0ac265c07bc4ad7a36d58085009e03c13dc860"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F7.c",
+                      "size":  150992,
+                      "sha256":  "43265924ba3c0c624ee1953bb4895a2b970bba139c0863d62b2cb205ed00a530"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F8.c",
+                      "size":  173174,
+                      "sha256":  "2a81bb351a7381c2aae4043689f01e2ba16867d39f8ef842204e698cc4ed7ff7"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000F9.c",
+                      "size":  69488,
+                      "sha256":  "34c450fb3262c91084ff1c1a3f6e0ea616547c1e2989ef78df9a1b8feec448ac"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000FC.c",
+                      "size":  187094,
+                      "sha256":  "51c87a25406799d70e9385f726d0119a61b28d2bb4864c0517a5058a5dac058a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000FD.c",
+                      "size":  62051,
+                      "sha256":  "5d3a358ee174f47511ff0524f3652e9fb252a6d392e8dd33877ab3bc29bb916c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_000FF.c",
+                      "size":  154362,
+                      "sha256":  "020731464ff8103f8683f56a64dbc4f23dbf09cb9c18c005730b6b1ba4ba313c"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00164.c",
+                      "size":  74337,
+                      "sha256":  "e1d16cb1b9c93dd7ea9ae374fb752bf14f257f476e3c45fcae8e91fa11a76088"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00165.c",
+                      "size":  61169,
+                      "sha256":  "16049b88d1de4e2c88f50fc4e7da89e96206c961d8799f9612cf6d4366160604"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00166.c",
+                      "size":  24119,
+                      "sha256":  "690127340a517cb352d37db1c11146d8d44ec6ec6a7385f0bb4395c032af4a8a"
+                  },
+                  {
+                      "path":  "static-recomp/generated/v35-shards/sc_v35_group_00167.c",
+                      "size":  139175,
+                      "sha256":  "641be9609b5b157ed4e776e5a80392d7c78586763aea97086ee0e3d16520d11f"
+                  },
+                  {
+                      "path":  "static-recomp/include/simcity_static_recomp.h",
+                      "size":  9000,
+                      "sha256":  "e381aca58c35facf4948aa1cbb203d81298d7c3f66d7d0faf03d83f8f458672d"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_audio_clock_profile.h",
+                      "size":  2298,
+                      "sha256":  "f5a4466d7315f46c2a6e14f3b2aabc122b4a7e61029cd90feac30af08a7cc771"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_audio_transport.h",
+                      "size":  3163,
+                      "sha256":  "a64b0d2cb16d0983026b8bdf9463b81373675f92594ed49e6326f9d8b069d37c"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_core_internal.h",
+                      "size":  376,
+                      "sha256":  "a11b8d311430ef7dc86aa2bbcc95df997dbec1ee3fbd9e1f76fb17a46167abdb"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_machine.h",
+                      "size":  8617,
+                      "sha256":  "6699dca92f2f0cdf49c843cc684ab5310552a09a849a7ccc205dba0c5b5870f9"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_v11_runtime.h",
+                      "size":  9115,
+                      "sha256":  "e030bc538410c906dbea5abe897eee70f7660c3e1111bd5375a58ed08053bba0"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_v11_video.h",
+                      "size":  419,
+                      "sha256":  "bb7806a2f482ab9f7ba6df8dce143e23de38a594a6723a45c52036b88c3e7f8d"
+                  },
+                  {
+                      "path":  "static-recomp/internal/include/sc_v28_video.h",
+                      "size":  1059,
+                      "sha256":  "e120d8c8782e3d20ed4d3fa2f05cacb18201ab2630e6fe560f61c665895656fa"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_audio_transport.c",
+                      "size":  9268,
+                      "sha256":  "cf0b51eaf2143a27c59f12513cc2a7766bef1c1209dabcc753312882a69f0bc1"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_machine.c",
+                      "size":  19642,
+                      "sha256":  "e8a87da8475f100b4095b8524d55bf639f82e96431aca5e6c4bb7b166af2e42a"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_v11_bus.c",
+                      "size":  28995,
+                      "sha256":  "4548ce7b1556a17c8a39b711703ea0afd827aa9011f0526f320910e230285b3a"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_v11_cpu.c",
+                      "size":  12342,
+                      "sha256":  "4d5a4a0f7b7684d035f0bd2692458d56d65625018fe9d864946e115188fa54de"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_v11_scheduler.c",
+                      "size":  7461,
+                      "sha256":  "34a33393cb7fe1583eefc3339724fc087e4956d071644e6f21c3c9ebf4a9b683"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_v11_smp.c",
+                      "size":  9804,
+                      "sha256":  "927a9abdb2062873394ef0c1e276d210df7795afcb8cb0e868c4a7b5225b8915"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_v11_support.c",
+                      "size":  5382,
+                      "sha256":  "e56a55b228634b5a0a85784d7947bbfac6d779f1da4e1d1f4dc39833f056ddb8"
+                  },
+                  {
+                      "path":  "static-recomp/src/sc_v28_video.c",
+                      "size":  24625,
+                      "sha256":  "7f110b952a2e38927446e4fd2619a22e60407303b37c01da633499fd491210df"
+                  },
+                  {
+                      "path":  "static-recomp/src/simcity_static_recomp.c",
+                      "size":  34211,
+                      "sha256":  "367ae40b92fa41448253275a44abc2a99514a3cd97b45041e65b4a08eec7695d"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/blargg_common.h",
+                      "size":  5205,
+                      "sha256":  "4bc17a19fe46de2860868d3f88c037aee718b4dedc61450a28de3d1336053dba"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/blargg_config.h",
+                      "size":  702,
+                      "sha256":  "b09d42a2130a9b2beedd9fa460e885d6953852cfcfbc30c19a28cd503b03e8b1"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/blargg_endian.h",
+                      "size":  6364,
+                      "sha256":  "97062e15b46e1347a4fc2e95fd131bcb89c1b8947b28d20a27c1f342a387d637"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/blargg_source.h",
+                      "size":  3037,
+                      "sha256":  "bd6b376d6d9b1bccce3b89e915b1ad9a6fede7d43b273258bfa13c3855fb1a6a"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/sc_static_sdsp_primitives.inc",
+                      "size":  14037,
+                      "sha256":  "7f5e92fe7988b977ed2bfadc421d3db87de99281a77281b7661b38856f461746"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/sdsp.cpp",
+                      "size":  2656,
+                      "sha256":  "17a390229a3e675c62d3f5e6a54914e174049e3061315a2688874161df1ddf16"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/sdsp.hpp",
+                      "size":  393,
+                      "sha256":  "0961d7ddc0626fd7a04fcaeca81626cc2a95f4cfb965a3c7bc47d66b83e0c36d"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/SPC_DSP.cpp",
+                      "size":  45928,
+                      "sha256":  "f26e57943503ea50c701d6d1344d3d271d81a2a383788e69f526a8193e6eda3b"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/SPC_DSP.h",
+                      "size":  9656,
+                      "sha256":  "97eb2e41d5862271e56754a6bc7328c2b9aabe868149f8b83c75173d1929fb91"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/PROVENANCE.md",
+                      "size":  543,
+                      "sha256":  "792042a2abdaf905df1d9d45e23a17c2038c5be9f8eb286e01ab43b458473ef8"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/sc_static_apu.cpp",
+                      "size":  16457,
+                      "sha256":  "dca74d2d22a89f940848abb6272fe53de520b12402fd33aaeaf3210a92d5f0fa"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/sc_static_apu.h",
+                      "size":  3471,
+                      "sha256":  "d78f5aaca235ef84a333e0207988d8164d176f371847063816252d2bd32d8525"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/algorithms.cpp",
+                      "size":  2180,
+                      "sha256":  "60d11d0871e9934323b9caae78e0f0270ed4ec083eb1db6cbb39bf5b2126c37c"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/core.cpp",
+                      "size":  2242,
+                      "sha256":  "1fbda59d9609f4a26833fc7a30e9af5ec3fcbbbe3b6d8b08d403aeb524bc943e"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/core/oppseudo_misc.cpp",
+                      "size":  4326,
+                      "sha256":  "7ab0aee29e1ba8144490f4a45986db0ec43c39fb7b39708a071232d89eb898e1"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/core/oppseudo_mov.cpp",
+                      "size":  10618,
+                      "sha256":  "de015670802074a2220e50941d5976ee62f20d5d41116be33a5d07e80b3973d5"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/core/oppseudo_pc.cpp",
+                      "size":  8469,
+                      "sha256":  "2a9311e1d4adaaf8573821f093ec8616fd0ca105d57e1a420fe5d529bfd9abaa"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/core/oppseudo_read.cpp",
+                      "size":  12220,
+                      "sha256":  "c07fa73b7a6e470035c33eeb1dabe6bb329a39b01b4a44eb0db7282a93bafb45"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/core/oppseudo_rmw.cpp",
+                      "size":  3841,
+                      "sha256":  "f6d3c0bf572102e76210ed64f442290c703d7cd6b91d0e398cd023d31d9ba9f6"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/iplrom.cpp",
+                      "size":  1697,
+                      "sha256":  "757fd8afb8a118d3db3cb1e6ba66bc8d7df2512ed48f96afad19a9e9f63746e4"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/memory.cpp",
+                      "size":  2483,
+                      "sha256":  "c879905b948f07a90b07cd582b2054413aaecc82cc894378c6fdca91e24c7b17"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/sc_smp_aot_code_bitmap.inc",
+                      "size":  50784,
+                      "sha256":  "3169fe2bc60cb38179b3036475bd137c3672e5dd57515b7d9692ba0f380a5794"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/sc_smp_aot_dispatch.inc",
+                      "size":  20184,
+                      "sha256":  "61ec3fcb955482f2ca3c6c86fdb0cb78dd9300607b9e94ab964a9864fc8cc591"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/sc_smp_aot_lookup.inc",
+                      "size":  57879,
+                      "sha256":  "2fb429b139f6a72b152bd86edd3de9a15868db1f9312c9091d006f2e6d2db10c"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/smp.cpp",
+                      "size":  1660,
+                      "sha256":  "14a42613089eeb8996c32c49cf1bd9130b5e687851a434c7085184075a347754"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/smp.hpp",
+                      "size":  3698,
+                      "sha256":  "29a468705612eea209db29ad3d66d624b5301e78dd640ad98e4b1a7d30e3a831"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/smp/timing.cpp",
+                      "size":  617,
+                      "sha256":  "6263a99d1092e7d8f299e4e9a0985b8a53210020401a5df8b375ccc9692fe980"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/SNES9X-LICENSE.txt",
+                      "size":  7247,
+                      "sha256":  "7783dd4c4c33df9c067919c38d666b3a530b3f4cf55e36d685d6b671ec1c8a29"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/static_snes.hpp",
+                      "size":  575,
+                      "sha256":  "4dc05734b354cd7ac9781224789dba5b07e0388df87cd8d5b16c83648a7fdbb6"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/static_types.hpp",
+                      "size":  1124,
+                      "sha256":  "77de4aaa03eceaf5705b1d6c8139e97b336667354cc3dc483593f70d33d20b3b"
+                  },
+                  {
+                      "path":  "third_party/gamecontrollerdb.txt",
+                      "size":  602815,
+                      "sha256":  "6bb4cab168b7e2fa38c3978ae03fde05bdbc051a28953d50534b235f8103151a"
+                  },
+                  {
+                      "path":  "third_party/simcity-gamepad/gamepad_input_win32.c",
+                      "size":  10434,
+                      "sha256":  "7e2c3a947b7e030f6d8ac2ff1e7b8898d40c59944195fc65067af7febc0c5116"
+                  },
+                  {
+                      "path":  "third_party/simcity-gamepad/gamepad_input_win32.h",
+                      "size":  1990,
+                      "sha256":  "61906bc8d614b1a4a1b6d34f9e3becd39dc68100925b5a916d5f03958295ec81"
+                  },
+                  {
+                      "path":  "VERSION.txt",
+                      "size":  167,
+                      "sha256":  "a1d4a0fed47c75a405c0396f4fee99e156ae9960e3a0e3ec1f8430dab0a4eb7c"
+                  }
+              ]
+}

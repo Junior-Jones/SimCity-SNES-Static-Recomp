@@ -1,0 +1,5 @@
+SimCity SNES Static Recomp
+Platform: native 64-bit Windows
+Executable: Launcher.exe
+Audio: Full Static, 32,040 Hz stereo PCM
+ROM: required externally and not included

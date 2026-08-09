@@ -1,0 +1,8 @@
+Required game ROM
+Name: SimCity
+Region: USA
+File extension: .sfc (the filename can be anything)
+File size: 524,288 bytes
+SHA-256: e9c0bc05511e05a0d7c3e7cc42e761e1e8e532d46f59b9854b6902e1a2e9dd0a
+
+The ROM is not included. Use a legally obtained exact matching image.
