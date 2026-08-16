@@ -3,7 +3,7 @@
     "platform":  "Windows",
     "version":  "1.1.0",
     "file_count":  266,
-    "total_bytes":  32291901,
+    "total_bytes":  32289386,
     "files":  [
                   {
                       "path":  "CMakeLists.txt",
@@ -62,8 +62,8 @@
                   },
                   {
                       "path":  "frontend/windows/simcity_launcher_win32.c",
-                      "size":  143201,
-                      "sha256":  "c26834a5f205700125f35f479b603af46d68f4e261b5ab12826249f01aa8df9f"
+                      "size":  140886,
+                      "sha256":  "f5a8656aac750edcebb7c123f6e9efc6d7160a5d77be3be940bd348fde0ea441"
                   },
                   {
                       "path":  "frontend/windows/simcity_video_output_sdl3.c",
@@ -1302,8 +1302,8 @@
                   },
                   {
                       "path":  "static-recomp/static-audio/snes9x-bapu-aot/SNES9X-LICENSE.txt",
-                      "size":  7247,
-                      "sha256":  "7783dd4c4c33df9c067919c38d666b3a530b3f4cf55e36d685d6b671ec1c8a29"
+                      "size":  7047,
+                      "sha256":  "70efeee282d82a6e9d26aeed5466d08c632369858371dc6a4644c8dcedc2be78"
                   },
                   {
                       "path":  "static-recomp/static-audio/snes9x-bapu-aot/static_snes.hpp",
