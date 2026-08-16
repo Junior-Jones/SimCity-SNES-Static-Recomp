@@ -23,8 +23,8 @@ int simcity_audio_recorder_win32_start(SimCityAudioRecorderWin32 *r,const wchar_
     for(attempt=0;attempt<100u;attempt++){
         written=_snwprintf(r->path,4096,
             attempt==0u?
-            L"%s\\Top-Gear-Full-Static-%04u%02u%02u-%02u%02u%02u-%03u.wav":
-            L"%s\\Top-Gear-Full-Static-%04u%02u%02u-%02u%02u%02u-%03u-%02u.wav",
+            L"%s\\SimCity-Full-Static-%04u%02u%02u-%02u%02u%02u-%03u.wav":
+            L"%s\\SimCity-Full-Static-%04u%02u%02u-%02u%02u%02u-%03u-%02u.wav",
             folder,t.wYear,t.wMonth,t.wDay,t.wHour,t.wMinute,t.wSecond,
             t.wMilliseconds,attempt);
         if(written<0||written>=4096){
