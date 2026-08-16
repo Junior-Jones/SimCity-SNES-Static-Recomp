@@ -3,7 +3,7 @@
     "platform":  "Windows",
     "version":  "1.1.0",
     "file_count":  266,
-    "total_bytes":  32290670,
+    "total_bytes":  32291901,
     "files":  [
                   {
                       "path":  "CMakeLists.txt",
@@ -62,8 +62,8 @@
                   },
                   {
                       "path":  "frontend/windows/simcity_launcher_win32.c",
-                      "size":  141970,
-                      "sha256":  "8746d09006b871f94fd8e0c2eb566fbfd194a39cdab18153fc11c33419064550"
+                      "size":  143201,
+                      "sha256":  "c26834a5f205700125f35f479b603af46d68f4e261b5ab12826249f01aa8df9f"
                   },
                   {
                       "path":  "frontend/windows/simcity_video_output_sdl3.c",

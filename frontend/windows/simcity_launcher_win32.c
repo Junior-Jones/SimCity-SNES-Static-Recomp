@@ -175,6 +175,10 @@ static int g_resume_after_failed_load;
 static int g_play_after_load;
 static int g_adjacent_rom_found;
 static uint16_t g_held_input;
+/* Mesen-style short-press safety: action-key transitions remain pending until
+   one emulated SNES frame has sampled them. Directions intentionally remain
+   held-state only so cursor movement cannot stick after a quick tap. */
+static uint16_t g_latched_input;
 static uint16_t g_gamepad_input;
 static SimCityGamepadInputWin32 g_gamepad;
 static wchar_t g_executable_directory[PATH_CAPACITY];
@@ -534,14 +538,22 @@ static int keyboard_gameplay_active(void) {
            !simcity_gamepad_win32_connected(&g_gamepad);
 }
 
+static uint16_t action_input_mask(void) {
+    return (uint16_t)(SIMCITY_INPUT_B | SIMCITY_INPUT_Y |
+                      SIMCITY_INPUT_SELECT | SIMCITY_INPUT_START |
+                      SIMCITY_INPUT_A | SIMCITY_INPUT_X |
+                      SIMCITY_INPUT_L | SIMCITY_INPUT_R);
+}
+
 static uint16_t current_gameplay_input(void) {
+    uint16_t keyboard_input = (uint16_t)(g_held_input | g_latched_input);
     if (g_frontend_settings.input_source[0] == SIMCITY_INPUT_SOURCE_GAMEPAD &&
         simcity_gamepad_win32_connected(&g_gamepad))
         return g_gamepad_input;
     if (g_frontend_settings.input_source[0] == SIMCITY_INPUT_SOURCE_COMBINED &&
         simcity_gamepad_win32_connected(&g_gamepad))
-        return (uint16_t)(g_held_input | g_gamepad_input);
-    return g_held_input;
+        return (uint16_t)(keyboard_input | g_gamepad_input);
+    return keyboard_input;
 }
 
 static int read_rom_file(const wchar_t *path, uint8_t **rom,
@@ -789,6 +801,7 @@ static void pause_game(const wchar_t *message) {
     if (g_game) (void)simcity_recomp_audio_discard(g_game);
     g_paused = 1;
     g_held_input = 0u;
+    g_latched_input = 0u;
     g_gamepad_input = 0u;
     restore_paused_presentation();
     SetWindowTextW(g_window, LAUNCHER_TITLE);
@@ -807,6 +820,7 @@ static void stop_game_on_core_failure(void) {
     simcity_audio_output_pause(&g_audio_output);
     g_paused = 1;
     g_held_input = 0u;
+    g_latched_input = 0u;
     g_gamepad_input = 0u;
     write_diagnostic_event(L"core-failure",
                            L"The static core stopped on a fail-closed error.",
@@ -822,6 +836,7 @@ static void play_game(void) {
     g_paused = 0;
     SetWindowTextW(g_window, APP_TITLE);
     g_held_input = 0u;
+    g_latched_input = 0u;
     g_gamepad_input = 0u;
     simcity_audio_output_resume(&g_audio_output);
     reset_pacing_clock();
@@ -2087,25 +2102,33 @@ static void reset_pacing_clock(void) {
 static int advance_frame_batch(uint32_t frame_count) {
     SimCityRecompFrameResult result;
     wchar_t message[512];
-    uint32_t headless_count;
-    uint16_t input_mask;
+    uint32_t frame_index;
     const uint32_t *pixels;
     int recorder_was_active;
     if (!g_game || frame_count == 0u) return 1;
     memset(&result, 0, sizeof(result));
-    input_mask = current_gameplay_input();
-    headless_count = frame_count > 1u ? frame_count - 1u : 0u;
-    g_video_output.diagnostics.dropped_presentations += headless_count;
-    if (headless_count &&
-        !simcity_recomp_advance_headless(g_game, input_mask,
-                                         headless_count, &result)) {
-        stop_game_on_core_failure();
-        return 0;
-    }
-    memset(&result, 0, sizeof(result));
-    if (!simcity_recomp_advance(g_game, input_mask, 1u, &result)) {
-        stop_game_on_core_failure();
-        return 0;
+    for (frame_index = 0u; frame_index < frame_count; ++frame_index) {
+        uint16_t input_mask = current_gameplay_input();
+        int final_frame = frame_index + 1u == frame_count;
+        int advanced;
+
+        memset(&result, 0, sizeof(result));
+        if (final_frame) {
+            advanced = simcity_recomp_advance(
+                g_game, input_mask, 1u, &result);
+        } else {
+            ++g_video_output.diagnostics.dropped_presentations;
+            advanced = simcity_recomp_advance_headless(
+                g_game, input_mask, 1u, &result);
+        }
+        if (!advanced) {
+            stop_game_on_core_failure();
+            return 0;
+        }
+        /* Clear only after a complete core frame consumes the transition. A
+           key released between Windows messages and this point still reaches
+           exactly one emulated frame. */
+        g_latched_input = 0u;
     }
     recorder_was_active = simcity_audio_recorder_win32_active(&g_audio_recorder);
     simcity_audio_output_pump(&g_audio_output, &g_audio_recorder, g_game);
@@ -3041,6 +3064,9 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 uint16_t mask = virtual_key_to_input(wparam, lparam);
                 if (mask != 0u) {
                     g_held_input = (uint16_t)(g_held_input | mask);
+                    if ((lparam & (1L << 30)) == 0)
+                        g_latched_input = (uint16_t)(
+                            g_latched_input | (mask & action_input_mask()));
                     return 0;
                 }
             }
@@ -3060,6 +3086,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
 
         case WM_KILLFOCUS:
             g_held_input = 0u;
+            g_latched_input = 0u;
             g_gamepad_input = 0u;
             if (g_frontend_settings.pause_on_focus_loss &&
                 g_game && !g_paused)
@@ -3110,6 +3137,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             free(result);
             g_paused = 1;
             g_held_input = 0u;
+            g_latched_input = 0u;
             (void)open_audio(1);
             InvalidateRect(window, NULL, TRUE);
             update_controls();
