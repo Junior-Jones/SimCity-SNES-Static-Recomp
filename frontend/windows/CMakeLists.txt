@@ -30,10 +30,12 @@ endif()
 add_executable(simcity-launcher WIN32
     simcity_launcher_win32.c
     launcher_version.rc
-    audio_output_winmm.c
-    audio_recorder_win32.c
-    frontend_settings_win32.c
-    "${SIMCITY_GAMEPAD_ADAPTER_DIR}/gamepad_input_win32.c"
+    simcity_audio_output_sdl3.c
+    simcity_audio_recorder_win32.c
+    simcity_diagnostics_log_win32.c
+    simcity_frontend_settings_win32.c
+    simcity_video_output_sdl3.c
+    "${SIMCITY_GAMEPAD_ADAPTER_DIR}/simcity_gamepad_input_win32.c"
 )
 target_include_directories(simcity-launcher PRIVATE
     "${SIMCITY_GAMEPAD_ADAPTER_DIR}"
@@ -45,7 +47,6 @@ target_link_libraries(simcity-launcher PRIVATE
     gdi32
     comdlg32
     comctl32
-    winmm
 )
 target_compile_definitions(simcity-launcher PRIVATE
     UNICODE
@@ -55,12 +56,13 @@ target_compile_definitions(simcity-launcher PRIVATE
     _CRT_SECURE_NO_WARNINGS
 )
 if(MSVC)
-    target_compile_options(simcity-launcher PRIVATE /W4 /experimental:deterministic)
+    target_compile_options(simcity-launcher PRIVATE /W4 /WX /experimental:deterministic)
 else()
     target_compile_options(simcity-launcher PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 set_target_properties(simcity-launcher PROPERTIES
     OUTPUT_NAME "Launcher"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/release"
 )
 add_custom_command(TARGET simcity-launcher POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different

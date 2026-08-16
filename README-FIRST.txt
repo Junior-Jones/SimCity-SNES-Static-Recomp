@@ -4,8 +4,8 @@ Place the exact matching .sfc ROM in the Rom folder, or use Browse to select it,
 
 Save data is written atomically beside Launcher.exe at Saves\SimCity-USA.srm.
 
-The Windows launcher uses a native static recompilation core and Full Static audio at 32,040 Hz stereo PCM. Host audio pause and resume uses a full WinMM queue reset, four-buffer pre-roll, stale-PCM discard, and a resume fade-in.
+The Windows launcher uses a native static recompilation core with SDL3 GPU presentation, SDL3 gamepad input, and Full Static audio at 32,040 Hz stereo PCM. Speaker output uses SDL3 device conversion and bounded latency control; WAV recording remains native 32,040 Hz PCM.
 
-Screenshots, Snapshots, and Audio folders are created only when their matching feature is first used.
+Screenshots, Snapshots, Audio, Saves, and Logs folders are created only when their matching feature first writes a file.
 
 See Rom\readme.txt and ROM-REQUIREMENTS.txt for the required ROM details.

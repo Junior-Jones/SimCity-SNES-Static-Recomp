@@ -1,5 +1,7 @@
 SimCity SNES Static Recomp
+Version: 1.1.0
 Platform: native 64-bit Windows
 Executable: Launcher.exe
-Audio: Full Static, 32,040 Hz stereo PCM
+Frontend: SDL3 video, audio and gamepad; native Win32 launcher
+Audio: Full Static, 32,040 Hz stereo PCM with SDL3 device output
 ROM: required externally and not included

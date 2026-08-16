@@ -16,6 +16,7 @@ if(MSVC)
     # Keep source/build-machine directory names out of diagnostics embedded in
     # portable release binaries. These mappings do not affect runtime paths.
     add_compile_options(
+        "/experimental:deterministic"
         "/pathmap:${CMAKE_SOURCE_DIR}=source"
         "/pathmap:${CMAKE_BINARY_DIR}=build"
     )
