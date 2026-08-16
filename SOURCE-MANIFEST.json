@@ -3,12 +3,37 @@
     "platform":  "Windows",
     "version":  "1.1.0",
     "file_count":  266,
-    "total_bytes":  32289386,
+    "total_bytes":  32289598,
     "files":  [
                   {
                       "path":  "CMakeLists.txt",
                       "size":  1682,
                       "sha256":  "c56235c6a3c10de76cd83f0552da71cbf982bd958dc4c0bda22ac6c6cd7ebc2c"
+                  },
+                  {
+                      "path":  "README-FIRST.txt",
+                      "size":  730,
+                      "sha256":  "a5d14837e828e36249062ec75450f3f0e05ba4a9e83ea5708b8317b985d3de19"
+                  },
+                  {
+                      "path":  "README.md",
+                      "size":  1022,
+                      "sha256":  "cce7f1d102eab296c3df7fa5a481a584739d70b2beed0f30f423af9d76f059ac"
+                  },
+                  {
+                      "path":  "ROM-REQUIREMENTS.txt",
+                      "size":  266,
+                      "sha256":  "47b9e9f4e5659c97ea6c6f1657122dda4360f18cc0e67a12e1cf7d5e65b0c19d"
+                  },
+                  {
+                      "path":  "Rom/readme.txt",
+                      "size":  164,
+                      "sha256":  "65d65c49b31e79863cf3a11193f2381e33a73f85b8d5c8b5144ad4e395057604"
+                  },
+                  {
+                      "path":  "VERSION.txt",
+                      "size":  269,
+                      "sha256":  "f7f6d0e35a55ec10c8efb2f9f0310900f8235b249de01d579b52ac33dc479045"
                   },
                   {
                       "path":  "frontend/windows/CMakeLists.txt",
@@ -32,8 +57,8 @@
                   },
                   {
                       "path":  "frontend/windows/simcity_audio_recorder_win32.c",
-                      "size":  3354,
-                      "sha256":  "5d2657ba5e96fba55ced29cd44d70b9304dd8316acd0f9d2633308ae9496bc43"
+                      "size":  3352,
+                      "sha256":  "6e7528c2384eadb6664e80297959178d5d053e36025691eadffe0ff79051b3ce"
                   },
                   {
                       "path":  "frontend/windows/simcity_audio_recorder_win32.h",
@@ -52,8 +77,8 @@
                   },
                   {
                       "path":  "frontend/windows/simcity_frontend_settings_win32.c",
-                      "size":  42888,
-                      "sha256":  "f0337e17aec7e41ae55bb3b2281481a4567909d710c59e67dd867c5c8628c60a"
+                      "size":  43102,
+                      "sha256":  "cc6741352c95184cbf925cc664ddaab5fe8786a7506bb3b8f6f4b19b908fcc08"
                   },
                   {
                       "path":  "frontend/windows/simcity_frontend_settings_win32.h",
@@ -74,26 +99,6 @@
                       "path":  "frontend/windows/simcity_video_output_sdl3.h",
                       "size":  2034,
                       "sha256":  "df127fab02cd9b9f703e93d867762870d5aa7a58ffc821c8704a198f0b57c29f"
-                  },
-                  {
-                      "path":  "README.md",
-                      "size":  1022,
-                      "sha256":  "cce7f1d102eab296c3df7fa5a481a584739d70b2beed0f30f423af9d76f059ac"
-                  },
-                  {
-                      "path":  "README-FIRST.txt",
-                      "size":  730,
-                      "sha256":  "a5d14837e828e36249062ec75450f3f0e05ba4a9e83ea5708b8317b985d3de19"
-                  },
-                  {
-                      "path":  "Rom/readme.txt",
-                      "size":  164,
-                      "sha256":  "65d65c49b31e79863cf3a11193f2381e33a73f85b8d5c8b5144ad4e395057604"
-                  },
-                  {
-                      "path":  "ROM-REQUIREMENTS.txt",
-                      "size":  266,
-                      "sha256":  "47b9e9f4e5659c97ea6c6f1657122dda4360f18cc0e67a12e1cf7d5e65b0c19d"
                   },
                   {
                       "path":  "static-recomp/CMakeLists.txt",
@@ -1166,6 +1171,26 @@
                       "sha256":  "367ae40b92fa41448253275a44abc2a99514a3cd97b45041e65b4a08eec7695d"
                   },
                   {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/PROVENANCE.md",
+                      "size":  543,
+                      "sha256":  "792042a2abdaf905df1d9d45e23a17c2038c5be9f8eb286e01ab43b458473ef8"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/SNES9X-LICENSE.txt",
+                      "size":  7047,
+                      "sha256":  "70efeee282d82a6e9d26aeed5466d08c632369858371dc6a4644c8dcedc2be78"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/SPC_DSP.cpp",
+                      "size":  45928,
+                      "sha256":  "f26e57943503ea50c701d6d1344d3d271d81a2a383788e69f526a8193e6eda3b"
+                  },
+                  {
+                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/SPC_DSP.h",
+                      "size":  9656,
+                      "sha256":  "97eb2e41d5862271e56754a6bc7328c2b9aabe868149f8b83c75173d1929fb91"
+                  },
+                  {
                       "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/blargg_common.h",
                       "size":  5205,
                       "sha256":  "4bc17a19fe46de2860868d3f88c037aee718b4dedc61450a28de3d1336053dba"
@@ -1199,21 +1224,6 @@
                       "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/sdsp.hpp",
                       "size":  393,
                       "sha256":  "0961d7ddc0626fd7a04fcaeca81626cc2a95f4cfb965a3c7bc47d66b83e0c36d"
-                  },
-                  {
-                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/SPC_DSP.cpp",
-                      "size":  45928,
-                      "sha256":  "f26e57943503ea50c701d6d1344d3d271d81a2a383788e69f526a8193e6eda3b"
-                  },
-                  {
-                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/dsp/SPC_DSP.h",
-                      "size":  9656,
-                      "sha256":  "97eb2e41d5862271e56754a6bc7328c2b9aabe868149f8b83c75173d1929fb91"
-                  },
-                  {
-                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/PROVENANCE.md",
-                      "size":  543,
-                      "sha256":  "792042a2abdaf905df1d9d45e23a17c2038c5be9f8eb286e01ab43b458473ef8"
                   },
                   {
                       "path":  "static-recomp/static-audio/snes9x-bapu-aot/sc_static_apu.cpp",
@@ -1301,11 +1311,6 @@
                       "sha256":  "6263a99d1092e7d8f299e4e9a0985b8a53210020401a5df8b375ccc9692fe980"
                   },
                   {
-                      "path":  "static-recomp/static-audio/snes9x-bapu-aot/SNES9X-LICENSE.txt",
-                      "size":  7047,
-                      "sha256":  "70efeee282d82a6e9d26aeed5466d08c632369858371dc6a4644c8dcedc2be78"
-                  },
-                  {
                       "path":  "static-recomp/static-audio/snes9x-bapu-aot/static_snes.hpp",
                       "size":  575,
                       "sha256":  "4dc05734b354cd7ac9781224789dba5b07e0388df87cd8d5b16c83648a7fdbb6"
@@ -1329,11 +1334,6 @@
                       "path":  "third_party/simcity-gamepad/simcity_gamepad_input_win32.h",
                       "size":  2517,
                       "sha256":  "cd87fc34c9b44b511f1182c9b649e4d3c0fec265d41b923e611701ed090c736f"
-                  },
-                  {
-                      "path":  "VERSION.txt",
-                      "size":  269,
-                      "sha256":  "f7f6d0e35a55ec10c8efb2f9f0310900f8235b249de01d579b52ac33dc479045"
                   }
               ]
 }

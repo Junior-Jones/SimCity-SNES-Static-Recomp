@@ -132,7 +132,10 @@ void simcity_frontend_settings_win32_defaults(SimCityFrontendSettingsWin32 *s) {
     memset(s, 0, sizeof(*s));
     s->pause_on_focus_loss = 1;
     s->correct_aspect = 1;
-    s->vsync_enabled = 1;
+    /* Keep the emulation clock authoritative by default. A blocking VSync
+       presentation can otherwise turn a missed 60.0988 Hz deadline into a
+       visible pause followed by a burst of catch-up frames. */
+    s->vsync_enabled = 0;
     s->allow_invalid_input = 0;
     s->gamepad_deadzone_percent = 35;
     s->snapshot_slot = 1;
@@ -179,7 +182,7 @@ void simcity_frontend_settings_win32_load(SimCityFrontendSettingsWin32 *s,
         L"General",L"FullScreenOnPlay",0,path)!=0;
     s->show_status_text=GetPrivateProfileIntW(L"General",L"ShowStatusText",1,path)!=0;
     s->correct_aspect=GetPrivateProfileIntW(L"General",L"CorrectAspect",1,path)!=0;
-    s->vsync_enabled=GetPrivateProfileIntW(L"General",L"VSync",1,path)!=0;
+    s->vsync_enabled=GetPrivateProfileIntW(L"General",L"VSync",0,path)!=0;
     s->allow_invalid_input=GetPrivateProfileIntW(
         L"General",L"AllowInvalidInput",0,path)!=0;
     s->gamepad_deadzone_percent=GetPrivateProfileIntW(
