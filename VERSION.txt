@@ -1,5 +1,5 @@
 SimCity SNES Static Recomp
-Version: 1.1.0
+Version: 1.1.1
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: SDL3 video, audio and gamepad; native Win32 launcher

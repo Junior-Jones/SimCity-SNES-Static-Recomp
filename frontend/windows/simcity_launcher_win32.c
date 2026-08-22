@@ -51,7 +51,6 @@
 #define ID_SNAPSHOT_LOAD 1014
 #define ID_RECORD 1015
 #define ID_SHORTCUTS 1016
-#define ID_CONTROLS 1017
 #define ID_RESET 1018
 #define ID_BROWSE_MENU 1019
 #define ID_FULLSCREEN 1020
@@ -133,7 +132,7 @@ typedef struct SnapshotDialogState {
 } SnapshotDialogState;
 
 typedef struct InfoDialogState {
-    const wchar_t *body;
+    wchar_t body[8192];
     HWND text;
     HWND close_button;
 } InfoDialogState;
@@ -160,6 +159,7 @@ static HWND g_rom_path;
 static HWND g_status;
 static HWND g_getting_started_window;
 static HWND g_rom_info_window;
+static HWND g_info_window;
 static HMENU g_menu;
 static SimCityRecomp *g_game;
 static HANDLE g_loader_thread;
@@ -207,6 +207,7 @@ static uint64_t g_pacing_skipped_deadlines;
 static uint32_t g_pacing_max_batch;
 static uint64_t g_pacing_resyncs;
 static GettingStartedDialogState g_getting_started_state;
+static InfoDialogState g_info_dialog_state;
 static int g_getting_started_mark_seen;
 static int g_startup_pending;
 static volatile LONG g_crash_log_started;
@@ -1207,34 +1208,6 @@ static void show_key_bindings(void) {
     if (resume_after && g_game) play_game();
 }
 
-static void show_game_controls(void) {
-    wchar_t key_name[SIMCITY_WIN_BINDING_COUNT][64];
-    wchar_t message[4096];
-    int index;
-    for (index = 0; index < SIMCITY_WIN_BINDING_COUNT; ++index)
-        simcity_frontend_settings_win32_key_name(
-            g_frontend_settings.bindings[0][index], key_name[index], 64u);
-    (void)_snwprintf(message, sizeof(message) / sizeof(message[0]),
-        L"SimCity SNES controls and current keyboard bindings\r\n\r\n"
-        L"D-pad: move the map cursor and navigate menus. Current keys: Up %s, Down %s, Left %s, Right %s.\r\n"
-        L"SNES B: select an item, confirm, and build or place it. Current key: %s.\r\n"
-        L"Select: switch between the map and the side toolbar. Current key: %s.\r\n"
-        L"Start: open the top menu bar. Current key: %s.\r\n"
-        L"SNES X: cancel, go back, or hide and restore interface bars where supported. Current key: %s.\r\n"
-        L"SNES A or Y plus a D-pad direction: rapidly scroll the map. Current keys: A %s; Y %s.\r\n"
-        L"SNES L and R: game shoulder controls where a screen supports them. Current keys: L %s; R %s.\r\n\r\n"
-        L"All twelve bindings can be changed using the Keys toolbar button or Settings, Key Bindings.",
-        key_name[SC_WIN_BIND_UP], key_name[SC_WIN_BIND_DOWN],
-        key_name[SC_WIN_BIND_LEFT], key_name[SC_WIN_BIND_RIGHT],
-        key_name[SC_WIN_BIND_SNES_B], key_name[SC_WIN_BIND_SELECT],
-        key_name[SC_WIN_BIND_START], key_name[SC_WIN_BIND_SNES_X],
-        key_name[SC_WIN_BIND_SNES_A], key_name[SC_WIN_BIND_SNES_Y],
-        key_name[SC_WIN_BIND_SNES_L], key_name[SC_WIN_BIND_SNES_R]);
-    message[(sizeof(message) / sizeof(message[0])) - 1u] = L'\0';
-    MessageBoxW(g_window, message, L"SimCity SNES Controls",
-                MB_OK | MB_ICONINFORMATION);
-}
-
 static const wchar_t g_welcome_text[] =
     L"This launcher runs the statically recompiled Super Nintendo version of SimCity\r\n\r\n"
     L"Essential launcher shortcuts\r\n"
@@ -1253,10 +1226,7 @@ static const wchar_t g_welcome_text[] =
     L"F9 - Start or stop audio recording";
 
 static void show_shortcuts(void) {
-    int resume_after = g_game && !g_paused;
-    if (resume_after) pause_game(L"Paused while Launcher Shortcut Keys is open.");
     show_information_window(L"Launcher Shortcut Keys", g_welcome_text, 680, 520);
-    if (resume_after && g_game) play_game();
 }
 
 static void show_frontend_settings(void) {
@@ -1732,6 +1702,13 @@ static LRESULT CALLBACK info_dialog_proc(HWND window, UINT message,
         case WM_CLOSE:
             DestroyWindow(window);
             return 0;
+        case WM_DESTROY:
+            if (window == g_info_window) {
+                g_info_window = NULL;
+                g_info_dialog_state.text = NULL;
+                g_info_dialog_state.close_button = NULL;
+            }
+            return 0;
         default:
             break;
     }
@@ -1741,33 +1718,40 @@ static LRESULT CALLBACK info_dialog_proc(HWND window, UINT message,
 static void show_information_window(const wchar_t *title,
                                     const wchar_t *body,
                                     int width, int height) {
-    InfoDialogState state;
     HWND dialog;
-    MSG message;
-    int message_result = 1;
-    ZeroMemory(&message, sizeof(message));
-    ZeroMemory(&state, sizeof(state));
-    state.body = body;
+    wcsncpy_s(g_info_dialog_state.body,
+              sizeof(g_info_dialog_state.body) /
+                  sizeof(g_info_dialog_state.body[0]),
+              body ? body : L"", _TRUNCATE);
+    if (IsWindow(g_info_window)) {
+        SetWindowTextW(g_info_window, title);
+        SetWindowTextW(g_info_dialog_state.text, g_info_dialog_state.body);
+        notify_accessible_value(g_info_dialog_state.text);
+        ShowWindow(g_info_window, SW_RESTORE);
+        SetWindowPos(g_info_window, HWND_TOP, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        SetForegroundWindow(g_info_window);
+        SetFocus(g_info_dialog_state.text);
+        NotifyWinEvent(EVENT_OBJECT_FOCUS, g_info_dialog_state.text,
+                       OBJID_CLIENT, CHILDID_SELF);
+        return;
+    }
+    g_info_dialog_state.text = NULL;
+    g_info_dialog_state.close_button = NULL;
     dialog = CreateWindowExW(
         WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
         INFO_CLASS_NAME, title,
         WS_CAPTION | WS_SYSMENU | WS_POPUP | WS_VISIBLE | WS_THICKFRAME,
         CW_USEDEFAULT, CW_USEDEFAULT, width, height,
-        g_window, NULL, g_instance, &state);
+        g_window, NULL, g_instance, &g_info_dialog_state);
     if (!dialog) return;
+    g_info_window = dialog;
     SetWindowTextW(dialog, title);
     center_window_on_parent(dialog, g_window);
-    EnableWindow(g_window, FALSE);
-    while (IsWindow(dialog) &&
-           (message_result = GetMessageW(&message, NULL, 0, 0)) > 0) {
-        if (!IsDialogMessageW(dialog, &message)) {
-            TranslateMessage(&message);
-            DispatchMessageW(&message);
-        }
-    }
-    EnableWindow(g_window, TRUE);
-    SetForegroundWindow(g_window);
-    if (message_result == 0) PostQuitMessage((int)message.wParam);
+    ShowWindow(dialog, SW_SHOWNORMAL);
+    SetWindowPos(dialog, HWND_TOP, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    SetForegroundWindow(dialog);
 }
 
 static HWND create_getting_started_text(HWND parent, const wchar_t *text,
@@ -2606,6 +2590,7 @@ static HMENU create_menu_bar(void) {
     HMENU bar = CreateMenu();
     HMENU file = CreatePopupMenu();
     HMENU settings = CreatePopupMenu();
+    HMENU help = CreatePopupMenu();
     AppendMenuW(file, MF_STRING, ID_BROWSE_MENU, L"&Browse ROM...\tCtrl+O");
     AppendMenuW(file, MF_STRING, ID_RUN, L"&Run\tF7");
     AppendMenuW(file, MF_STRING, ID_PAUSE_PLAY, L"&Play\tEscape");
@@ -2636,8 +2621,15 @@ static HMENU create_menu_bar(void) {
                 L"Use &Full Screen When Playing");
     AppendMenuW(settings, MF_STRING, ID_AUTO_RUN,
                 L"&Auto-Run at Startup");
+    AppendMenuW(help, MF_STRING, ID_GETTING_STARTED,
+                L"&Getting Started");
+    AppendMenuW(help, MF_STRING, ID_SHORTCUTS,
+                L"Launcher &Shortcut Keys\tF1");
+    AppendMenuW(help, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(help, MF_STRING, ID_ABOUT, L"&About");
     AppendMenuW(bar, MF_POPUP, (UINT_PTR)file, L"&File");
     AppendMenuW(bar, MF_POPUP, (UINT_PTR)settings, L"&Settings");
+    AppendMenuW(bar, MF_POPUP, (UINT_PTR)help, L"&Help");
     return bar;
 }
 
@@ -2941,7 +2933,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 case ID_RESET: reset_game(); return 0;
                 case ID_PAUSE_PLAY: toggle_pause_play(); return 0;
                 case ID_KEYS: show_key_bindings(); return 0;
-                case ID_CONTROLS: show_game_controls(); return 0;
                 case ID_FRONTEND_SETTINGS: show_frontend_settings(); return 0;
                 case ID_AUDIO_SETTINGS: show_audio_settings(); return 0;
                 case ID_FULLSCREEN:
@@ -3001,7 +2992,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                                      sizeof(renderer_name) /
                                      sizeof(renderer_name[0]));
                         (void)_snwprintf(about, sizeof(about) / sizeof(about[0]),
-                            L"SimCity (SNES) Static Recomp 1.1.0\r\n\r\n"
+                            L"SimCity (SNES) Static Recomp 1.1.1\r\n\r\n"
                             L"Launcher file: Launcher.exe\r\n"
                             L"Game window: SimCity (SNES)\r\n\r\n"
                             L"Generated static S-CPU execution with SDL3 video, controller and PCM host frontends. Full Static audio is the only linked audio path and fails closed.\r\n\r\n"
@@ -3366,6 +3357,17 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                             continue;
                         }
                         if (IsDialogMessageW(g_rom_info_window, &message))
+                            continue;
+                    }
+                    if (IsWindow(g_info_window) &&
+                        (message.hwnd == g_info_window ||
+                         IsChild(g_info_window, message.hwnd))) {
+                        if (message.message == WM_KEYDOWN &&
+                            message.wParam == VK_ESCAPE) {
+                            DestroyWindow(g_info_window);
+                            continue;
+                        }
+                        if (IsDialogMessageW(g_info_window, &message))
                             continue;
                     }
                     root_shortcut =
