@@ -3,7 +3,7 @@
   "platform": "Windows",
   "version": "1.1.2",
   "file_count": 267,
-  "total_bytes": 32289091,
+  "total_bytes": 32290836,
   "files": [
     {
       "path": ".gitattributes",
@@ -22,8 +22,8 @@
     },
     {
       "path": "README.md",
-      "size": 1022,
-      "sha256": "672e94645365dfad6e30b0cd7182095ed153023b59e835bd07285fe16b102381"
+      "size": 2767,
+      "sha256": "ba9b0a929c3e8803602486bfb26db855631ed9834c8daa70ec64a457821e40e5"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
