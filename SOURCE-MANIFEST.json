@@ -1,9 +1,9 @@
 {
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "file_count": 267,
-  "total_bytes": 32289093,
+  "total_bytes": 32289091,
   "files": [
     {
       "path": ".gitattributes",
@@ -23,7 +23,7 @@
     {
       "path": "README.md",
       "size": 1022,
-      "sha256": "22ed86916df5ff8acb6131ee7413b1533341a81e286ebb5a25dca7130741b6c1"
+      "sha256": "672e94645365dfad6e30b0cd7182095ed153023b59e835bd07285fe16b102381"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
@@ -38,7 +38,7 @@
     {
       "path": "VERSION.txt",
       "size": 269,
-      "sha256": "135a214fafbc57b310877883450c01fb62c996d4a50e399e4e66925f0600683d"
+      "sha256": "06fb2567224b7ed50278bfc05c806dfeef9313a260dcac52c979fb58ce2e001c"
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
@@ -48,7 +48,7 @@
     {
       "path": "frontend/windows/launcher_version.rc",
       "size": 823,
-      "sha256": "37f6b0d4b21fdff574a057550012ae8c15f8be9b2420086aaaae28a7f9b38ee4"
+      "sha256": "d1c309f2c08f9fc922329d6019194ab09d5433d7a3d27b1f2cf8b48f276c298f"
     },
     {
       "path": "frontend/windows/simcity_audio_output_sdl3.c",
@@ -62,8 +62,8 @@
     },
     {
       "path": "frontend/windows/simcity_audio_recorder_win32.c",
-      "size": 3354,
-      "sha256": "5d2657ba5e96fba55ced29cd44d70b9304dd8316acd0f9d2633308ae9496bc43"
+      "size": 3352,
+      "sha256": "6e7528c2384eadb6664e80297959178d5d053e36025691eadffe0ff79051b3ce"
     },
     {
       "path": "frontend/windows/simcity_audio_recorder_win32.h",
@@ -73,7 +73,7 @@
     {
       "path": "frontend/windows/simcity_diagnostics_log_win32.c",
       "size": 12704,
-      "sha256": "385e96dcc9e6e3642583d75671178013ea0ea75e0c45be47c9ead3c8b55ee205"
+      "sha256": "a1c373eb117ee1d0819c62862073232fed60afa3c858f1a38673446fd1378580"
     },
     {
       "path": "frontend/windows/simcity_diagnostics_log_win32.h",
@@ -93,7 +93,7 @@
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
       "size": 140574,
-      "sha256": "4c8aabbadfdfdb7a51d4bc10607cf18cc2dc82258bfc7e817fa6840d79ddb6b3"
+      "sha256": "8e486c9e4755201367ddb5302de52351a057287b251f8ca1dfb111aa26722510"
     },
     {
       "path": "frontend/windows/simcity_video_output_sdl3.c",

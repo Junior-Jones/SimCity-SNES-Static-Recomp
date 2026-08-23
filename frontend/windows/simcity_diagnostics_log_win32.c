@@ -138,7 +138,7 @@ int simcity_diagnostics_write(
     file = _wfopen(log_path, L"wb");
     if (!file) return 0;
     fprintf(file, "Format=SimCity-Diagnostic-v1\r\n"
-                  "LauncherVersion=1.1.1\r\n"
+                  "LauncherVersion=1.1.2\r\n"
                   "TimestampLocal=%04u-%02u-%02uT%02u:%02u:%02u.%03u\r\n"
                   "Event=%ls\r\nDetail=%s\r\nArtifact=%s\r\n"
                   "ProcessId=%lu\r\nThreadId=%lu\r\n",

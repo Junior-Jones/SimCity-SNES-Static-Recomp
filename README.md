@@ -1,4 +1,4 @@
-# SimCity SNES Static Recomp 1.1.1
+# SimCity SNES Static Recomp 1.1.2
 
 Native Windows static recompilation frontend and core for SimCity on the Super Nintendo Entertainment System.
 

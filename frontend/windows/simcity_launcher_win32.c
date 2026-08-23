@@ -2992,7 +2992,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                                      sizeof(renderer_name) /
                                      sizeof(renderer_name[0]));
                         (void)_snwprintf(about, sizeof(about) / sizeof(about[0]),
-                            L"SimCity (SNES) Static Recomp 1.1.1\r\n\r\n"
+                            L"SimCity (SNES) Static Recomp 1.1.2\r\n\r\n"
                             L"Launcher file: Launcher.exe\r\n"
                             L"Game window: SimCity (SNES)\r\n\r\n"
                             L"Generated static S-CPU execution with SDL3 video, controller and PCM host frontends. Full Static audio is the only linked audio path and fails closed.\r\n\r\n"
