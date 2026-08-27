@@ -2,13 +2,18 @@
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
   "version": "1.1.2",
-  "file_count": 267,
-  "total_bytes": 32290836,
+  "file_count": 268,
+  "total_bytes": 32291565,
   "files": [
     {
       "path": ".gitattributes",
       "size": 19,
       "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
+    },
+    {
+      "path": ".github/workflows/windows-ci.yml",
+      "size": 729,
+      "sha256": "cf3949c8051efb896d4d545e64545a5291f83a565dd40b72be30414725836740"
     },
     {
       "path": "CMakeLists.txt",
