@@ -62,6 +62,18 @@ pre-roll and a short resume fade. This replaces the previous adaptive SDL
 audio stream and its playback-ratio correction. SDL remains statically linked
 only for gamepad discovery, mappings, and input.
 
+The launcher follows the established Bubble Bobble frontend layout: Browse,
+Play, Reset, Audio, Settings, Keys, Full screen, and Auto-Run. F1 opens the
+single Welcome and shortcut guide; F2/F3 save and load snapshots; F4 opens
+Settings; F5 opens controller bindings; F6 opens Audio; F7 runs the selected
+ROM; and F8 captures the complete game window. Welcome and About use the same
+accessible information window with explicit Tab and Shift+Tab navigation.
+
+Battery data and snapshots are written under `Saves`. Screenshots are written
+under `Screenshots`, with per-capture diagnostics under `Screenshots/Logs`.
+The portable release includes both main folders with Readme files but contains
+no user settings, saves, snapshots, captures, recordings, ROMs, or test data.
+
 ## Building on Windows
 
 Requirements:

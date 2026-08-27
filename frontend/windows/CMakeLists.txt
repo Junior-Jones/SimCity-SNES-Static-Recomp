@@ -70,6 +70,16 @@ set_target_properties(simcity-launcher PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/release"
 )
 add_custom_command(TARGET simcity-launcher POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E make_directory
+        "$<TARGET_FILE_DIR:simcity-launcher>/Saves"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/Saves/Readme.txt"
+        "$<TARGET_FILE_DIR:simcity-launcher>/Saves/Readme.txt"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory
+        "$<TARGET_FILE_DIR:simcity-launcher>/Screenshots"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/Screenshots/Readme.txt"
+        "$<TARGET_FILE_DIR:simcity-launcher>/Screenshots/Readme.txt"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${SIMCITY_GAMEPAD_DATABASE}"
         "$<TARGET_FILE_DIR:simcity-launcher>/gamecontrollerdb.txt"
@@ -93,3 +103,7 @@ install(FILES "${CMAKE_SOURCE_DIR}/third_party/SDL_GameControllerDB-LICENSE.txt"
     DESTINATION . COMPONENT Runtime)
 install(FILES "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
     DESTINATION . COMPONENT Runtime)
+install(FILES "${CMAKE_SOURCE_DIR}/Saves/Readme.txt"
+    DESTINATION Saves COMPONENT Runtime)
+install(FILES "${CMAKE_SOURCE_DIR}/Screenshots/Readme.txt"
+    DESTINATION Screenshots COMPONENT Runtime)

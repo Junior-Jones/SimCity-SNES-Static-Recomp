@@ -182,6 +182,7 @@ int simcity_frontend_settings_win32_save(const SimCityFrontendSettingsWin32 *s,
         _snwprintf_s(key,32,_TRUNCATE,L"GamepadAction%d",i);
         ok&=write_int(L"Input",key,s->gamepad_bindings[i],path);
     }
+    ok&=WritePrivateProfileStringW(NULL,NULL,NULL,path)!=0;
     return ok;
 }
 

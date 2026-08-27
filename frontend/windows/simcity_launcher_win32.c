@@ -20,14 +20,11 @@
 
 #define APP_CLASS_NAME L"SimCityStaticRecompWindow"
 #define AUDIO_CLASS_NAME L"SimCityStaticRecompAudioSettings"
-#define ROM_INFO_CLASS_NAME L"SimCityStaticRecompRomInformation"
 #define SNAPSHOT_CLASS_NAME L"SimCityStaticRecompSnapshotWindow"
 #define INFO_CLASS_NAME L"SimCityStaticRecompInformationWindow"
-#define GETTING_STARTED_CLASS_NAME L"SimCityGettingStartedWindow"
 #define APP_TITLE L"SimCity (SNES)"
 #define LAUNCHER_TITLE L"Launcher"
 #define WM_APP_LOAD_COMPLETE (WM_APP + 1u)
-#define WM_APP_STARTUP_CONTINUE (WM_APP + 2u)
 #define HOST_TIMER_100NS_PER_SECOND 10000000u
 #define HOST_TIMER_HIGH_RESOLUTION 0x00000002u
 #define HOST_TIMER_ACCESS 0x001F0003u
@@ -48,23 +45,20 @@
 #define ID_SNAPSHOT_SAVE 1013
 #define ID_SNAPSHOT_LOAD 1014
 #define ID_RECORD 1015
-#define ID_SHORTCUTS 1016
 #define ID_RESET 1018
 #define ID_BROWSE_MENU 1019
 #define ID_FULLSCREEN 1020
 #define ID_SCREENSHOT 1021
 #define ID_AUTO_RUN 1022
-#define ID_GETTING_STARTED 1023
+#define ID_WELCOME 1023
 #define ID_SNAPSHOT_SAVE_CURRENT 1024
 #define ID_SNAPSHOT_LOAD_CURRENT 1025
-#define ID_ROM_NOTICE_CLOSE 4001
 #define ID_SNAPSHOT_SLOT_BASE 5000
 #define ID_SNAPSHOT_LABEL_BASE 5100
 #define ID_SNAPSHOT_INSTRUCTIONS 5200
 #define ID_SNAPSHOT_CLOSE 5201
 #define ID_INFO_TEXT 5300
 #define ID_INFO_CLOSE 5301
-#define ID_GETTING_STARTED_CLOSE 5400
 
 #define ID_AUDIO_ENABLED 2001
 #define ID_AUDIO_ENGINE 2002
@@ -85,8 +79,7 @@
 #define DEFAULT_KEY_SELECT 'T'
 
 #define AUDIO_DEFAULT_DEVICE_LABEL L"Default Windows audio device"
-#define AUDIO_MIN_LATENCY_MS 40
-#define AUDIO_MAX_LATENCY_MS 250
+#define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
 static const wchar_t *ROM_REQUIREMENTS_TEXT =
     L"Required game ROM\r\n\r\n"
@@ -113,7 +106,6 @@ typedef struct AudioDialogState {
     HWND enabled;
     HWND device;
     HWND volume;
-    HWND volume_value;
     HWND latency;
     int applied;
 } AudioDialogState;
@@ -135,14 +127,6 @@ typedef struct InfoDialogState {
     HWND close_button;
 } InfoDialogState;
 
-typedef struct GettingStartedDialogState {
-    HWND text;
-    HWND close_button;
-    HFONT heading_font;
-    HFONT body_font;
-} GettingStartedDialogState;
-
-
 static HINSTANCE g_instance;
 static HWND g_window;
 static HWND g_browse_button;
@@ -150,12 +134,11 @@ static HWND g_pause_play_button;
 static HWND g_reset_button;
 static HWND g_keys_button;
 static HWND g_audio_button;
+static HWND g_settings_button;
 static HWND g_fullscreen_checkbox;
 static HWND g_auto_run_checkbox;
 static HWND g_rom_path;
 static HWND g_status;
-static HWND g_getting_started_window;
-static HWND g_rom_info_window;
 static HWND g_info_window;
 static HMENU g_menu;
 static SimCityRecomp *g_game;
@@ -198,11 +181,42 @@ static uint64_t g_pacing_timer_ticks;
 static uint64_t g_pacing_skipped_deadlines;
 static uint32_t g_pacing_max_batch;
 static uint64_t g_pacing_resyncs;
-static GettingStartedDialogState g_getting_started_state;
 static InfoDialogState g_info_state;
 static int g_info_resume_after;
-static int g_getting_started_mark_seen;
-static int g_startup_pending;
+
+/* Multiline read-only edits claim Tab themselves. Route it explicitly so the
+   Welcome/About pair and every modal settings window support Tab and
+   Shift+Tab consistently. */
+static int route_dialog_keyboard(HWND dialog, MSG *message) {
+    HWND focused;
+    HWND next;
+    BOOL previous;
+    if (!dialog || !message || message->message != WM_KEYDOWN ||
+        message->wParam != VK_TAB)
+        return dialog && IsDialogMessageW(dialog, message);
+    if (!IsWindow(dialog) || !IsWindowVisible(dialog) ||
+        !IsWindowEnabled(dialog)) return 0;
+    focused = GetFocus();
+    previous = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+    if (dialog == g_info_window) {
+        HWND text = GetDlgItem(dialog, ID_INFO_TEXT);
+        HWND close = GetDlgItem(dialog, ID_INFO_CLOSE);
+        if (!text || !close) return 0;
+        if (focused == text) next = close;
+        else if (focused == close) next = text;
+        else next = previous ? text : close;
+    } else {
+        if (!focused || (focused != dialog && !IsChild(dialog, focused)))
+            return 0;
+        next = GetNextDlgTabItem(dialog, focused, previous);
+    }
+    if (!next || next == focused) return 0;
+    SetFocus(next);
+    return 1;
+}
+
+#define IsDialogMessageW(dialog, message) \
+    route_dialog_keyboard((dialog), (message))
 
 static void start_rom_load(int play_after_load);
 static void pause_game(const wchar_t *message);
@@ -230,8 +244,6 @@ static void show_snapshot_window(int save_mode);
 static void show_information_window(const wchar_t *title,
                                     const wchar_t *body,
                                     int width, int height);
-static void show_getting_started_window(int mark_seen);
-static void show_first_run_rom_information(void);
 static void continue_startup_after_welcome(void);
 
 static void copy_wide(wchar_t *destination, size_t capacity,
@@ -596,6 +608,7 @@ static void set_toolbar_visible(int visible) {
     ShowWindow(g_reset_button, command);
     ShowWindow(g_keys_button, command);
     ShowWindow(g_audio_button, command);
+    ShowWindow(g_settings_button, command);
     ShowWindow(g_fullscreen_checkbox, command);
     ShowWindow(g_auto_run_checkbox, command);
     ShowWindow(g_status, command);
@@ -681,6 +694,7 @@ static void update_controls(void) {
     EnableWindow(g_reset_button, !loading && g_game != NULL);
     EnableWindow(g_keys_button, TRUE);
     EnableWindow(g_audio_button, !loading);
+    EnableWindow(g_settings_button, !loading);
     EnableWindow(g_fullscreen_checkbox, !loading);
     EnableWindow(g_auto_run_checkbox, !loading);
     set_accessible_control_text(g_browse_button,
@@ -1113,29 +1127,31 @@ static void show_key_bindings(void) {
 }
 
 static const wchar_t g_welcome_text[] =
-    L"This launcher runs the statically recompiled Super Nintendo version of SimCity\r\n\r\n"
-    L"Essential launcher shortcuts\r\n"
-    L"Ctrl+O - Browse for a ROM\r\n"
-    L"Escape - Move between the launcher and game\r\n"
-    L"1 - Save current Snapshot\r\n"
-    L"2 - Load current Snapshot\r\n\r\n"
-    L"F1 - Launcher Shortcut Keys\r\n"
-    L"F2 - Save Snapshot window\r\n"
-    L"F3 - Load Snapshot window\r\n"
-    L"F4 - Audio settings\r\n"
-    L"F5 - Settings\r\n"
-    L"F6 - Controller bindings\r\n"
-    L"F7 - Run selected ROM\r\n"
-    L"F8 - Capture game window\r\n"
-    L"F9 - Start or stop audio recording";
+    L"Welcome to SimCity (SNES) Static Recompilation\r\n\r\n"
+    L"Frontend shortcuts\r\n"
+    L"Escape - Switch between the game and Launcher\r\n"
+    L"F1 - Welcome and shortcut guide\r\n"
+    L"F2 - Save snapshot\r\n"
+    L"F3 - Load snapshot\r\n"
+    L"F4 - Settings\r\n"
+    L"F5 - Controller bindings\r\n"
+    L"F6 - Audio settings\r\n"
+    L"F7 - Run the selected ROM\r\n"
+    L"F8 - Capture the complete game window\r\n\r\n"
+    L"ROM title: SimCity\r\n"
+    L"Region: USA\r\n"
+    L"File type: .sfc\r\n"
+    L"Place the ROM in the Rom folder or select Browse.";
 
-static void show_shortcuts(void) {
+static void show_welcome(void) {
+    if (IsWindow(g_info_window)) DestroyWindow(g_info_window);
     if (!IsWindow(g_info_window)) {
         g_info_resume_after = g_game && !g_paused;
         if (g_info_resume_after)
-            pause_game(L"Paused while Launcher Shortcut Keys is open.");
+            pause_game(L"Paused while Welcome is open.");
     }
-    show_information_window(L"Launcher Shortcut Keys", g_welcome_text, 680, 520);
+    show_information_window(L"Welcome to SimCity (SNES)",
+                            g_welcome_text, 620, 560);
 }
 
 static void show_frontend_settings(void) {
@@ -1158,7 +1174,7 @@ static void show_frontend_settings(void) {
 
 static int ensure_snapshot_directory(wchar_t *directory, size_t capacity) {
     DWORD attributes;
-    _snwprintf(directory, capacity, L"%s\\Snapshots", g_executable_directory);
+    copy_wide(directory, capacity, g_saves_directory);
     directory[capacity - 1u] = L'\0';
     if (!CreateDirectoryW(directory, NULL)) {
         DWORD error = GetLastError();
@@ -1246,7 +1262,7 @@ static int save_snapshot_slot(int slot) {
         &g_frontend_settings, g_frontend_ini_path);
     if (!snapshot_slot_path(slot, path,
                             sizeof(path) / sizeof(path[0]))) {
-        set_status(L"The Snapshots folder could not be created beside Launcher.exe.");
+        set_status(L"The Saves folder could not be created beside Launcher.exe.");
         return 0;
     }
     if (!WideCharToMultiByte(CP_UTF8, 0, path, -1, narrow_path,
@@ -1375,7 +1391,7 @@ static LRESULT CALLBACK snapshot_dialog_proc(HWND window, UINT message,
             state->instructions = CreateWindowExW(
                 0, L"STATIC",
                 state->save_mode ?
-                L"Choose a numbered slot to save the current paused game. The Snapshots folder is created beside Launcher.exe when needed." :
+                L"Choose a numbered slot to save the current paused game. Snapshots are stored in the Saves folder beside Launcher.exe." :
                 L"Choose a numbered slot to load. Green means currently loaded; red means not loaded. Empty slots are disabled.",
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
                 0, 0, 10, 10, window,
@@ -1504,7 +1520,7 @@ static void show_snapshot_window(int save_mode) {
     if (!ensure_snapshot_directory(directory,
                                    sizeof(directory) / sizeof(directory[0]))) {
         MessageBoxW(g_window,
-            L"The Snapshots folder could not be created beside Launcher.exe.",
+            L"The Saves folder could not be created beside Launcher.exe.",
             APP_TITLE, MB_OK | MB_ICONERROR);
         return;
     }
@@ -1661,172 +1677,6 @@ static void show_information_window(const wchar_t *title,
     BringWindowToTop(dialog);
     SetForegroundWindow(dialog);
     if (IsWindow(g_info_state.text)) SetFocus(g_info_state.text);
-}
-
-static HWND create_getting_started_text(HWND parent, const wchar_t *text,
-                                        int x, int y, int width, int height,
-                                        HFONT font) {
-    HWND control = CreateWindowExW(
-        WS_EX_CLIENTEDGE, L"EDIT", text,
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MULTILINE |
-        ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL,
-        x, y, width, height, parent, NULL, g_instance, NULL);
-    if (control && font)
-        SendMessageW(control, WM_SETFONT, (WPARAM)font, TRUE);
-    if (control) notify_accessible_value(control);
-    return control;
-}
-
-static HWND create_getting_started_heading(HWND parent, const wchar_t *text,
-                                           int x, int y, int width, int height,
-                                           HFONT font) {
-    HWND control = CreateWindowExW(
-        0, L"STATIC", text,
-        WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
-        x, y, width, height, parent, NULL, g_instance, NULL);
-    if (control && font)
-        SendMessageW(control, WM_SETFONT, (WPARAM)font, TRUE);
-    return control;
-}
-
-static LRESULT CALLBACK getting_started_dialog_proc(
-    HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
-    GettingStartedDialogState *state =
-        (GettingStartedDialogState *)GetWindowLongPtrW(window, GWLP_USERDATA);
-    switch (message) {
-        case WM_NCCREATE:
-            SetWindowLongPtrW(window, GWLP_USERDATA,
-                (LONG_PTR)((CREATESTRUCTW *)lparam)->lpCreateParams);
-            return TRUE;
-        case WM_CREATE: {
-            HDC dc;
-            int dpi = 96;
-            RECT client;
-            state = (GettingStartedDialogState *)GetWindowLongPtrW(
-                window, GWLP_USERDATA);
-            dc = GetDC(window);
-            if (dc) {
-                dpi = GetDeviceCaps(dc, LOGPIXELSY);
-                ReleaseDC(window, dc);
-            }
-            state->heading_font = CreateFontW(
-                -MulDiv(19, dpi, 72), 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE,
-                FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
-            state->body_font = CreateFontW(
-                -MulDiv(10, dpi, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE,
-                FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
-            GetClientRect(window, &client);
-
-            create_getting_started_heading(
-                window, L"Welcome", 24, 16, 760, 34,
-                state->heading_font);
-            state->text = create_getting_started_text(
-                window,
-                g_welcome_text,
-                20, 56, 780, 554, state->body_font);
-            if (state->text) SendMessageW(state->text, EM_SETSEL, 0, 0);
-            state->close_button = CreateWindowExW(
-                0, L"BUTTON", L"&Close",
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                ((client.right - client.left) - 120) / 2,
-                (client.bottom - client.top) - 48, 120, 34, window,
-                (HMENU)(INT_PTR)ID_GETTING_STARTED_CLOSE,
-                g_instance, NULL);
-            if (state->close_button)
-                SendMessageW(state->close_button, WM_SETFONT,
-                             (WPARAM)state->body_font, TRUE);
-            if (state->text) {
-                SetFocus(state->text);
-                NotifyWinEvent(EVENT_OBJECT_FOCUS, state->text,
-                               OBJID_CLIENT, CHILDID_SELF);
-            } else if (state->close_button) {
-                SetFocus(state->close_button);
-            }
-            return 0;
-        }
-        case WM_COMMAND:
-            if (LOWORD(wparam) == ID_GETTING_STARTED_CLOSE) {
-                DestroyWindow(window);
-                return 0;
-            }
-            break;
-        case WM_KEYDOWN:
-            if (wparam == VK_ESCAPE) {
-                DestroyWindow(window);
-                return 0;
-            }
-            break;
-        case WM_CLOSE:
-            DestroyWindow(window);
-            return 0;
-        case WM_DESTROY:
-            if (state) {
-                if (state->heading_font) DeleteObject(state->heading_font);
-                if (state->body_font) DeleteObject(state->body_font);
-                state->text = NULL;
-                state->heading_font = NULL;
-                state->body_font = NULL;
-            }
-            if (window == g_getting_started_window) {
-                g_getting_started_window = NULL;
-                if (g_getting_started_mark_seen) {
-                    g_frontend_settings.getting_started_shown = 1;
-                    if (!simcity_frontend_settings_win32_save(
-                            &g_frontend_settings, g_frontend_ini_path))
-                        set_status(L"Welcome was closed, but its one-time setting could not be saved.");
-                }
-                g_getting_started_mark_seen = 0;
-                if (g_startup_pending && IsWindow(g_window))
-                    PostMessageW(g_window, WM_APP_STARTUP_CONTINUE, 0, 0);
-            }
-            return 0;
-        default:
-            break;
-    }
-    return DefWindowProcW(window, message, wparam, lparam);
-}
-
-static void show_getting_started_window(int mark_seen) {
-    HWND dialog;
-    if (IsWindow(g_getting_started_window)) {
-        ShowWindow(g_getting_started_window, SW_RESTORE);
-        SetWindowPos(g_getting_started_window, HWND_TOP, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-        SetForegroundWindow(g_getting_started_window);
-        if (g_getting_started_state.text)
-            SetFocus(g_getting_started_state.text);
-        return;
-    }
-    ZeroMemory(&g_getting_started_state, sizeof(g_getting_started_state));
-    g_getting_started_mark_seen = mark_seen != 0;
-    dialog = CreateWindowExW(
-        WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
-        GETTING_STARTED_CLASS_NAME, L"Welcome",
-        WS_CAPTION | WS_SYSMENU | WS_POPUP,
-        CW_USEDEFAULT, CW_USEDEFAULT, 820, 720,
-        g_window, NULL, g_instance, &g_getting_started_state);
-    if (!dialog) {
-        g_getting_started_mark_seen = 0;
-        if (g_startup_pending)
-            PostMessageW(g_window, WM_APP_STARTUP_CONTINUE, 0, 0);
-        return;
-    }
-    g_getting_started_window = dialog;
-    center_window_on_parent(dialog, g_window);
-    ShowWindow(dialog, SW_SHOWNORMAL);
-    SetWindowPos(dialog, HWND_TOP, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-    SetActiveWindow(dialog);
-    SetForegroundWindow(dialog);
-    SendMessageW(g_getting_started_state.close_button, BM_SETSTYLE,
-                 BS_DEFPUSHBUTTON, TRUE);
-    SetFocus(g_getting_started_state.text);
-    NotifyWinEvent(EVENT_OBJECT_FOCUS, g_getting_started_state.text,
-                   OBJID_CLIENT, CHILDID_SELF);
 }
 
 static void save_current_snapshot(void) {
@@ -2084,14 +1934,15 @@ static void layout_controls(HWND window) {
     GetClientRect(window, &client);
     width = client.right - client.left;
     if (g_presentation_hidden) return;
-    MoveWindow(g_browse_button, 8, 8, 116, 30, TRUE);
-    MoveWindow(g_pause_play_button, 130, 8, 104, 30, TRUE);
-    MoveWindow(g_reset_button, 240, 8, 88, 30, TRUE);
-    MoveWindow(g_audio_button, 334, 8, 86, 30, TRUE);
-    MoveWindow(g_keys_button, 426, 8, 82, 30, TRUE);
-    MoveWindow(g_fullscreen_checkbox, 520, 10, 120, 26, TRUE);
-    MoveWindow(g_auto_run_checkbox, 650, 10,
-               width > 770 ? 120 : 100, 26, TRUE);
+    MoveWindow(g_browse_button, 8, 8, 92, 30, TRUE);
+    MoveWindow(g_pause_play_button, 106, 8, 72, 30, TRUE);
+    MoveWindow(g_reset_button, 184, 8, 66, 30, TRUE);
+    MoveWindow(g_audio_button, 256, 8, 66, 30, TRUE);
+    MoveWindow(g_settings_button, 328, 8, 82, 30, TRUE);
+    MoveWindow(g_keys_button, 416, 8, 62, 30, TRUE);
+    MoveWindow(g_fullscreen_checkbox, 488, 10, 112, 26, TRUE);
+    MoveWindow(g_auto_run_checkbox, 610, 10,
+               width > 720 ? 100 : 92, 26, TRUE);
     MoveWindow(g_status, 12, 48, width - 24, 24, TRUE);
 }
 
@@ -2168,27 +2019,23 @@ static AudioDialogState *audio_dialog_state(HWND window) {
 }
 
 static int read_audio_dialog(AudioDialogState *state, HWND window) {
-    BOOL translated = FALSE;
-    UINT volume;
-    UINT latency;
+    static const int latency_values[] = {40, 60, 80, 120, 250};
+    LRESULT volume;
+    LRESULT latency;
     LRESULT selection;
     wchar_t device_name[SIMCITY_AUDIO_DEVICE_NAME_CAPACITY];
     if (!state) return 0;
 
-    volume = (UINT)SendMessageW(state->volume, TBM_GETPOS, 0, 0);
-    latency = GetDlgItemInt(window, ID_AUDIO_LATENCY, &translated, FALSE);
-    if (!translated || latency < AUDIO_MIN_LATENCY_MS ||
-        latency > AUDIO_MAX_LATENCY_MS) {
-        MessageBoxW(window, L"Latency must be between 40 and 250 milliseconds.",
-                    L"Audio Settings", MB_OK | MB_ICONWARNING);
-        SetFocus(state->latency);
-        return 0;
-    }
+    (void)window;
+    volume = SendMessageW(state->volume, CB_GETCURSEL, 0, 0);
+    latency = SendMessageW(state->latency, CB_GETCURSEL, 0, 0);
+    if (volume < 0 || volume > 100 || latency < 0 ||
+        latency >= (LRESULT)ARRAY_COUNT(latency_values)) return 0;
 
     state->settings.enabled =
         SendMessageW(state->enabled, BM_GETCHECK, 0, 0) == BST_CHECKED;
     state->settings.volume_percent = (int)volume;
-    state->settings.latency_ms = (int)latency;
+    state->settings.latency_ms = latency_values[latency];
     state->settings.device_name[0] = L'\0';
     selection = SendMessageW(state->device, CB_GETCURSEL, 0, 0);
     if (selection > 0) {
@@ -2214,11 +2061,10 @@ static void audio_dialog_layout(HWND window, AudioDialogState *state) {
     MoveWindow(GetDlgItem(window, 2102), 16, 106, 104, 24, TRUE);
     MoveWindow(state->device, 126, 104, width - 142, 240, TRUE);
     MoveWindow(GetDlgItem(window, 2103), 16, 144, 104, 24, TRUE);
-    MoveWindow(state->volume, 126, 136, width - 224, 36, TRUE);
-    MoveWindow(state->volume_value, width - 84, 144, 68, 24, TRUE);
+    MoveWindow(state->volume, 126, 140, width - 142, 240, TRUE);
     MoveWindow(GetDlgItem(window, 2105), 16, 180, 104, 24, TRUE);
-    MoveWindow(state->latency, 126, 178, 84, 24, TRUE);
-    MoveWindow(GetDlgItem(window, 2106), 222, 180, width - 238, 24, TRUE);
+    MoveWindow(state->latency, 126, 176, 150, 180, TRUE);
+    MoveWindow(GetDlgItem(window, 2106), 288, 180, width - 304, 24, TRUE);
     MoveWindow(GetDlgItem(window, ID_AUDIO_APPLY), width - 190, 226, 80, 30, TRUE);
     MoveWindow(GetDlgItem(window, ID_AUDIO_CANCEL), width - 102, 226, 80, 30, TRUE);
 }
@@ -2236,6 +2082,7 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
         }
 
         case WM_CREATE: {
+            static const int latency_values[] = {40, 60, 80, 120, 250};
             wchar_t number[32];
             UINT index;
             UINT count;
@@ -2297,43 +2144,46 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
                 16, 144, 104, 24, window, (HMENU)(INT_PTR)2103,
                 g_instance, NULL));
-            _snwprintf_s(number, sizeof(number) / sizeof(number[0]),
-                         _TRUNCATE, L"%d", state->settings.volume_percent);
             state->volume = CreateWindowExW(
-                0, TRACKBAR_CLASSW, L"",
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | TBS_AUTOTICKS,
-                126, 136, 310, 36, window,
+                WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
+                WS_VSCROLL,
+                126, 140, 350, 240, window,
                 (HMENU)(INT_PTR)ID_AUDIO_VOLUME, g_instance, NULL);
             set_control_font(state->volume);
-            SendMessageW(state->volume, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
-            SendMessageW(state->volume, TBM_SETTICFREQ, 10, 0);
-            SendMessageW(state->volume, TBM_SETPOS, TRUE,
-                         state->settings.volume_percent);
-            _snwprintf_s(number, sizeof(number) / sizeof(number[0]),
-                         _TRUNCATE, L"%d%%", state->settings.volume_percent);
-            state->volume_value = CreateWindowExW(
-                0, L"STATIC", number,
-                WS_CHILD | WS_VISIBLE | SS_LEFT,
-                448, 144, 68, 24, window, (HMENU)(INT_PTR)2104,
-                g_instance, NULL);
-            set_control_font(state->volume_value);
+            for (index = 0u; index <= 100u; ++index) {
+                _snwprintf_s(number, ARRAY_COUNT(number), _TRUNCATE,
+                             L"%u%%", index);
+                (void)SendMessageW(state->volume, CB_ADDSTRING, 0,
+                                   (LPARAM)number);
+            }
+            (void)SendMessageW(state->volume, CB_SETCURSEL,
+                               state->settings.volume_percent, 0);
 
             set_control_font(CreateWindowExW(
                 0, L"STATIC", L"Buffer latency:",
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
                 16, 180, 104, 24, window, (HMENU)(INT_PTR)2105,
                 g_instance, NULL));
-            _snwprintf_s(number, sizeof(number) / sizeof(number[0]),
-                         _TRUNCATE, L"%d", state->settings.latency_ms);
             state->latency = CreateWindowExW(
-                WS_EX_CLIENTEDGE, L"EDIT", number,
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_NUMBER |
-                ES_AUTOHSCROLL,
-                126, 178, 84, 24, window,
+                WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
+                126, 176, 150, 180, window,
                 (HMENU)(INT_PTR)ID_AUDIO_LATENCY, g_instance, NULL);
             set_control_font(state->latency);
+            selection = 0;
+            for (index = 0u; index < ARRAY_COUNT(latency_values); ++index) {
+                _snwprintf_s(number, ARRAY_COUNT(number), _TRUNCATE,
+                             L"%d ms", latency_values[index]);
+                (void)SendMessageW(state->latency, CB_ADDSTRING, 0,
+                                   (LPARAM)number);
+                if (latency_values[index] == state->settings.latency_ms)
+                    selection = index;
+            }
+            (void)SendMessageW(state->latency, CB_SETCURSEL,
+                               (WPARAM)selection, 0);
             set_control_font(CreateWindowExW(
-                0, L"STATIC", L"milliseconds (40 to 250)",
+                0, L"STATIC", L"fixed buffer latency",
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
                 222, 216, 220, 24, window, (HMENU)(INT_PTR)2106,
                 g_instance, NULL));
@@ -2354,19 +2204,6 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
         case WM_SIZE:
             audio_dialog_layout(window, state);
             return 0;
-
-        case WM_HSCROLL:
-            if (state && (HWND)lparam == state->volume) {
-                wchar_t text[32];
-                (void)_snwprintf(text, sizeof(text) / sizeof(text[0]),
-                                 L"%ld%%",
-                                 (long)SendMessageW(state->volume,
-                                                    TBM_GETPOS, 0, 0));
-                SetWindowTextW(state->volume_value, text);
-                notify_accessible_value(state->volume_value);
-                return 0;
-            }
-            break;
 
         case WM_GETMINMAXINFO: {
             MINMAXINFO *info = (MINMAXINFO *)lparam;
@@ -2482,21 +2319,19 @@ static HMENU create_menu_bar(void) {
                 L"Record Full Static Audio\tF9");
     AppendMenuW(file, MF_SEPARATOR, 0, NULL);
     AppendMenuW(file, MF_STRING, ID_EXIT, L"E&xit\tAlt+F4");
-    AppendMenuW(settings, MF_STRING, ID_AUDIO_SETTINGS,
-                L"&Audio Settings...\tF4");
     AppendMenuW(settings, MF_STRING, ID_FRONTEND_SETTINGS,
-                L"&Settings...\tF5");
+                L"&Settings...\tF4");
     AppendMenuW(settings, MF_STRING, ID_KEYS,
-                L"&Controller Bindings...\tF6");
+                L"&Controller Bindings...\tF5");
+    AppendMenuW(settings, MF_STRING, ID_AUDIO_SETTINGS,
+                L"&Audio Settings...\tF6");
     AppendMenuW(settings, MF_SEPARATOR, 0, NULL);
     AppendMenuW(settings, MF_STRING, ID_FULLSCREEN,
                 L"Use &Full Screen When Playing");
     AppendMenuW(settings, MF_STRING, ID_AUTO_RUN,
                 L"&Auto-Run at Startup");
-    AppendMenuW(help, MF_STRING, ID_GETTING_STARTED,
-                L"&Getting Started...");
-    AppendMenuW(help, MF_STRING, ID_SHORTCUTS,
-                L"Launcher &Shortcut Keys\tF1");
+    AppendMenuW(help, MF_STRING, ID_WELCOME,
+                L"&Welcome\tF1");
     AppendMenuW(help, MF_SEPARATOR, 0, NULL);
     AppendMenuW(help, MF_STRING, ID_ABOUT, L"&About");
     AppendMenuW(bar, MF_POPUP, (UINT_PTR)file, L"&File");
@@ -2573,88 +2408,7 @@ static void initialize_paths_and_settings(void) {
     update_controls();
 }
 
-static LRESULT CALLBACK rom_info_proc(HWND window, UINT message,
-                                      WPARAM wparam, LPARAM lparam) {
-    (void)lparam;
-    switch (message) {
-        case WM_CREATE: {
-            SetWindowTextW(window, L"Required SimCity ROM");
-            HWND text = CreateWindowExW(
-                WS_EX_CLIENTEDGE, L"EDIT", ROM_REQUIREMENTS_TEXT,
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT |
-                ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL,
-                18, 16, 610, 190, window, NULL, g_instance, NULL);
-            HWND close_button = CreateWindowExW(
-                0, L"BUTTON", L"&Close",
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                278, 218, 96, 32, window,
-                (HMENU)(INT_PTR)ID_ROM_NOTICE_CLOSE, g_instance, NULL);
-            set_control_font(text);
-            set_control_font(close_button);
-            notify_accessible_value(text);
-            SetFocus(text);
-            NotifyWinEvent(EVENT_OBJECT_FOCUS, text,
-                           OBJID_CLIENT, CHILDID_SELF);
-            return 0;
-        }
-        case WM_COMMAND:
-            if (LOWORD(wparam) == ID_ROM_NOTICE_CLOSE) {
-                DestroyWindow(window);
-                return 0;
-            }
-            break;
-        case WM_KEYDOWN:
-            if (wparam == VK_ESCAPE) {
-                DestroyWindow(window);
-                return 0;
-            }
-            break;
-        case WM_CLOSE:
-            DestroyWindow(window);
-            return 0;
-        case WM_DESTROY:
-            if (window == g_rom_info_window) {
-                g_rom_info_window = NULL;
-                (void)WritePrivateProfileStringW(
-                    L"Startup", L"RomNoticeShown", L"1",
-                    g_frontend_ini_path);
-            }
-            return 0;
-        default: break;
-    }
-    return DefWindowProcW(window, message, wparam, lparam);
-}
-
-static void show_first_run_rom_information(void) {
-    HWND dialog;
-    if (GetPrivateProfileIntW(L"Startup", L"RomNoticeShown", 0,
-                              g_frontend_ini_path) != 0) return;
-    if (IsWindow(g_rom_info_window)) {
-        ShowWindow(g_rom_info_window, SW_RESTORE);
-        SetWindowPos(g_rom_info_window, HWND_TOP, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-        SetForegroundWindow(g_rom_info_window);
-        return;
-    }
-    dialog = CreateWindowExW(
-        WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
-        ROM_INFO_CLASS_NAME, L"Required SimCity ROM",
-        WS_CAPTION | WS_SYSMENU | WS_POPUP,
-        CW_USEDEFAULT, CW_USEDEFAULT, 660, 310,
-        g_window, NULL, g_instance, NULL);
-    if (!dialog) return;
-    g_rom_info_window = dialog;
-    center_window_on_parent(dialog, g_window);
-    ShowWindow(dialog, SW_SHOWNORMAL);
-    SetWindowPos(dialog, HWND_TOP, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-    SetActiveWindow(dialog);
-    SetForegroundWindow(dialog);
-}
-
 static void continue_startup_after_welcome(void) {
-    if (!g_startup_pending) return;
-    g_startup_pending = 0;
     reset_pacing_clock();
     if (g_adjacent_rom_found) {
         if (g_frontend_settings.auto_run_on_load) {
@@ -2668,7 +2422,11 @@ static void continue_startup_after_welcome(void) {
                            OBJID_CLIENT, CHILDID_SELF);
         }
     } else {
-        show_first_run_rom_information();
+        set_status(L"Browse for the required SimCity ROM.");
+        update_controls();
+        SetFocus(g_browse_button);
+        NotifyWinEvent(EVENT_OBJECT_FOCUS, g_browse_button,
+                       OBJID_CLIENT, CHILDID_SELF);
     }
 }
 
@@ -2695,37 +2453,42 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             g_browse_button = CreateWindowExW(
                 0, L"BUTTON", L"&Browse",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                8, 8, 116, 30, window, (HMENU)(INT_PTR)ID_BROWSE,
+                8, 8, 92, 30, window, (HMENU)(INT_PTR)ID_BROWSE,
                 g_instance, NULL);
             g_pause_play_button = CreateWindowExW(
                 0, L"BUTTON", L"&Play",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                110, 8, 104, 30, window,
+                106, 8, 72, 30, window,
                 (HMENU)(INT_PTR)ID_PAUSE_PLAY, g_instance, NULL);
             g_reset_button = CreateWindowExW(
                 0, L"BUTTON", L"&Reset",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                220, 8, 88, 30, window, (HMENU)(INT_PTR)ID_RESET,
+                184, 8, 66, 30, window, (HMENU)(INT_PTR)ID_RESET,
                 g_instance, NULL);
             g_audio_button = CreateWindowExW(
                 0, L"BUTTON", L"&Audio",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                334, 8, 86, 30, window,
+                256, 8, 66, 30, window,
                 (HMENU)(INT_PTR)ID_AUDIO_SETTINGS, g_instance, NULL);
+            g_settings_button = CreateWindowExW(
+                0, L"BUTTON", L"&Settings",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                328, 8, 82, 30, window,
+                (HMENU)(INT_PTR)ID_FRONTEND_SETTINGS, g_instance, NULL);
             g_keys_button = CreateWindowExW(
                 0, L"BUTTON", L"&Keys",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                426, 8, 82, 30, window, (HMENU)(INT_PTR)ID_KEYS,
+                416, 8, 62, 30, window, (HMENU)(INT_PTR)ID_KEYS,
                 g_instance, NULL);
             g_fullscreen_checkbox = CreateWindowExW(
                 0, L"BUTTON", L"&Full screen",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-                520, 10, 120, 26, window,
+                488, 10, 112, 26, window,
                 (HMENU)(INT_PTR)ID_FULLSCREEN, g_instance, NULL);
             g_auto_run_checkbox = CreateWindowExW(
                 0, L"BUTTON", L"Auto-&Run",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-                650, 10, 120, 26, window,
+                610, 10, 100, 26, window,
                 (HMENU)(INT_PTR)ID_AUTO_RUN, g_instance, NULL);
             /* The ROM path remains internal. Status is exposed as native
                static text, not as an editable toolbar field. */
@@ -2744,6 +2507,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             set_control_font(g_reset_button);
             set_control_font(g_keys_button);
             set_control_font(g_audio_button);
+            set_control_font(g_settings_button);
             set_control_font(g_fullscreen_checkbox);
             set_control_font(g_auto_run_checkbox);
             set_control_font(g_rom_path);
@@ -2820,14 +2584,12 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 case ID_SNAPSHOT_LOAD_CURRENT: load_current_snapshot(); return 0;
                 case ID_SCREENSHOT: capture_window_screenshot(); return 0;
                 case ID_RECORD: toggle_recording(); return 0;
-                case ID_GETTING_STARTED:
-                    show_getting_started_window(0);
-                    return 0;
-                case ID_SHORTCUTS: show_shortcuts(); return 0;
+                case ID_WELCOME: show_welcome(); return 0;
                 case ID_ABOUT:
                     {
                         static wchar_t about[4096];
                         (void)_snwprintf(about, sizeof(about) / sizeof(about[0]),
+                            L"F1 - Welcome and shortcut guide\r\n\r\n"
                             L"SimCity (SNES) Static Recomp\r\n\r\n"
                             L"Launcher file: Launcher.exe\r\n"
                             L"Game window: SimCity (SNES)\r\n\r\n"
@@ -2835,6 +2597,8 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                             L"The USA cartridge uses native NTSC hardware timing at approximately 60.098813897 frames per second and 32,040 native audio frames per second. Valid forced-blank startup frames no longer pause the application. F8 captures the active application window and F9 records Full Static WAV audio.\r\n\r\n%s",
                             ROM_REQUIREMENTS_TEXT);
                         about[(sizeof(about) / sizeof(about[0])) - 1u] = L'\0';
+                        if (IsWindow(g_info_window))
+                            DestroyWindow(g_info_window);
                         show_information_window(L"About", about, 720, 560);
                     }
                     return 0;
@@ -2849,7 +2613,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 return 0;
             }
             if (wparam == VK_F1) {
-                show_shortcuts();
+                show_welcome();
                 return 0;
             }
             if (wparam == VK_F2) {
@@ -2857,12 +2621,12 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 return 0;
             }
             if (wparam == VK_F3) { show_snapshot_window(0); return 0; }
-            if (wparam == VK_F4) { show_audio_settings(); return 0; }
-            if (wparam == VK_F5) {
+            if (wparam == VK_F4) {
                 show_frontend_settings();
                 return 0;
             }
-            if (wparam == VK_F6) { show_key_bindings(); return 0; }
+            if (wparam == VK_F5) { show_key_bindings(); return 0; }
+            if (wparam == VK_F6) { show_audio_settings(); return 0; }
             if (wparam == VK_F7) {
                 if (!g_game) start_rom_load(1);
                 return 0;
@@ -2959,10 +2723,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             return 0;
         }
 
-        case WM_APP_STARTUP_CONTINUE:
-            continue_startup_after_welcome();
-            return 0;
-
         case WM_CLOSE:
             if (InterlockedCompareExchange(&g_loading, 0, 0) != 0) {
                 g_close_requested = 1;
@@ -3006,10 +2766,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                     _In_ PWSTR command_line, _In_ int show_command) {
     WNDCLASSEXW window_class;
     WNDCLASSEXW audio_class;
-    WNDCLASSEXW rom_info_class;
     WNDCLASSEXW snapshot_class;
     WNDCLASSEXW info_class;
-    WNDCLASSEXW getting_started_class;
     MSG message;
     (void)previous;
 
@@ -3059,16 +2817,6 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     audio_class.lpszClassName = AUDIO_CLASS_NAME;
     if (!RegisterClassExW(&audio_class)) return 1;
 
-    ZeroMemory(&rom_info_class, sizeof(rom_info_class));
-    rom_info_class.cbSize = sizeof(rom_info_class);
-    rom_info_class.lpfnWndProc = rom_info_proc;
-    rom_info_class.hInstance = instance;
-    rom_info_class.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    rom_info_class.hIcon = LoadIconW(NULL, IDI_INFORMATION);
-    rom_info_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    rom_info_class.lpszClassName = ROM_INFO_CLASS_NAME;
-    if (!RegisterClassExW(&rom_info_class)) return 1;
-
     ZeroMemory(&snapshot_class, sizeof(snapshot_class));
     snapshot_class.cbSize = sizeof(snapshot_class);
     snapshot_class.lpfnWndProc = snapshot_dialog_proc;
@@ -3089,16 +2837,6 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     info_class.lpszClassName = INFO_CLASS_NAME;
     if (!RegisterClassExW(&info_class)) return 1;
 
-    ZeroMemory(&getting_started_class, sizeof(getting_started_class));
-    getting_started_class.cbSize = sizeof(getting_started_class);
-    getting_started_class.lpfnWndProc = getting_started_dialog_proc;
-    getting_started_class.hInstance = instance;
-    getting_started_class.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    getting_started_class.hIcon = LoadIconW(NULL, IDI_INFORMATION);
-    getting_started_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    getting_started_class.lpszClassName = GETTING_STARTED_CLASS_NAME;
-    if (!RegisterClassExW(&getting_started_class)) return 1;
-
     g_window = CreateWindowExW(
         WS_EX_CONTROLPARENT, APP_CLASS_NAME, LAUNCHER_TITLE,
         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -3108,12 +2846,13 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     initialize_paths_and_settings();
     ShowWindow(g_window, SW_MAXIMIZE);
     UpdateWindow(g_window);
-    g_startup_pending = 1;
     if (!g_frontend_settings.getting_started_shown) {
-        show_getting_started_window(1);
-    } else {
-        continue_startup_after_welcome();
+        g_frontend_settings.getting_started_shown = 1;
+        (void)simcity_frontend_settings_win32_save(
+            &g_frontend_settings, g_frontend_ini_path);
+        show_welcome();
     }
+    continue_startup_after_welcome();
 
     {
         int running = 1;
@@ -3131,49 +2870,6 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                     if (message.message == WM_QUIT) {
                         running = 0;
                         break;
-                    }
-                    if (IsWindow(g_getting_started_window) &&
-                        (message.hwnd == g_getting_started_window ||
-                         IsChild(g_getting_started_window, message.hwnd))) {
-                        if (message.message == WM_KEYDOWN &&
-                            message.wParam == VK_TAB) {
-                            HWND next = GetFocus() ==
-                                g_getting_started_state.close_button ?
-                                g_getting_started_state.text :
-                                g_getting_started_state.close_button;
-                            if (IsWindow(next)) {
-                                SetFocus(next);
-                                NotifyWinEvent(EVENT_OBJECT_FOCUS, next,
-                                               OBJID_CLIENT, CHILDID_SELF);
-                            }
-                            continue;
-                        }
-                        if (message.message == WM_KEYDOWN &&
-                            message.wParam == VK_RETURN) {
-                            SendMessageW(g_getting_started_window, WM_COMMAND,
-                                MAKEWPARAM(ID_GETTING_STARTED_CLOSE, BN_CLICKED),
-                                (LPARAM)g_getting_started_state.close_button);
-                            continue;
-                        }
-                        if (message.message == WM_KEYDOWN &&
-                            message.wParam == VK_ESCAPE) {
-                            DestroyWindow(g_getting_started_window);
-                            continue;
-                        }
-                        if (IsDialogMessageW(g_getting_started_window,
-                                             &message))
-                            continue;
-                    }
-                    if (IsWindow(g_rom_info_window) &&
-                        (message.hwnd == g_rom_info_window ||
-                         IsChild(g_rom_info_window, message.hwnd))) {
-                        if (message.message == WM_KEYDOWN &&
-                            message.wParam == VK_ESCAPE) {
-                            DestroyWindow(g_rom_info_window);
-                            continue;
-                        }
-                        if (IsDialogMessageW(g_rom_info_window, &message))
-                            continue;
                     }
                     if (IsWindow(g_info_window) &&
                         (message.hwnd == g_info_window ||

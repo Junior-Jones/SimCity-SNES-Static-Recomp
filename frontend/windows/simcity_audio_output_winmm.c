@@ -104,6 +104,7 @@ void simcity_audio_settings_save(const SimCityAudioSettings *settings,
         AUDIO_INI_SECTION, L"LatencyMs", number, ini_path);
     (void)WritePrivateProfileStringW(
         AUDIO_INI_SECTION, L"DeviceName", settings->device_name, ini_path);
+    (void)WritePrivateProfileStringW(NULL, NULL, NULL, ini_path);
 }
 
 UINT simcity_audio_device_count(void) {

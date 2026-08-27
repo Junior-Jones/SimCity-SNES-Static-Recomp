@@ -2,8 +2,8 @@
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
   "version": "1.2.0",
-  "file_count": 276,
-  "total_bytes": 19357308,
+  "file_count": 278,
+  "total_bytes": 19347093,
   "files": [
     {
       "path": ".gitattributes",
@@ -17,8 +17,8 @@
     },
     {
       "path": ".gitignore",
-      "size": 32,
-      "sha256": "586a976bbcf50f147914f249627ea2fe521757204f9cd849f0610170c9db4639"
+      "size": 95,
+      "sha256": "0fc704acc14c0e4f446e217c082aeb50ae051d3899013bb959b68c3e788c3d2f"
     },
     {
       "path": "CMakeLists.txt",
@@ -27,13 +27,13 @@
     },
     {
       "path": "README-FIRST.txt",
-      "size": 708,
-      "sha256": "e7cb5609c271e6885f2f85f62e6aa3bd440651134a533a061a6d9f5673e33245"
+      "size": 899,
+      "sha256": "8468ed4258097dcfa3783e2eeea0c804075e366642aa957b14444d34a9f1e99c"
     },
     {
       "path": "README.md",
-      "size": 3893,
-      "sha256": "c032a21a65077a6ec2fbf09b311f10b19b61e2e9cff9585e4ba85f485ff8ef02"
+      "size": 4662,
+      "sha256": "cb6f0aa55fca0fc163faff422434ab20717c84a8ceb214fd742983c66171fcd2"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
@@ -46,14 +46,24 @@
       "sha256": "65d65c49b31e79863cf3a11193f2381e33a73f85b8d5c8b5144ad4e395057604"
     },
     {
+      "path": "Saves/Readme.txt",
+      "size": 149,
+      "sha256": "66cb007f9a0d6cd0cfa1e47d8efcca6236f5d234241fd113eff669fc6275b7aa"
+    },
+    {
+      "path": "Screenshots/Readme.txt",
+      "size": 170,
+      "sha256": "11494ca64fb8cdca816b486c11236969a0b2fdc304133fe5253f8c79d9daab8d"
+    },
+    {
       "path": "THIRD-PARTY-NOTICES.txt",
       "size": 710,
       "sha256": "58aa7f15217cd91b15fd2ff404668e90065c5116e7c120de9a616ca21ae8b280"
     },
     {
       "path": "VERSION.txt",
-      "size": 1038,
-      "sha256": "03fa0513e7b6388d3923ea9643806ab429dbfd11018281e4f7836636f07d48fe"
+      "size": 1681,
+      "sha256": "034792b7a8c23e751cce8e1f561f5feec669230c15e4695e4a78b6deceaaf53f"
     },
     {
       "path": "frontend/common/simcity_input_latch.c",
@@ -67,8 +77,8 @@
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
-      "size": 3648,
-      "sha256": "f63818904e91c61e4479304861a195e1601ba3157a9eceddaf35bdcb4bd52f48"
+      "size": 4392,
+      "sha256": "31eaa58337e37cf3aab42102b3f5a41f601e86817f271103c87947863f065503"
     },
     {
       "path": "frontend/windows/launcher_version.rc",
@@ -87,8 +97,8 @@
     },
     {
       "path": "frontend/windows/simcity_audio_output_winmm.c",
-      "size": 16971,
-      "sha256": "f32687754336170c40834bf65742522fff3e98302cab8e8ee784acaf5750b709"
+      "size": 17037,
+      "sha256": "e70933bc7b41fadf19a67275eeb38740f6596ddf7481a3c8fc40203da01fc158"
     },
     {
       "path": "frontend/windows/simcity_audio_output_winmm.h",
@@ -107,8 +117,8 @@
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 33295,
-      "sha256": "0a2dc4719fbcdfb2589cafd6ac8652c501d7dc74dba7b67a9b3cab190b286a60"
+      "size": 33355,
+      "sha256": "13e9fad488470bae42ea6286468e883876564093564696cfcfd1008f6dc61443"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
@@ -117,8 +127,8 @@
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 130874,
-      "sha256": "5dc8713237d6d3836c8824ab6c2ebc2761f7358cdaa501c4f34a14187b57d71d"
+      "size": 117804,
+      "sha256": "f7c7a0c0dea705608ca4d3595a7a7b46b0c9913019ff43565d43a692725f1c38"
     },
     {
       "path": "static-recomp/CMakeLists.txt",

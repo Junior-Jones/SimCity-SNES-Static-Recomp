@@ -1,3 +1,7 @@
 build*/
 package*/
 verification/
+Saves/*.srm
+Saves/*.scsnap
+Screenshots/*.bmp
+Screenshots/Logs/

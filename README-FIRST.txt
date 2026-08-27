@@ -6,6 +6,6 @@ Save data is written atomically beside Launcher.exe at Saves\SimCity-USA.srm.
 
 The Windows launcher uses direct Win32 GDI presentation, SDL3 gamepad input, and Full Static audio at 32,040 Hz stereo PCM. Speaker output uses four native WinMM buffers with full pre-roll and resume fade; WAV recording remains native 32,040 Hz PCM.
 
-Screenshots, Snapshots, Audio, Saves, and Logs folders are created only when their matching feature first writes a file.
+The release includes Saves and Screenshots folders with short Readme files. Battery saves and snapshots are stored in Saves. Screenshots are stored in Screenshots, with per-capture diagnostic logs under Screenshots\Logs. Audio and log subfolders are created only when their matching feature first writes a file.
 
 See Rom\readme.txt and ROM-REQUIREMENTS.txt for the required ROM details.

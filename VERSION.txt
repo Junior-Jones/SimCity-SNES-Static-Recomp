@@ -16,3 +16,9 @@ Changes in 1.2.0:
 - Replaced adaptive SDL audio streaming with four fixed WinMM PCM buffers, full pre-roll, and resume fade.
 - Replaced SDL GPU presentation with direct Win32 GDI framebuffer presentation.
 - Adopted the matching input latch, settings dialogs, and gamepad host adapter.
+- Matched Bubble Bobble's complete launcher toolbar layout, including the Settings button.
+- Unified first-run Welcome, F1 help, and About information windows with reliable Tab and Shift+Tab navigation.
+- Standardized F1 through F8: Welcome, save/load snapshot, Settings, controller bindings, Audio, Run, and capture.
+- Replaced free-form audio widgets with fixed 0-100 volume and supported-latency drop-downs; accepted settings now flush immediately.
+- Moved snapshots into Saves and added release-safe Saves and Screenshots folders with Readme files.
+- Removed the redundant Getting Started, shortcut-only, and first-run ROM notice windows.
