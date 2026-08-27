@@ -32,7 +32,6 @@ add_executable(simcity-launcher WIN32
     simcity_app_core.c
     launcher_version.rc
     simcity_audio_output_winmm.c
-    simcity_audio_recorder_win32.c
     simcity_frontend_settings_win32.c
     ../common/simcity_input_latch.c
     "${SIMCITY_GAMEPAD_ADAPTER_DIR}/simcity_gamepad_input_win32.c"

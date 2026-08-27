@@ -25,7 +25,7 @@ The complete runtime includes:
 - Native DMA, HDMA, controller and CPU-I/O handling.
 - NTSC scheduling, refresh, NMI, IRQ and scanline events.
 - Fail-closed Full Static S-SMP and S-DSP audio.
-- Native 32,040 Hz stereo PCM generation and WAV recording.
+- Native 32,040 Hz stereo PCM generation.
 - Battery-backed SRAM persistence and deterministic snapshots.
 - Exact-ROM validation and runtime integrity checks.
 - An accessible native Windows launcher with direct GDI presentation,
@@ -72,7 +72,7 @@ accessible information window with explicit Tab and Shift+Tab navigation.
 Battery data and snapshots are written under `Saves`. Screenshots are written
 under `Screenshots`, with per-capture diagnostics under `Screenshots/Logs`.
 The portable release includes both main folders with Readme files but contains
-no user settings, saves, snapshots, captures, recordings, ROMs, or test data.
+no user settings, saves, snapshots, captures, ROMs, or test data.
 
 ## Building on Windows
 

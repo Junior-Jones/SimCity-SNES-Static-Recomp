@@ -7,7 +7,6 @@
 #include <commctrl.h>
 
 #include "simcity_audio_output_winmm.h"
-#include "simcity_audio_recorder_win32.h"
 #include "simcity_frontend_settings_win32.h"
 #include "simcity_app_core.h"
 #include "simcity_input_latch.h"
@@ -44,13 +43,11 @@
 #define ID_FRONTEND_SETTINGS 1012
 #define ID_SNAPSHOT_SAVE 1013
 #define ID_SNAPSHOT_LOAD 1014
-#define ID_RECORD 1015
 #define ID_RESET 1018
 #define ID_BROWSE_MENU 1019
 #define ID_FULLSCREEN 1020
 #define ID_SCREENSHOT 1021
 #define ID_AUTO_RUN 1022
-#define ID_WELCOME 1023
 #define ID_SNAPSHOT_SAVE_CURRENT 1024
 #define ID_SNAPSHOT_LOAD_CURRENT 1025
 #define ID_SNAPSHOT_SLOT_BASE 5000
@@ -81,15 +78,6 @@
 #define AUDIO_DEFAULT_DEVICE_LABEL L"Default Windows audio device"
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
-static const wchar_t *ROM_REQUIREMENTS_TEXT =
-    L"Required game ROM\r\n\r\n"
-    L"Name: SimCity\r\n"
-    L"Region: USA\r\n"
-    L"File extension: .sfc (the filename can be anything)\r\n"
-    L"File size: 524,288 bytes\r\n"
-    L"SHA-256: e9c0bc05511e05a0d7c3e7cc42e761e1e8e532d46f59b9854b6902e1a2e9dd0a\r\n\r\n"
-    L"The ROM is not included. Browse to your legally obtained matching ROM.";
-
 typedef struct LoaderRequest {
     wchar_t *path;
     wchar_t sram_path[PATH_CAPACITY];
@@ -104,7 +92,6 @@ typedef struct LoaderResult {
 typedef struct AudioDialogState {
     SimCityAudioSettings settings;
     HWND enabled;
-    HWND device;
     HWND volume;
     HWND latency;
     int applied;
@@ -167,7 +154,6 @@ static wchar_t g_audio_ini_path[PATH_CAPACITY];
 static wchar_t g_frontend_ini_path[PATH_CAPACITY];
 static SimCityAudioSettings g_audio_settings;
 static SimCityAudioOutput g_audio_output;
-static SimCityAudioRecorderWin32 g_audio_recorder;
 static SimCityFrontendSettingsWin32 g_frontend_settings;
 static int g_settings_saved_on_exit;
 static int g_loaded_snapshot_slot = -1;
@@ -1141,7 +1127,7 @@ static const wchar_t g_welcome_text[] =
     L"ROM title: SimCity\r\n"
     L"Region: USA\r\n"
     L"File type: .sfc\r\n"
-    L"Place the ROM in the Rom folder or select Browse.";
+    L"Place the ROM in the Rom folder or select Browse ROM.";
 
 static void show_welcome(void) {
     if (IsWindow(g_info_window)) DestroyWindow(g_info_window);
@@ -1711,82 +1697,6 @@ static void load_current_snapshot(void) {
     if (resume_after && g_game) play_game();
 }
 
-static int start_recording_to(const wchar_t *base_directory,
-                              wchar_t *message, size_t message_capacity) {
-    wchar_t default_directory[PATH_CAPACITY];
-    const wchar_t *directory;
-    join_wide_path(default_directory,
-                   sizeof(default_directory) / sizeof(default_directory[0]),
-                   g_executable_directory, L"Audio");
-    directory = base_directory && base_directory[0] ?
-        base_directory : default_directory;
-    if (!g_game) {
-        copy_wide(message, message_capacity,
-                  L"Load and run the ROM before recording.");
-        return 0;
-    }
-    if (simcity_audio_recorder_win32_active(&g_audio_recorder)) {
-        (void)_snwprintf(message, message_capacity,
-                         L"Recording is already active: %s",
-                         g_audio_recorder.path);
-        message[message_capacity - 1u] = L'\0';
-        return 1;
-    }
-    if (!ensure_directory_tree(directory)) {
-        copy_wide(message, message_capacity,
-                  L"Recording could not start because the Audio folder could not be created.");
-        return 0;
-    }
-    if (!simcity_audio_recorder_win32_start(&g_audio_recorder, directory)) {
-        (void)_snwprintf(message, message_capacity,
-                         L"Recording could not start: %s",
-                         g_audio_recorder.last_error[0] ?
-                         g_audio_recorder.last_error :
-                         L"Unable to create the WAV file.");
-        message[message_capacity - 1u] = L'\0';
-        return 0;
-    }
-    (void)_snwprintf(message, message_capacity,
-                     L"Full Static recording started: %s. Press F9 to stop.",
-                     g_audio_recorder.path);
-    message[message_capacity - 1u] = L'\0';
-    return 1;
-}
-
-static int stop_recording(wchar_t *message, size_t message_capacity) {
-    uint64_t frames;
-    wchar_t path[PATH_CAPACITY];
-    if (!simcity_audio_recorder_win32_active(&g_audio_recorder)) {
-        copy_wide(message, message_capacity, L"Recording is not active.");
-        return 1;
-    }
-    frames = g_audio_recorder.frames_written;
-    copy_wide(path, sizeof(path) / sizeof(path[0]), g_audio_recorder.path);
-    if (!simcity_audio_recorder_win32_stop(&g_audio_recorder)) {
-        (void)_snwprintf(message, message_capacity,
-                         L"Recording could not be finalized: %s",
-                         g_audio_recorder.last_error);
-        message[message_capacity - 1u] = L'\0';
-        return 0;
-    }
-    (void)_snwprintf(message, message_capacity,
-                     L"Recording stopped after %.2f seconds: %s",
-                     (double)frames / SIMCITY_RECOMP_HOST_AUDIO_SAMPLE_RATE, path);
-    message[message_capacity - 1u] = L'\0';
-    return 1;
-}
-
-static void toggle_recording(void) {
-    wchar_t message[PATH_CAPACITY + 128u];
-    if (simcity_audio_recorder_win32_active(&g_audio_recorder))
-        (void)stop_recording(message,
-                             sizeof(message) / sizeof(message[0]));
-    else
-        (void)start_recording_to(NULL, message,
-                                sizeof(message) / sizeof(message[0]));
-    set_status(message);
-}
-
 static void advance_frame_deadline(void) {
     g_next_frame_deadline += g_qpc_ticks_per_frame_base;
     g_qpc_remainder_accumulator += g_qpc_ticks_per_frame_remainder;
@@ -1847,7 +1757,6 @@ static int advance_frame_batch(uint32_t frame_count) {
     wchar_t message[512];
     uint32_t headless_count;
     uint16_t input_mask;
-    int recorder_was_active;
     if (!g_game || frame_count == 0u) return 1;
     memset(&result, 0, sizeof(result));
     input_mask = current_gameplay_input();
@@ -1865,17 +1774,7 @@ static int advance_frame_batch(uint32_t frame_count) {
     }
     if (keyboard_gameplay_active())
         simcity_input_latch_consume(&g_keyboard_input, input_mask);
-    recorder_was_active = simcity_audio_recorder_win32_active(&g_audio_recorder);
-    simcity_audio_output_pump(&g_audio_output, &g_audio_recorder, g_game);
-    if (recorder_was_active &&
-        !simcity_audio_recorder_win32_active(&g_audio_recorder) &&
-        g_audio_recorder.last_error[0]) {
-        _snwprintf(message, sizeof(message) / sizeof(message[0]),
-                   L"Audio recording stopped: %s",
-                   g_audio_recorder.last_error);
-        message[(sizeof(message) / sizeof(message[0])) - 1u] = L'\0';
-        set_status(message);
-    }
+    simcity_audio_output_pump(&g_audio_output, g_game);
     maybe_flush_battery_sram_win32();
     if (simcity_recomp_audio_overflowed(g_game)) {
         simcity_recomp_audio_clear_overflow(g_game);
@@ -2022,8 +1921,6 @@ static int read_audio_dialog(AudioDialogState *state, HWND window) {
     static const int latency_values[] = {40, 60, 80, 120, 250};
     LRESULT volume;
     LRESULT latency;
-    LRESULT selection;
-    wchar_t device_name[SIMCITY_AUDIO_DEVICE_NAME_CAPACITY];
     if (!state) return 0;
 
     (void)window;
@@ -2036,39 +1933,8 @@ static int read_audio_dialog(AudioDialogState *state, HWND window) {
         SendMessageW(state->enabled, BM_GETCHECK, 0, 0) == BST_CHECKED;
     state->settings.volume_percent = (int)volume;
     state->settings.latency_ms = latency_values[latency];
-    state->settings.device_name[0] = L'\0';
-    selection = SendMessageW(state->device, CB_GETCURSEL, 0, 0);
-    if (selection > 0) {
-        device_name[0] = L'\0';
-        if (SendMessageW(state->device, CB_GETLBTEXT,
-                         (WPARAM)selection,
-                         (LPARAM)device_name) != CB_ERR) {
-            copy_wide(state->settings.device_name,
-                      SIMCITY_AUDIO_DEVICE_NAME_CAPACITY, device_name);
-        }
-    }
     return 1;
 }
-
-static void audio_dialog_layout(HWND window, AudioDialogState *state) {
-    RECT client;
-    int width;
-    if (!state) return;
-    GetClientRect(window, &client);
-    width = client.right - client.left;
-    MoveWindow(GetDlgItem(window, 2100), 16, 12, width - 32, 54, TRUE);
-    MoveWindow(state->enabled, 16, 70, width - 32, 24, TRUE);
-    MoveWindow(GetDlgItem(window, 2102), 16, 106, 104, 24, TRUE);
-    MoveWindow(state->device, 126, 104, width - 142, 240, TRUE);
-    MoveWindow(GetDlgItem(window, 2103), 16, 144, 104, 24, TRUE);
-    MoveWindow(state->volume, 126, 140, width - 142, 240, TRUE);
-    MoveWindow(GetDlgItem(window, 2105), 16, 180, 104, 24, TRUE);
-    MoveWindow(state->latency, 126, 176, 150, 180, TRUE);
-    MoveWindow(GetDlgItem(window, 2106), 288, 180, width - 304, 24, TRUE);
-    MoveWindow(GetDlgItem(window, ID_AUDIO_APPLY), width - 190, 226, 80, 30, TRUE);
-    MoveWindow(GetDlgItem(window, ID_AUDIO_CANCEL), width - 102, 226, 80, 30, TRUE);
-}
-
 
 static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
                                           WPARAM wparam, LPARAM lparam) {
@@ -2085,22 +1951,15 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
             static const int latency_values[] = {40, 60, 80, 120, 250};
             wchar_t number[32];
             UINT index;
-            UINT count;
             LRESULT selection = 0;
             state = audio_dialog_state(window);
             if (!state) return -1;
-            SetWindowTextW(window, L"Audio Settings");
+            SetWindowTextW(window, L"SimCity 1.2.0 Audio Settings");
 
-            set_control_font(CreateWindowExW(
-                0, L"STATIC",
-                L"Choose how SimCity audio is played. Audio remains muted until Audio enabled is checked.",
-                WS_CHILD | WS_VISIBLE | SS_LEFT,
-                16, 12, 500, 54, window, (HMENU)(INT_PTR)2100,
-                g_instance, NULL));
             state->enabled = CreateWindowExW(
-                0, L"BUTTON", L"Audio enabled (uncheck to mute)",
+                0, L"BUTTON", L"Enable &audio output",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-                16, 70, 300, 24, window,
+                18, 20, 260, 28, window,
                 (HMENU)(INT_PTR)ID_AUDIO_ENABLED, g_instance, NULL);
             set_control_font(state->enabled);
             SendMessageW(state->enabled, BM_SETCHECK,
@@ -2108,47 +1967,15 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
                          0);
 
             set_control_font(CreateWindowExW(
-                0, L"STATIC", L"Output device:",
+                0, L"STATIC", L"&Volume (0-100):",
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
-                16, 106, 104, 24, window, (HMENU)(INT_PTR)2102,
-                g_instance, NULL));
-            state->device = CreateWindowExW(
-                WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
-                WS_VSCROLL,
-                126, 104, 350, 240, window,
-                (HMENU)(INT_PTR)ID_AUDIO_DEVICE, g_instance, NULL);
-            set_control_font(state->device);
-            (void)SendMessageW(state->device, CB_ADDSTRING, 0,
-                               (LPARAM)AUDIO_DEFAULT_DEVICE_LABEL);
-            count = simcity_audio_device_count();
-            for (index = 0u; index < count; ++index) {
-                wchar_t name[SIMCITY_AUDIO_DEVICE_NAME_CAPACITY];
-                if (simcity_audio_device_name(index, name,
-                                              sizeof(name) /
-                                              sizeof(name[0]))) {
-                    LRESULT item = SendMessageW(state->device, CB_ADDSTRING,
-                                                0, (LPARAM)name);
-                    if (item != CB_ERR && item != CB_ERRSPACE &&
-                        state->settings.device_name[0] &&
-                        wcscmp(name, state->settings.device_name) == 0) {
-                        selection = item;
-                    }
-                }
-            }
-            (void)SendMessageW(state->device, CB_SETCURSEL,
-                               (WPARAM)selection, 0);
-
-            set_control_font(CreateWindowExW(
-                0, L"STATIC", L"Volume:",
-                WS_CHILD | WS_VISIBLE | SS_LEFT,
-                16, 144, 104, 24, window, (HMENU)(INT_PTR)2103,
+                18, 66, 125, 22, window, (HMENU)(INT_PTR)2103,
                 g_instance, NULL));
             state->volume = CreateWindowExW(
                 WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
                 WS_VSCROLL,
-                126, 140, 350, 240, window,
+                148, 62, 94, 280, window,
                 (HMENU)(INT_PTR)ID_AUDIO_VOLUME, g_instance, NULL);
             set_control_font(state->volume);
             for (index = 0u; index <= 100u; ++index) {
@@ -2161,14 +1988,14 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
                                state->settings.volume_percent, 0);
 
             set_control_font(CreateWindowExW(
-                0, L"STATIC", L"Buffer latency:",
+                0, L"STATIC", L"&Latency:",
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
-                16, 180, 104, 24, window, (HMENU)(INT_PTR)2105,
+                18, 108, 90, 22, window, (HMENU)(INT_PTR)2105,
                 g_instance, NULL));
             state->latency = CreateWindowExW(
                 WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
-                126, 176, 150, 180, window,
+                112, 104, 130, 190, window,
                 (HMENU)(INT_PTR)ID_AUDIO_LATENCY, g_instance, NULL);
             set_control_font(state->latency);
             selection = 0;
@@ -2183,32 +2010,28 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
             (void)SendMessageW(state->latency, CB_SETCURSEL,
                                (WPARAM)selection, 0);
             set_control_font(CreateWindowExW(
-                0, L"STATIC", L"fixed buffer latency",
+                0, L"STATIC", L"Audio changes apply immediately.",
                 WS_CHILD | WS_VISIBLE | SS_LEFT,
-                222, 216, 220, 24, window, (HMENU)(INT_PTR)2106,
+                18, 150, 410, 24, window, (HMENU)(INT_PTR)2106,
                 g_instance, NULL));
 
             set_control_font(CreateWindowExW(
-                0, L"BUTTON", L"&Apply",
+                0, L"BUTTON", L"OK",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                330, 262, 80, 30, window,
+                218, 190, 105, 32, window,
                 (HMENU)(INT_PTR)ID_AUDIO_APPLY, g_instance, NULL));
             set_control_font(CreateWindowExW(
                 0, L"BUTTON", L"Cancel",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                418, 262, 80, 30, window,
+                341, 190, 105, 32, window,
                 (HMENU)(INT_PTR)ID_AUDIO_CANCEL, g_instance, NULL));
             return 0;
         }
 
-        case WM_SIZE:
-            audio_dialog_layout(window, state);
-            return 0;
-
         case WM_GETMINMAXINFO: {
             MINMAXINFO *info = (MINMAXINFO *)lparam;
-            info->ptMinTrackSize.x = 520;
-            info->ptMinTrackSize.y = 315;
+            info->ptMinTrackSize.x = 490;
+            info->ptMinTrackSize.y = 285;
             return 0;
         }
 
@@ -2252,9 +2075,9 @@ static void show_audio_settings(void) {
 
     dialog = CreateWindowExW(
         WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
-        AUDIO_CLASS_NAME, L"Audio Settings",
-        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME,
-        CW_USEDEFAULT, CW_USEDEFAULT, 560, 315,
+        AUDIO_CLASS_NAME, L"SimCity 1.2.0 Audio Settings",
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+        CW_USEDEFAULT, CW_USEDEFAULT, 490, 285,
         g_window, NULL, g_instance, &state);
     if (!dialog) {
         MessageBoxW(g_window, L"Unable to open Audio Settings.",
@@ -2299,8 +2122,7 @@ static HMENU create_menu_bar(void) {
     HMENU bar = CreateMenu();
     HMENU file = CreatePopupMenu();
     HMENU settings = CreatePopupMenu();
-    HMENU help = CreatePopupMenu();
-    AppendMenuW(file, MF_STRING, ID_BROWSE_MENU, L"&Browse ROM...\tCtrl+O");
+    AppendMenuW(file, MF_STRING, ID_BROWSE_MENU, L"&Browse ROM...");
     AppendMenuW(file, MF_STRING, ID_RUN, L"&Run\tF7");
     AppendMenuW(file, MF_STRING, ID_PAUSE_PLAY, L"&Play\tEscape");
     AppendMenuW(file, MF_STRING, ID_RESET, L"&Reset ROM");
@@ -2315,8 +2137,6 @@ static HMENU create_menu_bar(void) {
                 L"Load Snapshot...\tF3");
     AppendMenuW(file, MF_STRING, ID_SCREENSHOT,
                 L"Capture Game Window\tF8");
-    AppendMenuW(file, MF_STRING, ID_RECORD,
-                L"Record Full Static Audio\tF9");
     AppendMenuW(file, MF_SEPARATOR, 0, NULL);
     AppendMenuW(file, MF_STRING, ID_EXIT, L"E&xit\tAlt+F4");
     AppendMenuW(settings, MF_STRING, ID_FRONTEND_SETTINGS,
@@ -2330,13 +2150,10 @@ static HMENU create_menu_bar(void) {
                 L"Use &Full Screen When Playing");
     AppendMenuW(settings, MF_STRING, ID_AUTO_RUN,
                 L"&Auto-Run at Startup");
-    AppendMenuW(help, MF_STRING, ID_WELCOME,
-                L"&Welcome\tF1");
-    AppendMenuW(help, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(help, MF_STRING, ID_ABOUT, L"&About");
+    AppendMenuW(settings, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(settings, MF_STRING, ID_ABOUT, L"&About");
     AppendMenuW(bar, MF_POPUP, (UINT_PTR)file, L"&File");
     AppendMenuW(bar, MF_POPUP, (UINT_PTR)settings, L"&Settings");
-    AppendMenuW(bar, MF_POPUP, (UINT_PTR)help, L"&Help");
     return bar;
 }
 
@@ -2350,7 +2167,6 @@ static void initialize_paths_and_settings(void) {
                                              sizeof(module_path[0])));
     simcity_audio_settings_defaults(&g_audio_settings);
     simcity_audio_output_initialize(&g_audio_output);
-    simcity_audio_recorder_win32_init(&g_audio_recorder);
     simcity_frontend_settings_win32_defaults(&g_frontend_settings);
     if (length == 0u || length >= sizeof(module_path) / sizeof(module_path[0]))
         return;
@@ -2523,7 +2339,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
 
         case WM_GETMINMAXINFO: {
             MINMAXINFO *info = (MINMAXINFO *)lparam;
-            info->ptMinTrackSize.x = 720;
+            info->ptMinTrackSize.x = 820;
             info->ptMinTrackSize.y = 580;
             return 0;
         }
@@ -2583,23 +2399,18 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 case ID_SNAPSHOT_SAVE_CURRENT: save_current_snapshot(); return 0;
                 case ID_SNAPSHOT_LOAD_CURRENT: load_current_snapshot(); return 0;
                 case ID_SCREENSHOT: capture_window_screenshot(); return 0;
-                case ID_RECORD: toggle_recording(); return 0;
-                case ID_WELCOME: show_welcome(); return 0;
                 case ID_ABOUT:
                     {
-                        static wchar_t about[4096];
-                        (void)_snwprintf(about, sizeof(about) / sizeof(about[0]),
+                        static const wchar_t about[] =
                             L"F1 - Welcome and shortcut guide\r\n\r\n"
-                            L"SimCity (SNES) Static Recomp\r\n\r\n"
-                            L"Launcher file: Launcher.exe\r\n"
-                            L"Game window: SimCity (SNES)\r\n\r\n"
-                            L"Generated static S-CPU execution with native video, controller and PCM host frontends. Full Static audio is the only linked audio path and fails closed.\r\n\r\n"
-                            L"The USA cartridge uses native NTSC hardware timing at approximately 60.098813897 frames per second and 32,040 native audio frames per second. Valid forced-blank startup frames no longer pause the application. F8 captures the active application window and F9 records Full Static WAV audio.\r\n\r\n%s",
-                            ROM_REQUIREMENTS_TEXT);
-                        about[(sizeof(about) / sizeof(about[0])) - 1u] = L'\0';
+                            L"SimCity SNES Static Recompilation\r\n\r\n"
+                            L"Title: SimCity\r\n"
+                            L"Region: USA\r\n"
+                            L"File type: .sfc";
                         if (IsWindow(g_info_window))
                             DestroyWindow(g_info_window);
-                        show_information_window(L"About", about, 720, 560);
+                        show_information_window(L"About SimCity",
+                                                about, 520, 320);
                     }
                     return 0;
                 case ID_EXIT: SendMessageW(window, WM_CLOSE, 0, 0); return 0;
@@ -2632,7 +2443,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 return 0;
             }
             if (wparam == VK_F8) { capture_window_screenshot(); return 0; }
-            if (wparam == VK_F9) { toggle_recording(); return 0; }
             if (wparam == '1') { save_current_snapshot(); return 0; }
             if (wparam == '2') { load_current_snapshot(); return 0; }
             if (g_game && !g_paused && GetFocus() == g_window &&
@@ -2743,7 +2553,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             save_current_settings_on_exit();
             if (g_frame_timer) (void)CancelWaitableTimer(g_frame_timer);
             (void)flush_battery_sram_win32(1, NULL, 0u);
-            (void)simcity_audio_recorder_win32_stop(&g_audio_recorder);
             close_audio();
             if (g_loader_thread) {
                 WaitForSingleObject(g_loader_thread, INFINITE);
@@ -2844,7 +2653,7 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     if (!g_window) return 1;
 
     initialize_paths_and_settings();
-    ShowWindow(g_window, SW_MAXIMIZE);
+    ShowWindow(g_window, SW_SHOWNORMAL);
     UpdateWindow(g_window);
     if (!g_frontend_settings.getting_started_shown) {
         g_frontend_settings.getting_started_shown = 1;
@@ -2883,10 +2692,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                          message.wParam == VK_F2 || message.wParam == VK_F3 ||
                          message.wParam == VK_F4 || message.wParam == VK_F5 ||
                          message.wParam == VK_F6 || message.wParam == VK_F7 ||
-                         message.wParam == VK_F8 || message.wParam == VK_F9 ||
-                          (message.wParam == '1' || message.wParam == '2') ||
-                         ((GetKeyState(VK_CONTROL) & 0x8000) != 0 &&
-                          (message.wParam == 'O' || message.wParam == 'o')));
+                         message.wParam == VK_F8 ||
+                         message.wParam == '1' || message.wParam == '2');
                     game_key =
                         (message.message == WM_KEYDOWN ||
                          message.message == WM_KEYUP) &&
@@ -2894,13 +2701,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                           keyboard_gameplay_active() &&
                         virtual_key_to_input(message.wParam) != 0u;
                     if (root_shortcut) {
-                        if ((GetKeyState(VK_CONTROL) & 0x8000) != 0 &&
-                            (message.wParam == 'O' || message.wParam == 'o'))
-                            SendMessageW(g_window, WM_COMMAND,
-                                         ID_BROWSE_MENU, 0);
-                        else
-                            SendMessageW(g_window, message.message,
-                                         message.wParam, message.lParam);
+                        SendMessageW(g_window, message.message,
+                                     message.wParam, message.lParam);
                         continue;
                     }
                     if (game_key) {

@@ -15,7 +15,6 @@
 #include <mmsystem.h>
 
 #include "simcity_app_core.h"
-#include "simcity_audio_recorder_win32.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -69,7 +68,6 @@ int simcity_audio_output_is_open(const SimCityAudioOutput *output);
 
 /* Pulls only native PCM from the isolated static-recompilation core. */
 void simcity_audio_output_pump(SimCityAudioOutput *output,
-                               SimCityAudioRecorderWin32 *recorder,
                                SimCityRecomp *game);
 
 #endif

@@ -80,7 +80,7 @@ static void center_dialog(HWND w,HWND parent){
 }
 
 static int keyboard_key_is_reserved(UINT key){
-    return key==VK_ESCAPE||(key>=VK_F1&&key<=VK_F9)||key=='1'||key=='2';
+    return key==VK_ESCAPE||(key>=VK_F1&&key<=VK_F8)||key=='1'||key=='2';
 }
 
 static int keyboard_bindings_are_valid(
@@ -363,7 +363,7 @@ static LRESULT CALLBACK settings_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
     case WM_CREATE:{
         int i; wchar_t t[32]; HWND scale;
         c=(DialogContext*)GetWindowLongPtrW(w,GWLP_USERDATA);
-        SetWindowTextW(w,L"Settings");
+        SetWindowTextW(w,L"SimCity 1.2.0 Frontend Settings");
         set_font(CreateWindowW(L"BUTTON",L"General",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,14,12,512,112,w,NULL,NULL,NULL));
         set_font(CreateWindowW(L"BUTTON",L"Start a valid ROM automatically when the launcher opens",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,42,455,24,w,(HMENU)ID_AUTO_RUN,NULL,NULL));
         set_font(CreateWindowW(L"BUTTON",L"Pause the game when the app loses keyboard focus",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,76,455,24,w,(HMENU)ID_PAUSE_FOCUS,NULL,NULL));
@@ -422,7 +422,7 @@ static LRESULT CALLBACK controls_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
     case WM_NCCREATE:SetWindowLongPtrW(w,GWLP_USERDATA,(LONG_PTR)((CREATESTRUCTW*)lp)->lpCreateParams);return TRUE;
     case WM_CREATE:{
         HWND group;HWND label;wchar_t change_label[96];
-        c=(DialogContext*)GetWindowLongPtrW(w,GWLP_USERDATA);SetWindowTextW(w,L"Controls");
+        c=(DialogContext*)GetWindowLongPtrW(w,GWLP_USERDATA);SetWindowTextW(w,L"SimCity 1.2.0 Controller Bindings");
         group=CreateWindowW(L"BUTTON",L"Active input",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,
                             14,12,712,84,w,NULL,NULL,NULL);set_font(group);
         label=CreateWindowW(L"STATIC",L"Use for gameplay:",WS_CHILD|WS_VISIBLE,
@@ -596,5 +596,5 @@ static int run_dialog(HWND parent,HINSTANCE inst,const wchar_t *cls,const wchar_
     if(message_result==0)PostQuitMessage((int)msg.wParam);
     return c.accepted;
 }
-int simcity_frontend_settings_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s){return run_dialog(p,i,SETTINGS_CLASS,L"Settings",settings_proc,560,450,s,NULL);}
-int simcity_frontend_controls_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s,SimCityGamepadInputWin32 *gamepad){return run_dialog(p,i,CONTROLS_CLASS,L"Controls",controls_proc,760,640,s,gamepad);}
+int simcity_frontend_settings_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s){return run_dialog(p,i,SETTINGS_CLASS,L"SimCity 1.2.0 Frontend Settings",settings_proc,560,450,s,NULL);}
+int simcity_frontend_controls_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s,SimCityGamepadInputWin32 *gamepad){return run_dialog(p,i,CONTROLS_CLASS,L"SimCity 1.2.0 Controller Bindings",controls_proc,760,640,s,gamepad);}

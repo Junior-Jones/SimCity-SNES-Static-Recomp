@@ -350,7 +350,6 @@ static void apply_resume_fade(SimCityAudioOutput *output, int16_t *samples,
 }
 
 void simcity_audio_output_pump(SimCityAudioOutput *output,
-                               SimCityAudioRecorderWin32 *recorder,
                                SimCityRecomp *game) {
     int16_t staging[4096u * SIMCITY_RECOMP_AUDIO_CHANNELS];
     if (!game) return;
@@ -360,9 +359,6 @@ void simcity_audio_output_pump(SimCityAudioOutput *output,
             size_t request = available > 4096u ? 4096u : available;
             size_t frames = simcity_recomp_audio_read(game, staging, request);
             if (!frames) break;
-            if (recorder && simcity_audio_recorder_win32_active(recorder) &&
-                !simcity_audio_recorder_win32_write(recorder, staging, frames))
-                (void)simcity_audio_recorder_win32_stop(recorder);
         }
         return;
     }
@@ -383,12 +379,6 @@ void simcity_audio_output_pump(SimCityAudioOutput *output,
                 ((size_t)output->pending_frames * SIMCITY_RECOMP_AUDIO_CHANNELS),
             request);
         if (read_frames == 0u) break;
-        if (recorder && simcity_audio_recorder_win32_active(recorder) &&
-            !simcity_audio_recorder_win32_write(
-                recorder, output->pending_storage +
-                    ((size_t)output->pending_frames *
-                     SIMCITY_RECOMP_AUDIO_CHANNELS), read_frames))
-            (void)simcity_audio_recorder_win32_stop(recorder);
         output->pending_frames += (uint32_t)read_frames;
         if (output->pending_frames < output->buffer_frames) break;
         memcpy(header->lpData, output->pending_storage,
