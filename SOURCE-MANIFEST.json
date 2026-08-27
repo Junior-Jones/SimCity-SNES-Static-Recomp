@@ -3,7 +3,7 @@
   "platform": "Windows",
   "version": "1.2.0",
   "file_count": 276,
-  "total_bytes": 19331764,
+  "total_bytes": 19336616,
   "files": [
     {
       "path": ".gitattributes",
@@ -17,8 +17,8 @@
     },
     {
       "path": ".gitignore",
-      "size": 95,
-      "sha256": "0fc704acc14c0e4f446e217c082aeb50ae051d3899013bb959b68c3e788c3d2f"
+      "size": 149,
+      "sha256": "1cbd398f1899b8558e46bdf9a7ca80cb0934459e9d037041220ec0237892b64e"
     },
     {
       "path": "CMakeLists.txt",
@@ -27,13 +27,13 @@
     },
     {
       "path": "README-FIRST.txt",
-      "size": 764,
-      "sha256": "e37ba026c7e035ce7fd466b98102826d7694ad098c6c25b0f4dd064f1b7f71d0"
+      "size": 1016,
+      "sha256": "78bd4491f6df14fcf45e4583716f03d1d89af0c0b5a75b8a7fe7f112db5e6188"
     },
     {
       "path": "README.md",
-      "size": 4632,
-      "sha256": "fa835bbafe32d63efe7e7f70bf27eaa797d2ff160702aa9ff96d2bf17e986ddc"
+      "size": 4923,
+      "sha256": "83f6b27b334c4f5efec1c8eb96a4698d876c08051ac72940b7bfa07f822a00b4"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
@@ -62,8 +62,8 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 2010,
-      "sha256": "6083a691c3796cb44284f34f7f3c41f6a032a671a1418af41bc900d402501ad4"
+      "size": 2689,
+      "sha256": "093c3650743654aa6db6afbb061b9ecf11f60f8c72b9950485090dfd6ce2dec9"
     },
     {
       "path": "frontend/common/simcity_input_latch.c",
@@ -107,18 +107,18 @@
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 32466,
-      "sha256": "fa17b5565a55494086d769ece6edfec3beb71f357c4a5855656ae38e88af5332"
+      "size": 33052,
+      "sha256": "d873f819fc9b662301c17d2607aa4a30eb4138fe399de18414f283bd7d3af69a"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
-      "size": 2175,
-      "sha256": "786112e52ba1f80ad0eae373d73e8998911277f712bf1dd4d8d613013b1a8f79"
+      "size": 2149,
+      "sha256": "eb900f9786246b595248fde989159ce3b5612b8f9d63588350f1e9dd40ceac88"
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 108202,
-      "sha256": "313c4edbfc063988f74a8b58a9489a89697a20e0067f2e6e3528891acabd4759"
+      "size": 111218,
+      "sha256": "99af3c5a2422ac3a720eed6e2482650fb02fd5a398ddf0acef53e6664843ab1d"
     },
     {
       "path": "static-recomp/CMakeLists.txt",

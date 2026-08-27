@@ -5,3 +5,6 @@ Saves/*.srm
 Saves/*.scsnap
 Screenshots/*.bmp
 Screenshots/Logs/
+settings.ini
+Launcher-Audio.ini
+Launcher-Frontend.ini

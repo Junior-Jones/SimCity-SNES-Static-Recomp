@@ -74,6 +74,11 @@ under `Screenshots`, with per-capture diagnostics under `Screenshots/Logs`.
 The portable release includes both main folders with Readme files but contains
 no user settings, saves, snapshots, captures, ROMs, or test data.
 
+All persistent launcher state is stored in one portable `settings.ini` beside
+`Launcher.exe`, including general/display options, audio, keyboard and gamepad
+bindings, first-run state, current snapshot slot, and the remembered ROM path.
+Older split launcher INIs are migrated automatically.
+
 ## Building on Windows
 
 Requirements:

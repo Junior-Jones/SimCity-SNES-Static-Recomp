@@ -150,8 +150,7 @@ static wchar_t g_rom_directory[PATH_CAPACITY];
 static wchar_t g_saves_directory[PATH_CAPACITY];
 static wchar_t g_sram_path[PATH_CAPACITY];
 static uint32_t g_sram_last_flush_frame;
-static wchar_t g_audio_ini_path[PATH_CAPACITY];
-static wchar_t g_frontend_ini_path[PATH_CAPACITY];
+static wchar_t g_settings_ini_path[PATH_CAPACITY];
 static SimCityAudioSettings g_audio_settings;
 static SimCityAudioOutput g_audio_output;
 static SimCityFrontendSettingsWin32 g_frontend_settings;
@@ -829,7 +828,7 @@ static void browse_for_rom(void) {
     if (GetOpenFileNameW(&dialog)) {
         SetWindowTextW(g_rom_path, path);
         (void)WritePrivateProfileStringW(L"ROM", L"Path", path,
-                                         g_frontend_ini_path);
+                                         g_settings_ini_path);
         update_controls();
         if (g_frontend_settings.auto_run_on_load) {
             set_status(L"ROM selected. Starting now.");
@@ -1105,7 +1104,7 @@ static void show_key_bindings(void) {
     if (simcity_frontend_controls_win32_dialog(
             g_window, g_instance, &g_frontend_settings, &g_gamepad)) {
         if (!simcity_frontend_settings_win32_save(
-                &g_frontend_settings, g_frontend_ini_path))
+                &g_frontend_settings, g_settings_ini_path))
             set_status(L"Control settings changed, but the settings file could not be written.");
         else set_status(L"Control settings changed and saved.");
     }
@@ -1117,8 +1116,10 @@ static const wchar_t g_welcome_text[] =
     L"Frontend shortcuts\r\n"
     L"Escape - Switch between the game and Launcher\r\n"
     L"F1 - Welcome and shortcut guide\r\n"
-    L"F2 - Save snapshot\r\n"
-    L"F3 - Load snapshot\r\n"
+    L"F2 - Open the Save Snapshot window\r\n"
+    L"F3 - Open the Load Snapshot window\r\n"
+    L"1 - Save the current snapshot slot\r\n"
+    L"2 - Load the current snapshot slot\r\n"
     L"F4 - Settings\r\n"
     L"F5 - Controller bindings\r\n"
     L"F6 - Audio settings\r\n"
@@ -1146,7 +1147,7 @@ static void show_frontend_settings(void) {
     if (simcity_frontend_settings_win32_dialog(
             g_window, g_instance, &g_frontend_settings)) {
         if (!simcity_frontend_settings_win32_save(
-                &g_frontend_settings, g_frontend_ini_path))
+                &g_frontend_settings, g_settings_ini_path))
             set_status(L"Settings changed, but the settings file could not be written.");
         else set_status(L"Settings changed and saved.");
             SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
@@ -1245,7 +1246,7 @@ static int save_snapshot_slot(int slot) {
     if (slot < 1 || slot > 5) slot = 1;
     g_frontend_settings.snapshot_slot = slot;
     (void)simcity_frontend_settings_win32_save(
-        &g_frontend_settings, g_frontend_ini_path);
+        &g_frontend_settings, g_settings_ini_path);
     if (!snapshot_slot_path(slot, path,
                             sizeof(path) / sizeof(path[0]))) {
         set_status(L"The Saves folder could not be created beside Launcher.exe.");
@@ -1277,7 +1278,7 @@ static int load_snapshot_slot(int slot) {
     if (slot < 1 || slot > 5) slot = 1;
     g_frontend_settings.snapshot_slot = slot;
     (void)simcity_frontend_settings_win32_save(
-        &g_frontend_settings, g_frontend_ini_path);
+        &g_frontend_settings, g_settings_ini_path);
     if (!snapshot_slot_exists(slot)) {
         _snwprintf(status, sizeof(status) / sizeof(status[0]),
                    L"Snapshot slot %d is empty.", slot);
@@ -1530,6 +1531,11 @@ static void show_snapshot_window(int save_mode) {
     EnableWindow(g_window, FALSE);
     while (IsWindow(dialog) &&
            (message_result = GetMessageW(&message, NULL, 0, 0)) > 0) {
+        if (message.message == WM_KEYDOWN &&
+            message.wParam == VK_ESCAPE) {
+            DestroyWindow(dialog);
+            continue;
+        }
         if (message.message == WM_KEYDOWN && message.wParam == VK_TAB) {
             HWND next = GetNextDlgTabItem(
                 dialog, GetFocus(),
@@ -2094,6 +2100,11 @@ static void show_audio_settings(void) {
     UpdateWindow(dialog);
     while (IsWindow(dialog) &&
            (message_result = GetMessageW(&message, NULL, 0, 0)) > 0) {
+        if (message.message == WM_KEYDOWN &&
+            message.wParam == VK_ESCAPE) {
+            DestroyWindow(dialog);
+            continue;
+        }
         if (!IsDialogMessageW(dialog, &message)) {
             TranslateMessage(&message);
             DispatchMessageW(&message);
@@ -2104,7 +2115,7 @@ static void show_audio_settings(void) {
 
     if (state.applied) {
         g_audio_settings = state.settings;
-        simcity_audio_settings_save(&g_audio_settings, g_audio_ini_path);
+        simcity_audio_settings_save(&g_audio_settings, g_settings_ini_path);
         if (g_game) {
             if (open_audio(1) && simcity_audio_output_is_open(&g_audio_output))
                 set_status(L"Audio settings applied. Full Static host playback is active.");
@@ -2161,7 +2172,12 @@ static void initialize_paths_and_settings(void) {
     wchar_t module_path[PATH_CAPACITY];
     wchar_t default_rom[PATH_CAPACITY];
     wchar_t gamepad_database[PATH_CAPACITY];
+    wchar_t legacy_audio_ini[PATH_CAPACITY];
+    wchar_t legacy_frontend_ini[PATH_CAPACITY];
+    wchar_t migrated_rom_path[PATH_CAPACITY];
     wchar_t *slash;
+    DWORD attributes;
+    int unified_exists;
     DWORD length = GetModuleFileNameW(NULL, module_path,
                                      (DWORD)(sizeof(module_path) /
                                              sizeof(module_path[0])));
@@ -2187,21 +2203,57 @@ static void initialize_paths_and_settings(void) {
                    sizeof(g_sram_path) / sizeof(g_sram_path[0]),
                    g_saves_directory, L"SimCity-USA.srm");
 
-    (void)_snwprintf(g_audio_ini_path,
-                     sizeof(g_audio_ini_path) / sizeof(g_audio_ini_path[0]),
-                     L"%s\\Launcher-Audio.ini",
-                     g_executable_directory);
-    g_audio_ini_path[(sizeof(g_audio_ini_path) /
-                      sizeof(g_audio_ini_path[0])) - 1u] = L'\0';
-    simcity_audio_settings_load(&g_audio_settings, g_audio_ini_path);
-    (void)_snwprintf(g_frontend_ini_path,
-                     sizeof(g_frontend_ini_path) / sizeof(g_frontend_ini_path[0]),
-                     L"%s\\Launcher-Frontend.ini",
-                     g_executable_directory);
-    g_frontend_ini_path[(sizeof(g_frontend_ini_path) /
-                         sizeof(g_frontend_ini_path[0])) - 1u] = L'\0';
-    simcity_frontend_settings_win32_load(&g_frontend_settings,
-                                         g_frontend_ini_path);
+    (void)_snwprintf(g_settings_ini_path,
+                     sizeof(g_settings_ini_path) /
+                     sizeof(g_settings_ini_path[0]),
+                     L"%s\\settings.ini", g_executable_directory);
+    g_settings_ini_path[(sizeof(g_settings_ini_path) /
+                         sizeof(g_settings_ini_path[0])) - 1u] = L'\0';
+    (void)_snwprintf(legacy_audio_ini,
+                     sizeof(legacy_audio_ini) / sizeof(legacy_audio_ini[0]),
+                     L"%s\\Launcher-Audio.ini", g_executable_directory);
+    legacy_audio_ini[(sizeof(legacy_audio_ini) /
+                      sizeof(legacy_audio_ini[0])) - 1u] = L'\0';
+    (void)_snwprintf(legacy_frontend_ini,
+                     sizeof(legacy_frontend_ini) /
+                     sizeof(legacy_frontend_ini[0]),
+                     L"%s\\Launcher-Frontend.ini", g_executable_directory);
+    legacy_frontend_ini[(sizeof(legacy_frontend_ini) /
+                         sizeof(legacy_frontend_ini[0])) - 1u] = L'\0';
+    unified_exists = GetFileAttributesW(g_settings_ini_path) !=
+                     INVALID_FILE_ATTRIBUTES;
+    simcity_frontend_settings_win32_load(
+        &g_frontend_settings,
+        !unified_exists && GetFileAttributesW(legacy_frontend_ini) !=
+            INVALID_FILE_ATTRIBUTES ? legacy_frontend_ini :
+                                      g_settings_ini_path);
+    simcity_audio_settings_load(
+        &g_audio_settings,
+        !unified_exists && GetFileAttributesW(legacy_audio_ini) !=
+            INVALID_FILE_ATTRIBUTES ? legacy_audio_ini :
+                                      g_settings_ini_path);
+    if (!unified_exists) {
+        int frontend_saved;
+        migrated_rom_path[0] = L'\0';
+        (void)GetPrivateProfileStringW(
+            L"ROM", L"Path", L"", migrated_rom_path,
+            (DWORD)(sizeof(migrated_rom_path) /
+                    sizeof(migrated_rom_path[0])), legacy_frontend_ini);
+        frontend_saved = simcity_frontend_settings_win32_save(
+            &g_frontend_settings, g_settings_ini_path);
+        simcity_audio_settings_save(&g_audio_settings, g_settings_ini_path);
+        if (migrated_rom_path[0])
+            (void)WritePrivateProfileStringW(
+                L"ROM", L"Path", migrated_rom_path, g_settings_ini_path);
+        (void)WritePrivateProfileStringW(NULL, NULL, NULL,
+                                         g_settings_ini_path);
+        if (frontend_saved &&
+            GetFileAttributesW(g_settings_ini_path) !=
+                INVALID_FILE_ATTRIBUTES) {
+            (void)DeleteFileW(legacy_frontend_ini);
+            (void)DeleteFileW(legacy_audio_ini);
+        }
+    }
     join_wide_path(gamepad_database,
                    sizeof(gamepad_database) / sizeof(gamepad_database[0]),
                    g_executable_directory, L"gamecontrollerdb.txt");
@@ -2213,7 +2265,16 @@ static void initialize_paths_and_settings(void) {
                  g_frontend_settings.auto_run_on_load ? BST_CHECKED : BST_UNCHECKED,
                  0);
 
-    if (find_sfc_rom(g_rom_directory, default_rom,
+    default_rom[0] = L'\0';
+    (void)GetPrivateProfileStringW(
+        L"ROM", L"Path", L"", default_rom,
+        (DWORD)(sizeof(default_rom) / sizeof(default_rom[0])),
+        g_settings_ini_path);
+    attributes = default_rom[0] ? GetFileAttributesW(default_rom) :
+                                 INVALID_FILE_ATTRIBUTES;
+    if ((attributes != INVALID_FILE_ATTRIBUTES &&
+         (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) ||
+        find_sfc_rom(g_rom_directory, default_rom,
                      sizeof(default_rom) / sizeof(default_rom[0]))) {
         g_adjacent_rom_found = 1;
         SetWindowTextW(g_rom_path, default_rom);
@@ -2257,8 +2318,8 @@ static void save_current_settings_on_exit(void) {
             SendMessageW(g_fullscreen_checkbox, BM_GETCHECK, 0, 0) ==
             BST_CHECKED;
     (void)simcity_frontend_settings_win32_save(
-        &g_frontend_settings, g_frontend_ini_path);
-    simcity_audio_settings_save(&g_audio_settings, g_audio_ini_path);
+        &g_frontend_settings, g_settings_ini_path);
+    simcity_audio_settings_save(&g_audio_settings, g_settings_ini_path);
     g_settings_saved_on_exit = 1;
 }
 
@@ -2374,7 +2435,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                         SendMessageW(g_fullscreen_checkbox, BM_GETCHECK,
                                      0, 0) == BST_CHECKED;
                     (void)simcity_frontend_settings_win32_save(
-                        &g_frontend_settings, g_frontend_ini_path);
+                        &g_frontend_settings, g_settings_ini_path);
                     update_controls();
                     return 0;
                 case ID_AUTO_RUN:
@@ -2389,7 +2450,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                         SendMessageW(g_auto_run_checkbox, BM_GETCHECK, 0, 0) ==
                         BST_CHECKED;
                     (void)simcity_frontend_settings_win32_save(
-                        &g_frontend_settings, g_frontend_ini_path);
+                        &g_frontend_settings, g_settings_ini_path);
                     set_status(g_frontend_settings.auto_run_on_load ?
                         L"Auto-Run enabled for the next launch." :
                         L"Auto-Run disabled. Adjacent ROMs will load and wait for Play.");
@@ -2658,7 +2719,7 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     if (!g_frontend_settings.getting_started_shown) {
         g_frontend_settings.getting_started_shown = 1;
         (void)simcity_frontend_settings_win32_save(
-            &g_frontend_settings, g_frontend_ini_path);
+            &g_frontend_settings, g_settings_ini_path);
         show_welcome();
     }
     continue_startup_after_welcome();
@@ -2683,6 +2744,11 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                     if (IsWindow(g_info_window) &&
                         (message.hwnd == g_info_window ||
                          IsChild(g_info_window, message.hwnd))) {
+                        if (message.message == WM_KEYDOWN &&
+                            message.wParam == VK_ESCAPE) {
+                            DestroyWindow(g_info_window);
+                            continue;
+                        }
                         if (IsDialogMessageW(g_info_window, &message))
                             continue;
                     }

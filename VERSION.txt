@@ -24,3 +24,9 @@ Changes in 1.2.0:
 - Removed the redundant Getting Started, shortcut-only, and first-run ROM notice windows.
 - Removed the remaining Help menu, Ctrl+O/F9 extras, and WAV recorder so Bubble Bobble's File/Settings menu structure is retained; SimCity's slot-based snapshots are the deliberate frontend difference.
 - Renamed the toolbar Keys button to Controls and removed the redundant Audio and Controls launchers from the Settings window.
+- Changed Pause on Focus Loss to disabled by default for new installations.
+- Reworked Settings into focused General and Display groups and added the meaningful quick-snapshot slot selector.
+- Consolidated frontend, controls, audio, first-run state, snapshot slot, and remembered ROM path into one settings.ini with automatic legacy-INI migration.
+- Corrected Welcome so F2/F3 describe the snapshot windows while 1/2 describe quick save/load of the current slot.
+- Made Escape reliably close Welcome, About, Settings, Controller Bindings, Audio Settings, and snapshot windows.
+- Removed the unused ShowStatusText setting and restored the remembered external ROM path at startup.

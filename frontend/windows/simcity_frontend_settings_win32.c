@@ -97,7 +97,7 @@ static int keyboard_bindings_are_valid(
 void simcity_frontend_settings_win32_defaults(SimCityFrontendSettingsWin32 *s) {
     if (!s) return;
     memset(s, 0, sizeof(*s));
-    s->pause_on_focus_loss = 1;
+    s->pause_on_focus_loss = 0;
     s->snapshot_slot = 1;
     s->input_source = SIMCITY_INPUT_SOURCE_KEYBOARD;
     s->bindings[0]=VK_UP; s->bindings[1]=VK_DOWN;
@@ -124,11 +124,10 @@ void simcity_frontend_settings_win32_load(SimCityFrontendSettingsWin32 *s,
     simcity_frontend_settings_win32_defaults(s);
     if (!path || !*path) return;
     s->integer_scale=GetPrivateProfileIntW(L"General",L"IntegerScale",0,path);
-    s->pause_on_focus_loss=GetPrivateProfileIntW(L"General",L"PauseOnFocusLoss",1,path)!=0;
+    s->pause_on_focus_loss=GetPrivateProfileIntW(L"General",L"PauseOnFocusLoss",0,path)!=0;
     s->auto_run_on_load=GetPrivateProfileIntW(L"General",L"AutoRunOnLoad",0,path)!=0;
     s->fullscreen_on_play=GetPrivateProfileIntW(
         L"General",L"FullScreenOnPlay",0,path)!=0;
-    s->show_status_text=GetPrivateProfileIntW(L"General",L"ShowStatusText",1,path)!=0;
     s->snapshot_slot=GetPrivateProfileIntW(L"General",L"SnapshotSlot",1,path);
     s->getting_started_shown=GetPrivateProfileIntW(
         L"General",L"GettingStartedShown",0,path)!=0;
@@ -169,7 +168,6 @@ int simcity_frontend_settings_win32_save(const SimCityFrontendSettingsWin32 *s,
     ok&=write_int(L"General",L"PauseOnFocusLoss",s->pause_on_focus_loss,path);
     ok&=write_int(L"General",L"AutoRunOnLoad",s->auto_run_on_load,path);
     ok&=write_int(L"General",L"FullScreenOnPlay",s->fullscreen_on_play,path);
-    ok&=write_int(L"General",L"ShowStatusText",s->show_status_text,path);
     ok&=write_int(L"General",L"SnapshotSlot",s->snapshot_slot,path);
     ok&=write_int(L"General",L"GettingStartedShown",
                   s->getting_started_shown,path);
@@ -180,7 +178,7 @@ int simcity_frontend_settings_win32_save(const SimCityFrontendSettingsWin32 *s,
         _snwprintf_s(key,32,_TRUNCATE,L"GamepadAction%d",i);
         ok&=write_int(L"Input",key,s->gamepad_bindings[i],path);
     }
-    ok&=WritePrivateProfileStringW(NULL,NULL,NULL,path)!=0;
+    (void)WritePrivateProfileStringW(NULL,NULL,NULL,path);
     return ok;
 }
 
@@ -362,21 +360,29 @@ static LRESULT CALLBACK settings_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
         int i; wchar_t t[32]; HWND scale;
         c=(DialogContext*)GetWindowLongPtrW(w,GWLP_USERDATA);
         SetWindowTextW(w,L"SimCity 1.2.0 Frontend Settings");
-        set_font(CreateWindowW(L"BUTTON",L"General",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,14,12,512,112,w,NULL,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"General",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,14,12,512,148,w,NULL,NULL,NULL));
         set_font(CreateWindowW(L"BUTTON",L"Start a valid ROM automatically when the launcher opens",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,42,455,24,w,(HMENU)ID_AUTO_RUN,NULL,NULL));
         set_font(CreateWindowW(L"BUTTON",L"Pause the game when the app loses keyboard focus",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,76,455,24,w,(HMENU)ID_PAUSE_FOCUS,NULL,NULL));
+        set_font(CreateWindowW(L"STATIC",L"Quick snapshot slot used by 1 and 2:",WS_CHILD|WS_VISIBLE,32,112,250,22,w,NULL,NULL,NULL));
+        {
+            HWND slot=CreateWindowExW(0,L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,
+                                      290,108,90,150,w,(HMENU)ID_SLOT,NULL,NULL);
+            set_font(slot);
+            for(i=1;i<=5;i++){_snwprintf(t,32,L"Slot %d",i);SendMessageW(slot,CB_ADDSTRING,0,(LPARAM)t);}
+            SendMessageW(slot,CB_SETCURSEL,c->value.snapshot_slot-1,0);
+        }
 
-        set_font(CreateWindowW(L"BUTTON",L"Display",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,14,134,512,108,w,NULL,NULL,NULL));
-        set_font(CreateWindowW(L"STATIC",L"Game image scale:",WS_CHILD|WS_VISIBLE,32,166,150,22,w,NULL,NULL,NULL));
-        scale=CreateWindowExW(0,L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,190,162,180,160,w,(HMENU)ID_SCALE,NULL,NULL);
+        set_font(CreateWindowW(L"BUTTON",L"Display",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,14,170,512,108,w,NULL,NULL,NULL));
+        set_font(CreateWindowW(L"STATIC",L"Game image scale:",WS_CHILD|WS_VISIBLE,32,202,150,22,w,NULL,NULL,NULL));
+        scale=CreateWindowExW(0,L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,190,198,180,160,w,(HMENU)ID_SCALE,NULL,NULL);
         set_font(scale);
         SendMessageW(scale,CB_ADDSTRING,0,(LPARAM)L"Automatic (fit window)");
         for(i=1;i<=4;i++){_snwprintf(t,32,L"%dx integer scale",i);SendMessageW(scale,CB_ADDSTRING,0,(LPARAM)t);}
         SendMessageW(scale,CB_SETCURSEL,c->value.integer_scale,0);
-        set_font(CreateWindowW(L"BUTTON",L"Use full screen when Play starts",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,202,320,24,w,(HMENU)ID_FULLSCREEN_SETTING,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"Use full screen when Play starts",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,238,320,24,w,(HMENU)ID_FULLSCREEN_SETTING,NULL,NULL));
 
-        set_font(CreateWindowW(L"BUTTON",L"Apply",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,350,262,80,30,w,(HMENU)ID_APPLY,NULL,NULL));
-        set_font(CreateWindowW(L"BUTTON",L"Close",WS_CHILD|WS_VISIBLE|WS_TABSTOP,440,262,80,30,w,(HMENU)ID_CANCEL,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"Apply",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,350,296,80,30,w,(HMENU)ID_APPLY,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"Close",WS_CHILD|WS_VISIBLE|WS_TABSTOP,440,296,80,30,w,(HMENU)ID_CANCEL,NULL,NULL));
         SendDlgItemMessageW(w,ID_PAUSE_FOCUS,BM_SETCHECK,c->value.pause_on_focus_loss?BST_CHECKED:BST_UNCHECKED,0);
         SendDlgItemMessageW(w,ID_AUTO_RUN,BM_SETCHECK,c->value.auto_run_on_load?BST_CHECKED:BST_UNCHECKED,0);
         SendDlgItemMessageW(w,ID_FULLSCREEN_SETTING,BM_SETCHECK,
@@ -389,6 +395,7 @@ static LRESULT CALLBACK settings_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
             c->value.integer_scale=(int)SendDlgItemMessageW(w,ID_SCALE,CB_GETCURSEL,0,0);
             c->value.pause_on_focus_loss=SendDlgItemMessageW(w,ID_PAUSE_FOCUS,BM_GETCHECK,0,0)==BST_CHECKED;
             c->value.auto_run_on_load=SendDlgItemMessageW(w,ID_AUTO_RUN,BM_GETCHECK,0,0)==BST_CHECKED;
+            c->value.snapshot_slot=(int)SendDlgItemMessageW(w,ID_SLOT,CB_GETCURSEL,0,0)+1;
             c->value.fullscreen_on_play=SendDlgItemMessageW(
                 w,ID_FULLSCREEN_SETTING,BM_GETCHECK,0,0)==BST_CHECKED;
             SendDlgItemMessageW(c->parent,1020,BM_SETCHECK,
@@ -574,6 +581,9 @@ static int run_dialog(HWND parent,HINSTANCE inst,const wchar_t *cls,const wchar_
             else SendMessageW(w,WM_COMPLETE_KEYBOARD_CAPTURE,msg.wParam,0);
             continue;
         }
+        if(msg.message==WM_KEYDOWN&&msg.wParam==VK_ESCAPE){
+            DestroyWindow(w);continue;
+        }
         if(!IsDialogMessageW(w,&msg)){TranslateMessage(&msg);DispatchMessageW(&msg);}
     }
     if(parent_enabled)EnableWindow(parent,TRUE);
@@ -581,5 +591,5 @@ static int run_dialog(HWND parent,HINSTANCE inst,const wchar_t *cls,const wchar_
     if(message_result==0)PostQuitMessage((int)msg.wParam);
     return c.accepted;
 }
-int simcity_frontend_settings_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s){return run_dialog(p,i,SETTINGS_CLASS,L"SimCity 1.2.0 Frontend Settings",settings_proc,560,350,s,NULL);}
+int simcity_frontend_settings_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s){return run_dialog(p,i,SETTINGS_CLASS,L"SimCity 1.2.0 Frontend Settings",settings_proc,560,385,s,NULL);}
 int simcity_frontend_controls_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s,SimCityGamepadInputWin32 *gamepad){return run_dialog(p,i,CONTROLS_CLASS,L"SimCity 1.2.0 Controller Bindings",controls_proc,760,640,s,gamepad);}

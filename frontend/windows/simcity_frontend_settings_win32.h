@@ -22,7 +22,6 @@ typedef struct SimCityFrontendSettingsWin32 {
     int pause_on_focus_loss;
     int auto_run_on_load;
     int fullscreen_on_play;
-    int show_status_text;
     int snapshot_slot;
     int input_source;
     int input_source_saved;
