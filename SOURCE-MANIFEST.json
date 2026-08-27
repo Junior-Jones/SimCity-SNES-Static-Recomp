@@ -2,8 +2,8 @@
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
   "version": "1.1.2",
-  "file_count": 268,
-  "total_bytes": 32291565,
+  "file_count": 270,
+  "total_bytes": 32293749,
   "files": [
     {
       "path": ".gitattributes",
@@ -41,14 +41,19 @@
       "sha256": "65d65c49b31e79863cf3a11193f2381e33a73f85b8d5c8b5144ad4e395057604"
     },
     {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "size": 710,
+      "sha256": "58aa7f15217cd91b15fd2ff404668e90065c5116e7c120de9a616ca21ae8b280"
+    },
+    {
       "path": "VERSION.txt",
       "size": 269,
       "sha256": "06fb2567224b7ed50278bfc05c806dfeef9313a260dcac52c979fb58ce2e001c"
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
-      "size": 2913,
-      "sha256": "2f4cc90e1b1e0d8846c7337e4b7f30282609d3d961ada69fe0080ceaaa73722b"
+      "size": 3510,
+      "sha256": "e4d9a0a6fdc1322daee59166136d9037002c356ebd4663e4310dfd19760f13d0"
     },
     {
       "path": "frontend/windows/launcher_version.rc",
@@ -1329,6 +1334,11 @@
       "path": "static-recomp/static-audio/snes9x-bapu-aot/static_types.hpp",
       "size": 1124,
       "sha256": "77de4aaa03eceaf5705b1d6c8139e97b336667354cc3dc483593f70d33d20b3b"
+    },
+    {
+      "path": "third_party/SDL_GameControllerDB-LICENSE.txt",
+      "size": 877,
+      "sha256": "737fece95d2c7e0146fe81caa96788e3921605e874b426c95c51aae80f4f1187"
     },
     {
       "path": "third_party/gamecontrollerdb.txt",

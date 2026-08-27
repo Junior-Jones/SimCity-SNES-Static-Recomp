@@ -71,6 +71,12 @@ add_custom_command(TARGET simcity-launcher POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${SIMCITY_SDL_SOURCE_DIR}/LICENSE.txt"
         "$<TARGET_FILE_DIR:simcity-launcher>/SDL-LICENSE.txt"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/third_party/SDL_GameControllerDB-LICENSE.txt"
+        "$<TARGET_FILE_DIR:simcity-launcher>/SDL_GameControllerDB-LICENSE.txt"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
+        "$<TARGET_FILE_DIR:simcity-launcher>/THIRD-PARTY-NOTICES.txt"
     VERBATIM
 )
 install(TARGETS simcity-launcher RUNTIME DESTINATION . COMPONENT Runtime)
@@ -78,3 +84,7 @@ install(FILES "${SIMCITY_GAMEPAD_DATABASE}"
     DESTINATION . RENAME gamecontrollerdb.txt COMPONENT Runtime)
 install(FILES "${SIMCITY_SDL_SOURCE_DIR}/LICENSE.txt"
     DESTINATION . RENAME SDL-LICENSE.txt COMPONENT Runtime)
+install(FILES "${CMAKE_SOURCE_DIR}/third_party/SDL_GameControllerDB-LICENSE.txt"
+    DESTINATION . COMPONENT Runtime)
+install(FILES "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
+    DESTINATION . COMPONENT Runtime)
