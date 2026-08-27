@@ -15,8 +15,6 @@
 #define ID_APPLY 3108
 #define ID_CANCEL 3109
 #define ID_FULLSCREEN_SETTING 3110
-#define ID_OPEN_AUDIO 3111
-#define ID_OPEN_KEYS 3112
 #define ID_CONTROL_BASE 3200
 #define ID_INPUT_SOURCE 3300
 #define ID_CONTROLS_ACCESSIBLE 3301
@@ -377,13 +375,8 @@ static LRESULT CALLBACK settings_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
         SendMessageW(scale,CB_SETCURSEL,c->value.integer_scale,0);
         set_font(CreateWindowW(L"BUTTON",L"Use full screen when Play starts",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,202,320,24,w,(HMENU)ID_FULLSCREEN_SETTING,NULL,NULL));
 
-        set_font(CreateWindowW(L"BUTTON",L"Audio and controls",WS_CHILD|WS_VISIBLE|BS_GROUPBOX,14,252,512,92,w,NULL,NULL,NULL));
-        set_font(CreateWindowW(L"BUTTON",L"Audio Settings...",WS_CHILD|WS_VISIBLE|WS_TABSTOP,32,286,220,30,w,(HMENU)ID_OPEN_AUDIO,NULL,NULL));
-        set_font(CreateWindowW(L"BUTTON",L"Controls...",WS_CHILD|WS_VISIBLE|WS_TABSTOP,264,286,220,30,w,(HMENU)ID_OPEN_KEYS,NULL,NULL));
-        set_font(CreateWindowW(L"STATIC",L"Configure audio output and keyboard or gamepad controls.",WS_CHILD|WS_VISIBLE,32,320,470,20,w,NULL,NULL,NULL));
-
-        set_font(CreateWindowW(L"BUTTON",L"Apply",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,350,360,80,30,w,(HMENU)ID_APPLY,NULL,NULL));
-        set_font(CreateWindowW(L"BUTTON",L"Close",WS_CHILD|WS_VISIBLE|WS_TABSTOP,440,360,80,30,w,(HMENU)ID_CANCEL,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"Apply",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,350,262,80,30,w,(HMENU)ID_APPLY,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"Close",WS_CHILD|WS_VISIBLE|WS_TABSTOP,440,262,80,30,w,(HMENU)ID_CANCEL,NULL,NULL));
         SendDlgItemMessageW(w,ID_PAUSE_FOCUS,BM_SETCHECK,c->value.pause_on_focus_loss?BST_CHECKED:BST_UNCHECKED,0);
         SendDlgItemMessageW(w,ID_AUTO_RUN,BM_SETCHECK,c->value.auto_run_on_load?BST_CHECKED:BST_UNCHECKED,0);
         SendDlgItemMessageW(w,ID_FULLSCREEN_SETTING,BM_SETCHECK,
@@ -392,14 +385,6 @@ static LRESULT CALLBACK settings_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
     case WM_COMMAND:
         if(!c)break;
         switch(LOWORD(wp)){
-        case ID_OPEN_AUDIO:
-            EnableWindow(w,FALSE);
-            SendMessageW(c->parent,WM_COMMAND,1005,0);
-            EnableWindow(w,TRUE);SetForegroundWindow(w);return 0;
-        case ID_OPEN_KEYS:
-            EnableWindow(w,FALSE);
-            SendMessageW(c->parent,WM_COMMAND,1004,0);
-            EnableWindow(w,TRUE);SetForegroundWindow(w);return 0;
         case ID_APPLY:
             c->value.integer_scale=(int)SendDlgItemMessageW(w,ID_SCALE,CB_GETCURSEL,0,0);
             c->value.pause_on_focus_loss=SendDlgItemMessageW(w,ID_PAUSE_FOCUS,BM_GETCHECK,0,0)==BST_CHECKED;
@@ -596,5 +581,5 @@ static int run_dialog(HWND parent,HINSTANCE inst,const wchar_t *cls,const wchar_
     if(message_result==0)PostQuitMessage((int)msg.wParam);
     return c.accepted;
 }
-int simcity_frontend_settings_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s){return run_dialog(p,i,SETTINGS_CLASS,L"SimCity 1.2.0 Frontend Settings",settings_proc,560,450,s,NULL);}
+int simcity_frontend_settings_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s){return run_dialog(p,i,SETTINGS_CLASS,L"SimCity 1.2.0 Frontend Settings",settings_proc,560,350,s,NULL);}
 int simcity_frontend_controls_win32_dialog(HWND p,HINSTANCE i,SimCityFrontendSettingsWin32 *s,SimCityGamepadInputWin32 *gamepad){return run_dialog(p,i,CONTROLS_CLASS,L"SimCity 1.2.0 Controller Bindings",controls_proc,760,640,s,gamepad);}

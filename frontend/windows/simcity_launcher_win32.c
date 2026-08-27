@@ -2292,7 +2292,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 328, 8, 82, 30, window,
                 (HMENU)(INT_PTR)ID_FRONTEND_SETTINGS, g_instance, NULL);
             g_keys_button = CreateWindowExW(
-                0, L"BUTTON", L"&Keys",
+                0, L"BUTTON", L"&Controls",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                 416, 8, 62, 30, window, (HMENU)(INT_PTR)ID_KEYS,
                 g_instance, NULL);

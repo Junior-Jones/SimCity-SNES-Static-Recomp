@@ -23,3 +23,4 @@ Changes in 1.2.0:
 - Moved snapshots into Saves and added release-safe Saves and Screenshots folders with Readme files.
 - Removed the redundant Getting Started, shortcut-only, and first-run ROM notice windows.
 - Removed the remaining Help menu, Ctrl+O/F9 extras, and WAV recorder so Bubble Bobble's File/Settings menu structure is retained; SimCity's slot-based snapshots are the deliberate frontend difference.
+- Renamed the toolbar Keys button to Controls and removed the redundant Audio and Controls launchers from the Settings window.

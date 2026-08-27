@@ -3,7 +3,7 @@
   "platform": "Windows",
   "version": "1.2.0",
   "file_count": 276,
-  "total_bytes": 19332618,
+  "total_bytes": 19331764,
   "files": [
     {
       "path": ".gitattributes",
@@ -62,8 +62,8 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 1883,
-      "sha256": "ed25d4439f9052a5d3f08056321bd67f899ac3440e578aa74f07f47ba252d4cd"
+      "size": 2010,
+      "sha256": "6083a691c3796cb44284f34f7f3c41f6a032a671a1418af41bc900d402501ad4"
     },
     {
       "path": "frontend/common/simcity_input_latch.c",
@@ -107,8 +107,8 @@
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 33451,
-      "sha256": "c719162f769c0a7869b166b00fbea1e0d67db61d1b2a2c5a5b3252c806fd01d1"
+      "size": 32466,
+      "sha256": "fa17b5565a55494086d769ece6edfec3beb71f357c4a5855656ae38e88af5332"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
@@ -117,8 +117,8 @@
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 108198,
-      "sha256": "2c0ab31d07ee355eb0494ba661211ffebc74d5a82a8c3f4d81cfbb4e535c9366"
+      "size": 108202,
+      "sha256": "313c4edbfc063988f74a8b58a9489a89697a20e0067f2e6e3528891acabd4759"
     },
     {
       "path": "static-recomp/CMakeLists.txt",
