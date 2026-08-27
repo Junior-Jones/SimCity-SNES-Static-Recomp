@@ -3,7 +3,7 @@
   "platform": "Windows",
   "version": "1.2.0",
   "file_count": 276,
-  "total_bytes": 19336616,
+  "total_bytes": 19334547,
   "files": [
     {
       "path": ".gitattributes",
@@ -27,13 +27,13 @@
     },
     {
       "path": "README-FIRST.txt",
-      "size": 1016,
-      "sha256": "78bd4491f6df14fcf45e4583716f03d1d89af0c0b5a75b8a7fe7f112db5e6188"
+      "size": 852,
+      "sha256": "bc8350dc4bbf1006cfd3cf529b978a36a0a474082ad3bef680094a08f1673312"
     },
     {
       "path": "README.md",
-      "size": 4923,
-      "sha256": "83f6b27b334c4f5efec1c8eb96a4698d876c08051ac72940b7bfa07f822a00b4"
+      "size": 2832,
+      "sha256": "c1e44be10d15e82e739586d07a75667210552d5fd3e5d3c842065723197ada20"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
@@ -62,8 +62,8 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 2689,
-      "sha256": "093c3650743654aa6db6afbb061b9ecf11f60f8c72b9950485090dfd6ce2dec9"
+      "size": 2775,
+      "sha256": "1a239d9fd038f3b41f008eda3c632831bb926c88243843b2117aadfc496e8002"
     },
     {
       "path": "frontend/common/simcity_input_latch.c",
@@ -107,18 +107,18 @@
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 33052,
-      "sha256": "d873f819fc9b662301c17d2607aa4a30eb4138fe399de18414f283bd7d3af69a"
+      "size": 33176,
+      "sha256": "a9b86a6c4d99c95384820976606d894d160a4fbab2bc1412bbb0374f17204254"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
-      "size": 2149,
-      "sha256": "eb900f9786246b595248fde989159ce3b5612b8f9d63588350f1e9dd40ceac88"
+      "size": 2141,
+      "sha256": "ca37af5a7a691fde94b8f5947eb5690531baa3ca1d9d1f599411704187432b07"
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 111218,
-      "sha256": "99af3c5a2422ac3a720eed6e2482650fb02fd5a398ddf0acef53e6664843ab1d"
+      "size": 111202,
+      "sha256": "ed0eaf7a061780a5140b8ad76576f17065c351ebafb390497cc1399cba95354a"
     },
     {
       "path": "static-recomp/CMakeLists.txt",

@@ -2716,8 +2716,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     initialize_paths_and_settings();
     ShowWindow(g_window, SW_SHOWNORMAL);
     UpdateWindow(g_window);
-    if (!g_frontend_settings.getting_started_shown) {
-        g_frontend_settings.getting_started_shown = 1;
+    if (!g_frontend_settings.welcome_shown) {
+        g_frontend_settings.welcome_shown = 1;
         (void)simcity_frontend_settings_win32_save(
             &g_frontend_settings, g_settings_ini_path);
         show_welcome();

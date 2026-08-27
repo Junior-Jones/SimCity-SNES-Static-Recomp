@@ -4,10 +4,10 @@ Place the exact matching .sfc ROM in the Rom folder, or use Browse to select it,
 
 Save data is written atomically beside Launcher.exe at Saves\SimCity-USA.srm.
 
-The Windows launcher uses direct Win32 GDI presentation, SDL3 gamepad input, and Full Static audio at 32,040 Hz stereo PCM. Speaker output uses four native WinMM buffers with full pre-roll and resume fade.
+The Windows launcher uses a native static recompilation core with Win32/GDI presentation, SDL3 gamepad input, and Full Static audio at 32,040 Hz stereo PCM through native WinMM playback.
 
-The release includes Saves and Screenshots folders with short Readme files. Battery saves and snapshots are stored in Saves. Screenshots are stored in Screenshots, with per-capture diagnostic logs under Screenshots\Logs.
+Frontend, controls, audio, display, snapshot slot, remembered ROM path, and first-run Welcome status are stored together in settings.ini. Deleting settings.ini restores defaults and displays Welcome again.
 
-Launcher, display, audio, controls, first-run, snapshot-slot, and remembered ROM settings are stored together in settings.ini beside Launcher.exe. Existing Launcher-Frontend.ini and Launcher-Audio.ini files are migrated automatically on first launch.
+Screenshots, Snapshots, Audio, Saves, and Logs folders are created only when their matching feature first writes a file.
 
 See Rom\readme.txt and ROM-REQUIREMENTS.txt for the required ROM details.

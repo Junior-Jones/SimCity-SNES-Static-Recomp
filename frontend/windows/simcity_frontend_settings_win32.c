@@ -129,8 +129,10 @@ void simcity_frontend_settings_win32_load(SimCityFrontendSettingsWin32 *s,
     s->fullscreen_on_play=GetPrivateProfileIntW(
         L"General",L"FullScreenOnPlay",0,path)!=0;
     s->snapshot_slot=GetPrivateProfileIntW(L"General",L"SnapshotSlot",1,path);
-    s->getting_started_shown=GetPrivateProfileIntW(
-        L"General",L"GettingStartedShown",0,path)!=0;
+    s->welcome_shown=GetPrivateProfileIntW(
+        L"General",L"WelcomeShown",
+        GetPrivateProfileIntW(L"General",L"GettingStartedShown",0,path),
+        path)!=0;
     source=GetPrivateProfileIntW(L"Input",L"Source",-1,path);
     if(source==SIMCITY_INPUT_SOURCE_KEYBOARD||source==SIMCITY_INPUT_SOURCE_GAMEPAD){
         s->input_source=source;s->input_source_saved=1;
@@ -169,8 +171,9 @@ int simcity_frontend_settings_win32_save(const SimCityFrontendSettingsWin32 *s,
     ok&=write_int(L"General",L"AutoRunOnLoad",s->auto_run_on_load,path);
     ok&=write_int(L"General",L"FullScreenOnPlay",s->fullscreen_on_play,path);
     ok&=write_int(L"General",L"SnapshotSlot",s->snapshot_slot,path);
-    ok&=write_int(L"General",L"GettingStartedShown",
-                  s->getting_started_shown,path);
+    ok&=write_int(L"General",L"WelcomeShown",s->welcome_shown,path);
+    ok&=WritePrivateProfileStringW(
+        L"General",L"GettingStartedShown",NULL,path)!=0;
     ok&=write_int(L"Input",L"Source",s->input_source,path);
     for(i=0;i<SIMCITY_WIN_BINDING_COUNT;i++){
         _snwprintf_s(key,32,_TRUNCATE,L"Action%d",i);

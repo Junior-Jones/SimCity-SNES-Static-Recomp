@@ -25,7 +25,7 @@ typedef struct SimCityFrontendSettingsWin32 {
     int snapshot_slot;
     int input_source;
     int input_source_saved;
-    int getting_started_shown;
+    int welcome_shown;
     UINT bindings[SIMCITY_WIN_BINDING_COUNT];
     int gamepad_bindings[SIMCITY_WIN_BINDING_COUNT];
 } SimCityFrontendSettingsWin32;

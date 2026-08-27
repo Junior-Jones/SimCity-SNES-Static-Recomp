@@ -26,7 +26,7 @@ Changes in 1.2.0:
 - Renamed the toolbar Keys button to Controls and removed the redundant Audio and Controls launchers from the Settings window.
 - Changed Pause on Focus Loss to disabled by default for new installations.
 - Reworked Settings into focused General and Display groups and added the meaningful quick-snapshot slot selector.
-- Consolidated frontend, controls, audio, first-run state, snapshot slot, and remembered ROM path into one settings.ini with automatic legacy-INI migration.
+- Consolidated frontend, controls, audio, snapshot slot, remembered ROM path, and the explicit WelcomeShown first-run flag into one settings.ini with automatic legacy-INI migration; deleting the file restores defaults and shows Welcome again.
 - Corrected Welcome so F2/F3 describe the snapshot windows while 1/2 describe quick save/load of the current slot.
 - Made Escape reliably close Welcome, About, Settings, Controller Bindings, Audio Settings, and snapshot windows.
 - Removed the unused ShowStatusText setting and restored the remembered external ROM path at startup.
