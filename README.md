@@ -1,4 +1,4 @@
-# SimCity SNES Static Recomp 1.1.2
+# SimCity SNES Static Recomp 1.2.0
 
 Native Windows static recompilation frontend and core for SimCity on the Super Nintendo Entertainment System.
 
@@ -39,6 +39,19 @@ execution path.
 
 Reference code retained for research or provenance is not linked into the
 production launcher and cannot be selected as an automatic runtime fallback.
+
+## Static-core compaction in 1.2.0
+
+Version 1.2.0 replaces repeated generated entry and exit bookkeeping with
+compile-time C macros and removes 2,503 later exact contexts that were
+unreachable because an earlier production dispatch stage already owned the
+same `PBR:PC:E:M:X` key. The dispatch order and every retained context key are
+unchanged. The compaction introduces no runtime opcode fetch, decoder,
+interpreter, JIT or fallback path.
+
+Machine-readable receipts in `static-recomp/generated` record the source
+transformations and hashes. The corresponding scripts in `tools` can verify
+the compacted files without requiring the game ROM.
 
 ## Building on Windows
 

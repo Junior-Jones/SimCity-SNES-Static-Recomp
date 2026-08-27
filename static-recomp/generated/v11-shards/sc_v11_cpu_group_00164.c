@@ -18,8 +18,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059098u:
@@ -30,8 +29,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x909Au;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05909Au:
@@ -42,8 +40,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x909Cu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05909Cu:
@@ -53,8 +50,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x909Fu;
       sc_v11_op_ldx(r,(uint16_t)(0xC9E0u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05909Fu:
@@ -65,8 +61,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90A1u;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590A1u:
@@ -76,8 +71,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90A3u;
       sc_v11_op_lda(r,(uint16_t)(0x0007u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590A3u:
@@ -88,8 +82,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90A5u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590A5u:
@@ -99,8 +92,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90A8u;
       sc_v11_op_ldx(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590A8u:
@@ -111,8 +103,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90AAu;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590AAu:
@@ -123,8 +114,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90ACu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590ACu:
@@ -134,8 +124,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90AFu;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590AFu:
@@ -152,8 +141,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590B1u:
@@ -164,8 +152,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90B3u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590B3u:
@@ -176,8 +163,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90B5u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590B5u:
@@ -187,8 +173,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90B8u;
       sc_v11_op_ldx(r,(uint16_t)(0xA680u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590B8u:
@@ -199,8 +184,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90BAu;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590BAu:
@@ -210,8 +194,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90BCu;
       sc_v11_op_lda(r,(uint16_t)(0x0007u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590BCu:
@@ -222,8 +205,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90BEu;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590BEu:
@@ -233,8 +215,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90C1u;
       sc_v11_op_ldx(r,(uint16_t)(0x4000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590C1u:
@@ -245,8 +226,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90C3u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590C3u:
@@ -257,8 +237,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90C5u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590C5u:
@@ -268,8 +247,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90C8u;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590C8u:
@@ -286,8 +264,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590CAu:
@@ -298,8 +275,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90CCu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590CCu:
@@ -309,8 +285,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90CFu;
       {uint32_t a=sc_v11_ea_abs(r,0x2116u);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590CFu:
@@ -321,8 +296,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90D1u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x30u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D1u:
@@ -332,8 +306,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90D3u;
       sc_v11_op_lda(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D3u:
@@ -344,8 +317,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90D4u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D4u:
@@ -356,8 +328,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90D5u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D5u:
@@ -368,8 +339,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90D6u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D6u:
@@ -380,8 +350,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90D7u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D7u:
@@ -393,8 +362,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)(c->a&0x00FFu);
       sc_v11_set_nz8(c,(uint8_t)c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590D8u:
@@ -404,8 +372,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90DAu;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590DAu:
@@ -416,8 +383,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90DDu;
       {uint32_t a=sc_v11_ea_absx(r,0x4300u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590DDu:
@@ -427,8 +393,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90DFu;
       sc_v11_op_lda(r,(uint16_t)(0x0018u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590DFu:
@@ -439,8 +404,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90E2u;
       {uint32_t a=sc_v11_ea_absx(r,0x4301u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590E2u:
@@ -450,8 +414,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90E4u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590E4u:
@@ -462,8 +425,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90E7u;
       {uint32_t a=sc_v11_ea_absx(r,0x4302u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590E7u:
@@ -473,8 +435,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90E9u;
       sc_v11_op_lda(r,(uint16_t)(0x0080u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590E9u:
@@ -485,8 +446,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90ECu;
       {uint32_t a=sc_v11_ea_absx(r,0x4303u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590ECu:
@@ -496,8 +456,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90EEu;
       sc_v11_op_lda(r,(uint16_t)(0x007Eu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590EEu:
@@ -508,8 +467,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90F1u;
       {uint32_t a=sc_v11_ea_absx(r,0x4304u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590F1u:
@@ -519,8 +477,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90F3u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590F3u:
@@ -531,8 +488,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90F6u;
       {uint32_t a=sc_v11_ea_absx(r,0x4305u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590F6u:
@@ -542,8 +498,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90F8u;
       sc_v11_op_lda(r,(uint16_t)(0x0080u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590F8u:
@@ -554,8 +509,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x90FBu;
       {uint32_t a=sc_v11_ea_absx(r,0x4306u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590FBu:
@@ -565,8 +519,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90FDu;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590FDu:
@@ -576,8 +529,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x90FFu;
       sc_v11_op_ldx(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0590FFu:
@@ -588,8 +540,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9101u;
       if((c->p&SC_FLAG_Z)!=0u)c->pc=0x9105u;
       if(c->pc!=0x9101u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x9101u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059101u:
@@ -600,8 +551,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9102u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059102u:
@@ -613,8 +563,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)((c->x+(-1))&0x00FFu);
       sc_v11_set_nz8(c,(uint8_t)c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059103u:
@@ -625,8 +574,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9105u;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x9101u;
       if(c->pc!=0x9105u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x9105u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059105u:
@@ -636,8 +584,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9108u;
       {uint32_t a=sc_v11_ea_abs(r,0x420Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059108u:
@@ -648,8 +595,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x910Au;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05910Au:
@@ -660,8 +606,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x910Cu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05910Cu:
@@ -671,8 +616,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x910Fu;
       sc_v11_op_ldx(r,(uint16_t)(0xC930u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05910Fu:
@@ -683,8 +627,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9111u;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059111u:
@@ -694,8 +637,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9113u;
       sc_v11_op_lda(r,(uint16_t)(0x0007u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059113u:
@@ -706,8 +648,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9115u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059115u:
@@ -717,8 +658,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9118u;
       sc_v11_op_ldx(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059118u:
@@ -729,8 +669,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x911Au;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05911Au:
@@ -741,8 +680,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x911Cu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05911Cu:
@@ -752,8 +690,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x911Fu;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05911Fu:
@@ -770,8 +707,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059121u:
@@ -782,8 +718,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9123u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059123u:
@@ -794,8 +729,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9125u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059125u:
@@ -805,8 +739,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9128u;
       sc_v11_op_ldx(r,(uint16_t)(0x9224u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059128u:
@@ -817,8 +750,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x912Au;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05912Au:
@@ -828,8 +760,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x912Cu;
       sc_v11_op_lda(r,(uint16_t)(0x000Bu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05912Cu:
@@ -840,8 +771,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x912Eu;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05912Eu:
@@ -851,8 +781,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9131u;
       sc_v11_op_ldx(r,(uint16_t)(0x2000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059131u:
@@ -863,8 +792,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9133u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059133u:
@@ -875,8 +803,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9135u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059135u:
@@ -886,8 +813,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9138u;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059138u:
@@ -904,8 +830,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05913Au:
@@ -916,8 +841,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x913Cu;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05913Cu:
@@ -928,8 +852,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x913Eu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05913Eu:
@@ -939,8 +862,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9141u;
       sc_v11_op_ldx(r,(uint16_t)(0x942Bu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059141u:
@@ -951,8 +873,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9143u;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059143u:
@@ -962,8 +883,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9145u;
       sc_v11_op_lda(r,(uint16_t)(0x000Bu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059145u:
@@ -974,8 +894,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9147u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059147u:
@@ -985,8 +904,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x914Au;
       sc_v11_op_ldx(r,(uint16_t)(0x3000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05914Au:
@@ -997,8 +915,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x914Cu;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05914Cu:
@@ -1009,8 +926,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x914Eu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05914Eu:
@@ -1020,8 +936,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9151u;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059151u:
@@ -1038,8 +953,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059153u:
@@ -1050,8 +964,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9155u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059155u:
@@ -1062,8 +975,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9157u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059157u:
@@ -1073,8 +985,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x915Au;
       sc_v11_op_ldx(r,(uint16_t)(0x966Bu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05915Au:
@@ -1085,8 +996,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x915Cu;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05915Cu:
@@ -1096,8 +1006,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x915Eu;
       sc_v11_op_lda(r,(uint16_t)(0x000Bu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05915Eu:
@@ -1108,8 +1017,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9160u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059160u:
@@ -1119,8 +1027,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9163u;
       sc_v11_op_ldx(r,(uint16_t)(0x4000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059163u:
@@ -1131,8 +1038,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9165u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059165u:
@@ -1143,8 +1049,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9167u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059167u:
@@ -1154,8 +1059,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x916Au;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05916Au:
@@ -1172,8 +1076,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05916Cu:
@@ -1184,8 +1087,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x916Eu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05916Eu:
@@ -1195,8 +1097,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9171u;
       sc_v11_op_lda(r,(uint16_t)(0x4000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059171u:
@@ -1206,8 +1107,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9174u;
       {uint32_t a=sc_v11_ea_abs(r,0x2116u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059174u:
@@ -1218,8 +1118,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9176u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x30u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059176u:
@@ -1229,8 +1128,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9178u;
       sc_v11_op_lda(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059178u:
@@ -1241,8 +1139,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9179u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059179u:
@@ -1253,8 +1150,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x917Au;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05917Au:
@@ -1265,8 +1161,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x917Bu;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05917Bu:
@@ -1277,8 +1172,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x917Cu;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05917Cu:
@@ -1290,8 +1184,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)(c->a&0x00FFu);
       sc_v11_set_nz8(c,(uint8_t)c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05917Du:
@@ -1301,8 +1194,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x917Fu;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05917Fu:
@@ -1313,8 +1205,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9182u;
       {uint32_t a=sc_v11_ea_absx(r,0x4300u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059182u:
@@ -1324,8 +1215,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9184u;
       sc_v11_op_lda(r,(uint16_t)(0x0018u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059184u:
@@ -1336,8 +1226,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9187u;
       {uint32_t a=sc_v11_ea_absx(r,0x4301u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059187u:
@@ -1347,8 +1236,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9189u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059189u:
@@ -1359,8 +1247,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x918Cu;
       {uint32_t a=sc_v11_ea_absx(r,0x4302u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05918Cu:
@@ -1370,8 +1257,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x918Eu;
       sc_v11_op_lda(r,(uint16_t)(0x0080u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05918Eu:
@@ -1382,8 +1268,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9191u;
       {uint32_t a=sc_v11_ea_absx(r,0x4303u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059191u:
@@ -1393,8 +1278,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9193u;
       sc_v11_op_lda(r,(uint16_t)(0x007Eu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059193u:
@@ -1405,8 +1289,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9196u;
       {uint32_t a=sc_v11_ea_absx(r,0x4304u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059196u:
@@ -1416,8 +1299,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9198u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059198u:
@@ -1428,8 +1310,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x919Bu;
       {uint32_t a=sc_v11_ea_absx(r,0x4305u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05919Bu:
@@ -1439,8 +1320,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x919Du;
       sc_v11_op_lda(r,(uint16_t)(0x0060u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05919Du:
@@ -1451,8 +1331,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91A0u;
       {uint32_t a=sc_v11_ea_absx(r,0x4306u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591A0u:
@@ -1462,8 +1341,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91A2u;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591A2u:
@@ -1473,8 +1351,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91A4u;
       sc_v11_op_ldx(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591A4u:
@@ -1485,8 +1362,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91A6u;
       if((c->p&SC_FLAG_Z)!=0u)c->pc=0x91AAu;
       if(c->pc!=0x91A6u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x91A6u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591A6u:
@@ -1497,8 +1373,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91A7u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591A7u:
@@ -1510,8 +1385,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)((c->x+(-1))&0x00FFu);
       sc_v11_set_nz8(c,(uint8_t)c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591A8u:
@@ -1522,8 +1396,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91AAu;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x91A6u;
       if(c->pc!=0x91AAu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x91AAu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591AAu:
@@ -1533,8 +1406,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91ADu;
       {uint32_t a=sc_v11_ea_abs(r,0x420Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591ADu:
@@ -1545,8 +1417,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91AFu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x30u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591AFu:
@@ -1557,8 +1428,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91B0u;
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push8(r,c->dbr))return 0;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591B0u:
@@ -1568,8 +1438,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91B3u;
       sc_v11_op_ldx(r,(uint16_t)(0xB000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591B3u:
@@ -1579,8 +1448,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91B6u;
       sc_v11_op_ldy(r,(uint16_t)(0x2840u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591B6u:
@@ -1590,8 +1458,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91B9u;
       sc_v11_op_lda(r,(uint16_t)(0x07FFu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591B9u:
@@ -1607,8 +1474,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->dbr=0x7Eu;
       if(c->a!=0xFFFFu)c->pc=0x91B9u;
       sc_v11_scheduler_internal_cycle(r,2u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591BCu:
@@ -1618,8 +1484,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91BFu;
       sc_v11_op_ldx(r,(uint16_t)(0xC000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591BFu:
@@ -1629,8 +1494,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91C2u;
       sc_v11_op_ldy(r,(uint16_t)(0x3040u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591C2u:
@@ -1640,8 +1504,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91C5u;
       sc_v11_op_lda(r,(uint16_t)(0x0FFFu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591C5u:
@@ -1657,8 +1520,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->dbr=0x7Eu;
       if(c->a!=0xFFFFu)c->pc=0x91C5u;
       sc_v11_scheduler_internal_cycle(r,2u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591C8u:
@@ -1670,8 +1532,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,2u);
       c->dbr=sc_v11_pop8(r);
       sc_v11_set_nz8(c,c->dbr);
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591C9u:
@@ -1682,8 +1543,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91CBu;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591CBu:
@@ -1694,8 +1554,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91CDu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591CDu:
@@ -1705,8 +1564,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91D0u;
       sc_v11_op_ldx(r,(uint16_t)(0x89D8u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591D0u:
@@ -1717,8 +1575,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91D2u;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591D2u:
@@ -1728,8 +1585,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91D4u;
       sc_v11_op_lda(r,(uint16_t)(0x000Cu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591D4u:
@@ -1740,8 +1596,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91D6u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591D6u:
@@ -1751,8 +1606,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91D9u;
       sc_v11_op_ldx(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591D9u:
@@ -1763,8 +1617,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91DBu;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591DBu:
@@ -1775,8 +1628,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91DDu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591DDu:
@@ -1786,8 +1638,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91E0u;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591E0u:
@@ -1804,8 +1655,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591E2u:
@@ -1816,8 +1666,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91E4u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591E4u:
@@ -1828,8 +1677,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91E6u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591E6u:
@@ -1839,8 +1687,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91E9u;
       {uint32_t a=sc_v11_ea_abs(r,0x2121u);sc_v11_bus_write8(r,a,(uint8_t)(0u));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591E9u:
@@ -1851,8 +1698,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91EBu;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x30u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591EBu:
@@ -1862,8 +1708,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91EDu;
       sc_v11_op_lda(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591EDu:
@@ -1874,8 +1719,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91EEu;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591EEu:
@@ -1886,8 +1730,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91EFu;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591EFu:
@@ -1898,8 +1741,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91F0u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591F0u:
@@ -1910,8 +1752,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91F1u;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591F1u:
@@ -1923,8 +1764,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)(c->a&0x00FFu);
       sc_v11_set_nz8(c,(uint8_t)c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591F2u:
@@ -1934,8 +1774,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91F4u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591F4u:
@@ -1946,8 +1785,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91F7u;
       {uint32_t a=sc_v11_ea_absx(r,0x4300u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591F7u:
@@ -1957,8 +1795,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91F9u;
       sc_v11_op_lda(r,(uint16_t)(0x0022u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591F9u:
@@ -1969,8 +1806,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x91FCu;
       {uint32_t a=sc_v11_ea_absx(r,0x4301u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591FCu:
@@ -1980,8 +1816,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x91FEu;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0591FEu:
@@ -1992,8 +1827,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9201u;
       {uint32_t a=sc_v11_ea_absx(r,0x4302u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059201u:
@@ -2003,8 +1837,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9203u;
       sc_v11_op_lda(r,(uint16_t)(0x0080u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059203u:
@@ -2015,8 +1848,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9206u;
       {uint32_t a=sc_v11_ea_absx(r,0x4303u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059206u:
@@ -2026,8 +1858,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9208u;
       sc_v11_op_lda(r,(uint16_t)(0x007Eu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059208u:
@@ -2038,8 +1869,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x920Bu;
       {uint32_t a=sc_v11_ea_absx(r,0x4304u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05920Bu:
@@ -2049,8 +1879,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x920Du;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05920Du:
@@ -2061,8 +1890,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9210u;
       {uint32_t a=sc_v11_ea_absx(r,0x4305u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059210u:
@@ -2072,8 +1900,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9212u;
       sc_v11_op_lda(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059212u:
@@ -2084,8 +1911,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9215u;
       {uint32_t a=sc_v11_ea_absx(r,0x4306u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059215u:
@@ -2095,8 +1921,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9217u;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059217u:
@@ -2106,8 +1931,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9219u;
       sc_v11_op_ldx(r,(uint16_t)(0x0002u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059219u:
@@ -2118,8 +1942,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x921Bu;
       if((c->p&SC_FLAG_Z)!=0u)c->pc=0x921Fu;
       if(c->pc!=0x921Bu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x921Bu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05921Bu:
@@ -2130,8 +1953,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x921Cu;
       sc_v11_op_shift_accumulator(r,8u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05921Cu:
@@ -2143,8 +1965,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)((c->x+(-1))&0x00FFu);
       sc_v11_set_nz8(c,(uint8_t)c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05921Du:
@@ -2155,8 +1976,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x921Fu;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x921Bu;
       if(c->pc!=0x921Fu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x921Fu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05921Fu:
@@ -2166,8 +1986,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9222u;
       {uint32_t a=sc_v11_ea_abs(r,0x420Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059222u:
@@ -2178,8 +1997,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9224u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x30u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059224u:
@@ -2190,8 +2008,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9225u;
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push8(r,c->dbr))return 0;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059225u:
@@ -2201,8 +2018,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9228u;
       sc_v11_op_ldx(r,(uint16_t)(0x8000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059228u:
@@ -2212,8 +2028,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x922Bu;
       sc_v11_op_ldy(r,(uint16_t)(0x2440u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05922Bu:
@@ -2223,8 +2038,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x922Eu;
       sc_v11_op_lda(r,(uint16_t)(0x01FFu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05922Eu:
@@ -2240,8 +2054,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->dbr=0x7Eu;
       if(c->a!=0xFFFFu)c->pc=0x922Eu;
       sc_v11_scheduler_internal_cycle(r,2u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059231u:
@@ -2253,8 +2066,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,2u);
       c->dbr=sc_v11_pop8(r);
       sc_v11_set_nz8(c,c->dbr);
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059232u:
@@ -2265,8 +2077,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9234u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059234u:
@@ -2277,8 +2088,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9236u;
       {uint32_t a=sc_v11_ea_dp(r,0x0028u);sc_v11_bus_write8(r,a,(uint8_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059236u:
@@ -2288,8 +2098,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9238u;
       sc_v11_op_lda(r,(uint16_t)(0x005Fu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059238u:
@@ -2300,8 +2109,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x923Au;
       {uint32_t a=sc_v11_ea_dp(r,0x002Au);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05923Au:
@@ -2311,8 +2119,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x923Cu;
       sc_v11_op_lda(r,(uint16_t)(0x0080u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05923Cu:
@@ -2323,8 +2130,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x923Eu;
       {uint32_t a=sc_v11_ea_dp(r,0x0026u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05923Eu:
@@ -2334,8 +2140,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9240u;
       sc_v11_op_lda(r,(uint16_t)(0x005Cu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059240u:
@@ -2346,8 +2151,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9242u;
       {uint32_t a=sc_v11_ea_dp(r,0x0024u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059242u:
@@ -2359,8 +2163,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push16(r,0x9244u))return 0;
       c->pc=0x94BEu;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059245u:
@@ -2371,8 +2174,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9247u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059247u:
@@ -2382,8 +2184,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x924Au;
       sc_v11_op_lda(r,(uint16_t)(0x0190u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05924Au:
@@ -2393,8 +2194,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x924Du;
       {uint32_t a=sc_v11_ea_abs(r,0x0277u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05924Du:
@@ -2404,8 +2204,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9250u;
       sc_v11_op_lda(r,(uint16_t)(0x00B7u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059250u:
@@ -2415,8 +2214,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9253u;
       {uint32_t a=sc_v11_ea_abs(r,0x027Fu);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059253u:
@@ -2427,8 +2225,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9255u;
       {uint32_t a=sc_v11_ea_dp(r,0x0040u);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059255u:
@@ -2439,8 +2236,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9257u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059257u:
@@ -2451,8 +2247,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9259u;
       {uint32_t a=sc_v11_ea_dp(r,0x0052u);sc_v11_bus_write8(r,a,(uint8_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059259u:
@@ -2463,8 +2258,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x925Bu;
       {uint32_t a=sc_v11_ea_dp(r,0x0054u);sc_v11_bus_write8(r,a,(uint8_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05925Bu:
@@ -2474,8 +2268,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x925Du;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05925Du:
@@ -2486,8 +2279,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x925Fu;
       {uint32_t a=sc_v11_ea_dp(r,0x0061u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05925Fu:
@@ -2498,8 +2290,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9261u;
       {uint32_t a=sc_v11_ea_dp(r,0x0066u);sc_v11_bus_write8(r,a,(uint8_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059261u:
@@ -2509,8 +2300,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9263u;
       sc_v11_op_lda(r,(uint16_t)(0x0004u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059263u:
@@ -2521,8 +2311,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9265u;
       {uint32_t a=sc_v11_ea_dp(r,0x0067u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059265u:
@@ -2532,8 +2321,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9267u;
       sc_v11_op_lda(r,(uint16_t)(0x0063u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059267u:
@@ -2544,8 +2332,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9269u;
       {uint32_t a=sc_v11_ea_dp(r,0x0062u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059269u:
@@ -2555,8 +2342,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x926Bu;
       sc_v11_op_lda(r,(uint16_t)(0x005Au),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05926Bu:
@@ -2567,8 +2353,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x926Du;
       {uint32_t a=sc_v11_ea_dp(r,0x0063u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05926Du:
@@ -2578,8 +2363,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x926Fu;
       sc_v11_op_lda(r,(uint16_t)(0x0052u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05926Fu:
@@ -2590,8 +2374,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9271u;
       {uint32_t a=sc_v11_ea_dp(r,0x0064u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059271u:
@@ -2601,8 +2384,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9273u;
       sc_v11_op_lda(r,(uint16_t)(0x0081u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059273u:
@@ -2613,8 +2395,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9275u;
       {uint32_t a=sc_v11_ea_dp(r,0x0060u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059275u:
@@ -2624,8 +2405,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9277u;
       sc_v11_op_lda(r,(uint16_t)(0x008Fu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059277u:
@@ -2636,8 +2416,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9279u;
       {uint32_t a=sc_v11_ea_dp(r,0x006Du);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059279u:
@@ -2647,8 +2426,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x927Bu;
       sc_v11_op_lda(r,(uint16_t)(0x00FFu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05927Bu:
@@ -2659,8 +2437,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x927Du;
       {uint32_t a=sc_v11_ea_dp(r,0x006Eu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05927Du:
@@ -2670,8 +2447,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x927Fu;
       sc_v11_op_lda(r,(uint16_t)(0x0017u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05927Fu:
@@ -2682,8 +2458,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9281u;
       {uint32_t a=sc_v11_ea_dp(r,0x0068u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059281u:
@@ -2694,8 +2469,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9283u;
       {uint32_t a=sc_v11_ea_dp(r,0x006Cu);sc_v11_bus_write8(r,a,(uint8_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059283u:
@@ -2706,8 +2480,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9285u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059285u:
@@ -2717,8 +2490,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9288u;
       sc_v11_op_lda(r,(uint16_t)(0x01D0u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059288u:
@@ -2729,8 +2501,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x928Au;
       {uint32_t a=sc_v11_ea_dp(r,0x0020u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05928Au:
@@ -2740,8 +2511,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x928Du;
       sc_v11_op_lda(r,(uint16_t)(0x01A1u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05928Du:
@@ -2752,8 +2522,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x928Fu;
       {uint32_t a=sc_v11_ea_dp(r,0x001Cu);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05928Fu:
@@ -2763,8 +2532,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9292u;
       sc_v11_op_lda(r,(uint16_t)(0x0143u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059292u:
@@ -2775,8 +2543,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9294u;
       {uint32_t a=sc_v11_ea_dp(r,0x0018u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059294u:
@@ -2786,8 +2553,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9297u;
       sc_v11_op_lda(r,(uint16_t)(0x0001u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059297u:
@@ -2798,8 +2564,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9299u;
       {uint32_t a=sc_v11_ea_dp(r,0x002Cu);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059299u:
@@ -2810,8 +2575,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x929Bu;
       {uint32_t a=sc_v11_ea_dp(r,0x0016u);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05929Bu:
@@ -2822,8 +2586,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x929Du;
       {uint32_t a=sc_v11_ea_dp(r,0x001Au);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05929Du:
@@ -2834,8 +2597,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x929Fu;
       {uint32_t a=sc_v11_ea_dp(r,0x001Eu);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05929Fu:
@@ -2846,8 +2608,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92A1u;
       {uint32_t a=sc_v11_ea_dp(r,0x0030u);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592A1u:
@@ -2857,8 +2618,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92A4u;
       sc_v11_op_lda(r,(uint16_t)(0x000Au),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592A4u:
@@ -2868,8 +2628,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92A7u;
       {uint32_t a=sc_v11_ea_abs(r,0x0133u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592A7u:
@@ -2879,8 +2638,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92AAu;
       sc_v11_op_lda(r,(uint16_t)(0x0004u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592AAu:
@@ -2890,8 +2648,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92ADu;
       {uint32_t a=sc_v11_ea_abs(r,0x0135u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592ADu:
@@ -2902,8 +2659,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92AFu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592AFu:
@@ -2913,8 +2669,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92B2u;
       sc_v11_op_lda(r,(uint16_t)(0x00FCu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592B2u:
@@ -2924,8 +2679,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92B5u;
       {uint32_t a=sc_v11_ea_abs(r,0x0253u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592B5u:
@@ -2935,8 +2689,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92B8u;
       sc_v11_op_lda(r,(uint16_t)(0x00B0u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592B8u:
@@ -2946,8 +2699,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92BBu;
       {uint32_t a=sc_v11_ea_abs(r,0x025Du);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592BBu:
@@ -2957,8 +2709,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92BEu;
       sc_v11_op_lda(r,(uint16_t)(0x00B7u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592BEu:
@@ -2968,8 +2719,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92C1u;
       {uint32_t a=sc_v11_ea_abs(r,0x025Fu);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592C1u:
@@ -2979,8 +2729,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92C4u;
       sc_v11_op_lda(r,(uint16_t)(0x0017u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592C4u:
@@ -2990,8 +2739,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92C7u;
       {uint32_t a=sc_v11_ea_abs(r,0x0261u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592C7u:
@@ -3002,8 +2750,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92C9u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592C9u:
@@ -3013,8 +2760,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92CCu;
       sc_v11_op_lda(r,(uint16_t)(0x0002u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592CCu:
@@ -3031,8 +2777,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592CEu:
@@ -3043,8 +2788,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92D0u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592D0u:
@@ -3055,8 +2799,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92D2u;
       sc_v11_op_lda(r,(uint16_t)(sc_v11_bus_read8(r,sc_v11_ea_dp(r,0x00B3u))),8u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592D2u:
@@ -3066,8 +2809,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92D4u;
       sc_v11_op_ora(r,(uint16_t)(0x0080u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592D4u:
@@ -3078,8 +2820,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92D6u;
       {uint32_t a=sc_v11_ea_dp(r,0x00B1u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592D6u:
@@ -3090,8 +2831,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92D8u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592D8u:
@@ -3102,8 +2842,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92DAu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592DAu:
@@ -3113,8 +2852,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92DDu;
       sc_v11_op_lda(r,(uint16_t)(0x0003u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592DDu:
@@ -3131,8 +2869,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592DFu:
@@ -3143,8 +2880,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92E1u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x30u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592E1u:
@@ -3155,8 +2891,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92E3u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592E3u:
@@ -3167,8 +2902,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92E5u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592E5u:
@@ -3178,8 +2912,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92E8u;
       sc_v11_op_ldx(r,(uint16_t)(0xD77Cu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592E8u:
@@ -3190,8 +2923,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92EAu;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592EAu:
@@ -3201,8 +2933,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92ECu;
       sc_v11_op_lda(r,(uint16_t)(0x000Du),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592ECu:
@@ -3213,8 +2944,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92EEu;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592EEu:
@@ -3224,8 +2954,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92F1u;
       sc_v11_op_ldx(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592F1u:
@@ -3236,8 +2965,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92F3u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592F3u:
@@ -3248,8 +2976,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92F5u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592F5u:
@@ -3259,8 +2986,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92F8u;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592F8u:
@@ -3277,8 +3003,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592FAu:
@@ -3289,8 +3014,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x92FBu;
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push8(r,c->dbr))return 0;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592FBu:
@@ -3300,8 +3024,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x92FEu;
       sc_v11_op_ldx(r,(uint16_t)(0x8000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0592FEu:
@@ -3311,8 +3034,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9301u;
       sc_v11_op_ldy(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059301u:
@@ -3322,8 +3044,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9304u;
       sc_v11_op_lda(r,(uint16_t)(0x7FFFu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059304u:
@@ -3339,8 +3060,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->dbr=0x7Fu;
       if(c->a!=0xFFFFu)c->pc=0x9304u;
       sc_v11_scheduler_internal_cycle(r,2u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059307u:
@@ -3351,8 +3071,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9309u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059309u:
@@ -3363,8 +3082,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x930Bu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05930Bu:
@@ -3374,8 +3092,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x930Eu;
       sc_v11_op_ldx(r,(uint16_t)(0xC242u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05930Eu:
@@ -3386,8 +3103,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9310u;
       {uint32_t a=sc_v11_ea_dp(r,0x0009u);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059310u:
@@ -3397,8 +3113,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9312u;
       sc_v11_op_lda(r,(uint16_t)(0x000Eu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059312u:
@@ -3409,8 +3124,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9314u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Bu);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059314u:
@@ -3420,8 +3134,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9317u;
       sc_v11_op_ldx(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059317u:
@@ -3432,8 +3145,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9319u;
       {uint32_t a=sc_v11_ea_dp(r,0x000Eu);sc_v11_bus_write16(r,a,(uint16_t)(c->x));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059319u:
@@ -3444,8 +3156,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x931Bu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05931Bu:
@@ -3455,8 +3166,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x931Eu;
       sc_v11_op_lda(r,(uint16_t)(0x0008u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05931Eu:
@@ -3473,8 +3183,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059320u:
@@ -3484,8 +3193,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9323u;
       sc_v11_op_ldx(r,(uint16_t)(0x8000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059323u:
@@ -3495,8 +3203,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9326u;
       sc_v11_op_ldy(r,(uint16_t)(0x8000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059326u:
@@ -3506,8 +3213,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9329u;
       sc_v11_op_lda(r,(uint16_t)(0x7FFFu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059329u:
@@ -3523,8 +3229,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->dbr=0x7Fu;
       if(c->a!=0xFFFFu)c->pc=0x9329u;
       sc_v11_scheduler_internal_cycle(r,2u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05932Cu:
@@ -3536,8 +3241,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,2u);
       c->dbr=sc_v11_pop8(r);
       sc_v11_set_nz8(c,c->dbr);
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05932Du:
@@ -3549,8 +3253,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push16(r,0x932Fu))return 0;
       c->pc=0x9347u;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059330u:
@@ -3562,8 +3265,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
 
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x0014u),8u,1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059332u:
@@ -3574,8 +3276,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9334u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059334u:
@@ -3585,8 +3286,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9337u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059337u:
@@ -3603,8 +3303,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059339u:
@@ -3615,8 +3314,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x933Bu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05933Bu:
@@ -3626,8 +3324,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x933Eu;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05933Eu:
@@ -3644,8 +3341,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->p&=(uint8_t)~SC_FLAG_D;
       c->pbr=0u;
       c->pc=sc_v11_bus_read16(r,0x00FFE4u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059340u:
@@ -3656,8 +3352,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9342u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059342u:
@@ -3667,8 +3362,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9344u;
       sc_v11_op_lda(r,(uint16_t)(0x0007u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059344u:
@@ -3679,8 +3373,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9346u;
       {uint32_t a=sc_v11_ea_dp(r,0x0003u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059346u:
@@ -3692,8 +3385,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,2u);
       c->pc=(uint16_t)(sc_v11_pop16(r)+1u);
       c->pbr=sc_v11_pop8(r);
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059347u:
@@ -3704,8 +3396,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9349u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059349u:
@@ -3716,8 +3407,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x934Bu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05934Bu:
@@ -3727,8 +3417,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x934Eu;
       sc_v11_op_ldy(r,(uint16_t)(0x0000u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05934Eu:
@@ -3739,8 +3428,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9350u;
       {uint32_t a=sc_v11_ea_dp(r,0x0000u);sc_v11_bus_write16(r,a,(uint16_t)(c->y));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059350u:
@@ -3750,8 +3438,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9352u;
       sc_v11_op_lda(r,(uint16_t)(0x007Fu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059352u:
@@ -3762,8 +3449,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9354u;
       {uint32_t a=sc_v11_ea_dp(r,0x0002u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059354u:
@@ -3773,8 +3459,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9357u;
       sc_v11_op_ldx(r,(uint16_t)(0xBBAAu),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059357u:
@@ -3784,8 +3469,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x935Au;
       sc_v11_op_compare(r,c->x,(uint16_t)(sc_v11_bus_read16(r,sc_v11_ea_abs(r,0x2140u))),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05935Au:
@@ -3796,8 +3480,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x935Cu;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x9357u;
       if(c->pc!=0x935Cu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x935Cu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05935Cu:
@@ -3807,8 +3490,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x935Eu;
       sc_v11_op_lda(r,(uint16_t)(0x00CCu),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05935Eu:
@@ -3820,8 +3502,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9386u;
       sc_v11_scheduler_internal_cycle(r,1u);
       if(c->emulation&&((0x9360u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059360u:
@@ -3832,8 +3513,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9362u;
       sc_v11_op_lda(r,(uint16_t)(sc_v11_bus_read8(r,sc_v11_ea_dp_long_y(r,0x00u))),8u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059362u:
@@ -3845,8 +3525,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->y=(uint16_t)((c->y+(1))&0xFFFFu);
       sc_v11_set_nz16(c,c->y);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059363u:
@@ -3858,8 +3537,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->a=(uint16_t)(((c->a&0x00FFu)<<8)|((c->a>>8)&0x00FFu));
       sc_v11_set_nz8(c,(uint8_t)c->a);
       sc_v11_scheduler_idle_or_read(r); sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059364u:
@@ -3869,8 +3547,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9366u;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059366u:
@@ -3882,8 +3559,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9373u;
       sc_v11_scheduler_internal_cycle(r,1u);
       if(c->emulation&&((0x9368u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059368u:
@@ -3895,8 +3571,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->a=(uint16_t)(((c->a&0x00FFu)<<8)|((c->a>>8)&0x00FFu));
       sc_v11_set_nz8(c,(uint8_t)c->a);
       sc_v11_scheduler_idle_or_read(r); sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059369u:
@@ -3907,8 +3582,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x936Bu;
       sc_v11_op_lda(r,(uint16_t)(sc_v11_bus_read8(r,sc_v11_ea_dp_long_y(r,0x00u))),8u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05936Bu:
@@ -3920,8 +3594,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->y=(uint16_t)((c->y+(1))&0xFFFFu);
       sc_v11_set_nz16(c,c->y);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05936Cu:
@@ -3933,8 +3606,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->a=(uint16_t)(((c->a&0x00FFu)<<8)|((c->a>>8)&0x00FFu));
       sc_v11_set_nz8(c,(uint8_t)c->a);
       sc_v11_scheduler_idle_or_read(r); sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05936Du:
@@ -3944,8 +3616,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9370u;
       sc_v11_op_compare(r,c->a,(uint16_t)(sc_v11_bus_read8(r,sc_v11_ea_abs(r,0x2140u))),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059370u:
@@ -3956,8 +3627,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9372u;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x936Du;
       if(c->pc!=0x9372u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x9372u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059372u:
@@ -3968,8 +3638,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9373u;
       sc_v11_op_incdec_accumulator(r,8u,1);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059373u:
@@ -3980,8 +3649,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9375u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059375u:
@@ -3991,8 +3659,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9378u;
       {uint32_t a=sc_v11_ea_abs(r,0x2140u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059378u:
@@ -4003,8 +3670,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x937Au;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05937Au:
@@ -4016,8 +3682,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)((c->x+(-1))&0xFFFFu);
       sc_v11_set_nz16(c,c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05937Bu:
@@ -4028,8 +3693,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x937Du;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x9368u;
       if(c->pc!=0x937Du){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x937Du^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05937Du:
@@ -4039,8 +3703,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9380u;
       sc_v11_op_compare(r,c->a,(uint16_t)(sc_v11_bus_read8(r,sc_v11_ea_abs(r,0x2140u))),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059380u:
@@ -4051,8 +3714,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9382u;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x937Du;
       if(c->pc!=0x9382u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x9382u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059382u:
@@ -4063,8 +3725,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9384u;
       sc_v11_op_adc(r,(uint16_t)(0x0003u),8u);
       if((c->p&SC_FLAG_D)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059384u:
@@ -4075,8 +3736,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9386u;
       if((c->p&SC_FLAG_Z)!=0u)c->pc=0x9382u;
       if(c->pc!=0x9386u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x9386u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059386u:
@@ -4087,8 +3747,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9387u;
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push8(r,(uint8_t)c->a))return 0;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059387u:
@@ -4099,8 +3758,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9389u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059389u:
@@ -4111,8 +3769,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x938Bu;
       sc_v11_op_lda(r,(uint16_t)(sc_v11_bus_read16(r,sc_v11_ea_dp_long_y(r,0x00u))),16u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05938Bu:
@@ -4124,8 +3781,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->y=(uint16_t)((c->y+(1))&0xFFFFu);
       sc_v11_set_nz16(c,c->y);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05938Cu:
@@ -4137,8 +3793,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->y=(uint16_t)((c->y+(1))&0xFFFFu);
       sc_v11_set_nz16(c,c->y);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05938Du:
@@ -4150,8 +3805,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)(c->a&0xFFFFu);
       sc_v11_set_nz16(c,c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05938Eu:
@@ -4162,8 +3816,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9390u;
       sc_v11_op_lda(r,(uint16_t)(sc_v11_bus_read16(r,sc_v11_ea_dp_long_y(r,0x00u))),16u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059390u:
@@ -4175,8 +3828,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->y=(uint16_t)((c->y+(1))&0xFFFFu);
       sc_v11_set_nz16(c,c->y);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059391u:
@@ -4188,8 +3840,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->y=(uint16_t)((c->y+(1))&0xFFFFu);
       sc_v11_set_nz16(c,c->y);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059392u:
@@ -4199,8 +3850,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x9395u;
       {uint32_t a=sc_v11_ea_abs(r,0x2142u);sc_v11_bus_write16(r,a,(uint16_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059395u:
@@ -4211,8 +3861,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x9397u;
       sc_v11_unpack_p(c,(uint8_t)(c->p|0x20u));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x059397u:
@@ -4222,8 +3871,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x939Au;
       sc_v11_op_compare(r,c->x,(uint16_t)(0x0001u),16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05939Au:
@@ -4233,8 +3881,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x939Cu;
       sc_v11_op_lda(r,(uint16_t)(0x0000u),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05939Cu:
@@ -4245,8 +3892,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x939Du;
       sc_v11_op_shift_accumulator(r,8u,2u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x05939Du:
@@ -4256,8 +3902,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93A0u;
       {uint32_t a=sc_v11_ea_abs(r,0x2141u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593A0u:
@@ -4268,8 +3913,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93A2u;
       sc_v11_op_adc(r,(uint16_t)(0x007Fu),8u);
       if((c->p&SC_FLAG_D)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593A2u:
@@ -4280,8 +3924,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93A3u;
       sc_v11_scheduler_internal_cycle(r,2u);
       sc_v11_op_lda(r,sc_v11_pop8(r),8u);
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593A3u:
@@ -4291,8 +3934,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93A6u;
       {uint32_t a=sc_v11_ea_abs(r,0x2140u);sc_v11_bus_write8(r,a,(uint8_t)(c->a));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593A6u:
@@ -4302,8 +3944,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93A9u;
       sc_v11_op_compare(r,c->a,(uint16_t)(sc_v11_bus_read8(r,sc_v11_ea_abs(r,0x2140u))),8u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593A9u:
@@ -4314,8 +3955,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93ABu;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x93A6u;
       if(c->pc!=0x93ABu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93ABu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593ABu:
@@ -4326,8 +3966,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93ADu;
       if((c->p&SC_FLAG_V)!=0u)c->pc=0x9360u;
       if(c->pc!=0x93ADu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93ADu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593ADu:
@@ -4337,8 +3976,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93AEu;
       {uint16_t sc_v11_return_pc; sc_v11_scheduler_internal_cycle(r,2u); sc_v11_return_pc=sc_v11_pop16(r); sc_v11_scheduler_internal_cycle(r,1u); c->pc=(uint16_t)(sc_v11_return_pc+1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593AEu:
@@ -4349,8 +3987,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93B0u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x30u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593B0u:
@@ -4364,8 +4001,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       if(!sc_v11_push16(r,0x93B3u))return 0;
       c->pbr=0x05u;
       c->pc=0x9603u;
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593B4u:
@@ -4375,8 +4011,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93B7u;
       {uint32_t a=sc_v11_ea_abs(r,0x0253u);sc_v11_bus_write16(r,a,(uint16_t)(0u));}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593B7u:
@@ -4387,8 +4022,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93B9u;
       sc_v11_op_lda(r,(uint16_t)(sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x0030u))),16u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593B9u:
@@ -4399,8 +4033,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93BBu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x10u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593BBu:
@@ -4411,8 +4044,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93BCu;
       sc_v11_op_shift_accumulator(r,16u,0u);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593BCu:
@@ -4424,8 +4056,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->x=(uint16_t)(c->a&0xFFFFu);
       sc_v11_set_nz16(c,c->x);
       sc_v11_scheduler_idle_or_read(r);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593BDu:
@@ -4437,8 +4068,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push16(r,0x93BFu))return 0;
       c->pc=sc_v11_bus_read16(r,((uint32_t)c->pbr<<16)|(uint16_t)(0x93C1u+c->x));
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593C0u:
@@ -4450,8 +4080,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,2u);
       c->pc=(uint16_t)(sc_v11_pop16(r)+1u);
       c->pbr=sc_v11_pop8(r);
-            if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+            SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593CBu:
@@ -4462,8 +4091,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93CDu;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x20u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593CDu:
@@ -4475,8 +4103,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
 
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x002Cu),16u,-1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593CFu:
@@ -4487,8 +4114,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93D1u;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x93D3u;
       if(c->pc!=0x93D1u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93D1u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593D1u:
@@ -4500,8 +4126,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
 
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x0030u),16u,1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593D3u:
@@ -4511,8 +4136,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93D4u;
       {uint16_t sc_v11_return_pc; sc_v11_scheduler_internal_cycle(r,2u); sc_v11_return_pc=sc_v11_pop16(r); sc_v11_scheduler_internal_cycle(r,1u); c->pc=(uint16_t)(sc_v11_return_pc+1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593D4u:
@@ -4523,8 +4147,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93D6u;
       sc_v11_unpack_p(c,(uint8_t)(c->p&((uint8_t)~0x30u)));
       sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593D6u:
@@ -4535,8 +4158,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93D8u;
       sc_v11_op_lda(r,(uint16_t)sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x002Cu)),16u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593D8u:
@@ -4546,8 +4168,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93DBu;
       sc_v11_op_and(r,(uint16_t)0x0007u,16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593DBu:
@@ -4558,8 +4179,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93DDu;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x93E1u;
       if(c->pc!=0x93DDu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93DDu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593DDu:
@@ -4570,8 +4190,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93DFu;
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x0024u),16u,-1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593DFu:
@@ -4582,8 +4201,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93E1u;
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x0020u),16u,1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593E1u:
@@ -4593,8 +4211,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93E4u;
       sc_v11_op_and(r,(uint16_t)0x0003u,16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593E4u:
@@ -4605,8 +4222,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93E6u;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x93E8u;
       if(c->pc!=0x93E6u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93E6u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593E6u:
@@ -4617,8 +4233,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93E8u;
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x001Cu),16u,1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593E8u:
@@ -4628,8 +4243,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93EBu;
       sc_v11_op_and(r,(uint16_t)0x0001u,16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593EBu:
@@ -4640,8 +4254,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93EDu;
       if((c->p&SC_FLAG_Z)==0u)c->pc=0x93F8u;
       if(c->pc!=0x93EDu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93EDu^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593EDu:
@@ -4652,8 +4265,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93EFu;
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x0018u),16u,1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593EFu:
@@ -4664,8 +4276,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93F1u;
       sc_v11_op_lda(r,(uint16_t)sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x0018u)),16u);
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593F1u:
@@ -4675,8 +4286,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       r->scheduler.cpu_instructions++; r->generated_callbacks++; r->machine.static_executed_instructions=(uint32_t)r->scheduler.cpu_instructions;
       c->pc=0x93F4u;
       sc_v11_op_compare(r,c->a,(uint16_t)0x01E6u,16u);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593F4u:
@@ -4687,8 +4297,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93F6u;
       if((c->p&SC_FLAG_C)==0u)c->pc=0x93F8u;
       if(c->pc!=0x93F6u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0x93F6u^c->pc)&0xFF00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593F6u:
@@ -4699,8 +4308,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93F8u;
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x002Au),16u,-1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593F8u:
@@ -4711,8 +4319,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       c->pc=0x93FAu;
       if((c->d&0x00FFu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
       sc_v11_op_incdec_memory(r,sc_v11_ea_dp(r,0x002Cu),16u,1);
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593FAu:
@@ -4724,8 +4331,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push16(r,0x93FCu))return 0;
       c->pc=0x94BEu;
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   case 0x0593FDu:
@@ -4737,8 +4343,7 @@ int sc_v11_cpu_group_00164(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x)
       sc_v11_scheduler_internal_cycle(r,1u);
       if(!sc_v11_push16(r,0x93FFu))return 0;
       c->pc=0x952Eu;
-      if(!sc_v11_finish_instruction(r))return 0;
-      return r->route_failed?0:1;
+      SC_STATIC_CONTEXT_END();
     }
     break;
   default: break;

@@ -169,4 +169,22 @@ void sc_v11_op_shift_memory(SCV11Runtime*,uint32_t,unsigned,unsigned); void sc_v
 void sc_v11_op_incdec_memory(SCV11Runtime*,uint32_t,unsigned,int); void sc_v11_op_incdec_accumulator(SCV11Runtime*,unsigned,int);
 int sc_v11_fail(SCV11Runtime*,uint32_t,const char*);
 void sc_v11_trace_cpu_instruction(SCV11Runtime*,uint32_t);
+
+/*
+ * Compile-time source compaction for exact generated contexts.  These macros
+ * expand to the original generated bookkeeping statements; they add no
+ * runtime decoder, lookup table, fallback path, or context-key dimension.
+ */
+#define SC_STATIC_CONTEXT_BEGIN(address_, length_, open_bus_, next_pc_) \
+    sc_v11_scheduler_code_access(r, address_, length_); \
+    r->open_bus = open_bus_; \
+    r->scheduler.cpu_instructions++; \
+    r->generated_callbacks++; \
+    r->machine.static_executed_instructions = \
+        (uint32_t)r->scheduler.cpu_instructions; \
+    c->pc = next_pc_
+
+#define SC_STATIC_CONTEXT_END() \
+    if (!sc_v11_finish_instruction(r)) return 0; \
+    return r->route_failed ? 0 : 1
 #endif

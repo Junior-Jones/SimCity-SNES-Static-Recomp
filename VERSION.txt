@@ -1,7 +1,14 @@
 SimCity SNES Static Recomp
-Version: 1.1.2
+Version: 1.2.0
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: SDL3 video, audio and gamepad; native Win32 launcher
 Audio: Full Static, 32,040 Hz stereo PCM with SDL3 device output
 ROM: required externally and not included
+
+Changes in 1.2.0:
+- Compacted repeated generated-core bookkeeping into compile-time macros.
+- Removed 2,503 unreachable exact contexts shadowed by earlier dispatch authority.
+- Preserved exact PBR:PC:E:M:X dispatch and fail-closed static execution.
+- Added reproducible compaction and context-pruning receipts and verification tools.
+- Reduced the static-core source and native release binary sizes.
