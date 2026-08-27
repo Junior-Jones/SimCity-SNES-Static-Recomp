@@ -2,7 +2,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 #include "simcity_audio_recorder_win32.h"
-#include "simcity_static_recomp.h"
+#include "simcity_app_core.h"
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>

@@ -28,8 +28,8 @@ The complete runtime includes:
 - Native 32,040 Hz stereo PCM generation and WAV recording.
 - Battery-backed SRAM persistence and deterministic snapshots.
 - Exact-ROM validation and runtime integrity checks.
-- An accessible native Windows launcher with statically linked SDL
-  presentation, audio and gamepad support.
+- An accessible native Windows launcher with direct GDI presentation,
+  four-buffer WinMM audio, and statically linked SDL gamepad support.
 
 "Fully static" does not mean that the city simulation, graphics or audio are
 prerecorded. The simulation advances live according to player decisions and
@@ -53,6 +53,15 @@ Machine-readable receipts in `static-recomp/generated` record the source
 transformations and hashes. The corresponding scripts in `tools` can verify
 the compacted files without requiring the game ROM.
 
+## Windows frontend and audio
+
+The 1.2.0 launcher uses a thin host connector over the public SimCity static
+core API. Video frames are presented directly through Win32 GDI. Native
+32,040 Hz stereo PCM is queued through four fixed WinMM buffers with complete
+pre-roll and a short resume fade. This replaces the previous adaptive SDL
+audio stream and its playback-ratio correction. SDL remains statically linked
+only for gamepad discovery, mappings, and input.
+
 ## Building on Windows
 
 Requirements:
@@ -69,4 +78,4 @@ cmake --build build --config Release --target simcity-launcher
 
 The resulting portable `Launcher.exe` is placed in `build/release`.
 
-SDL is downloaded from its official `release-3.4.10` tag and checked against a pinned SHA-256 before it is used. It supplies static-linked GPU presentation, device audio and gamepad support; no SDL DLL is required beside `Launcher.exe`. The controller database and project adapter are included under `third_party`.
+SDL is downloaded from its official `release-3.4.10` tag and checked against a pinned SHA-256 before it is used for gamepad support. No SDL DLL is required beside `Launcher.exe`. The controller database and project adapter are included under `third_party`; video and speaker output use native Windows APIs.

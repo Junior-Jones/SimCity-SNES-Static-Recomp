@@ -29,24 +29,29 @@ endif()
 
 add_executable(simcity-launcher WIN32
     simcity_launcher_win32.c
+    simcity_app_core.c
     launcher_version.rc
-    simcity_audio_output_sdl3.c
+    simcity_audio_output_winmm.c
     simcity_audio_recorder_win32.c
-    simcity_diagnostics_log_win32.c
     simcity_frontend_settings_win32.c
-    simcity_video_output_sdl3.c
+    ../common/simcity_input_latch.c
     "${SIMCITY_GAMEPAD_ADAPTER_DIR}/simcity_gamepad_input_win32.c"
 )
 target_include_directories(simcity-launcher PRIVATE
+    "${CMAKE_SOURCE_DIR}/frontend/common"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/static-recomp/include"
     "${SIMCITY_GAMEPAD_ADAPTER_DIR}"
 )
 target_link_libraries(simcity-launcher PRIVATE
     simcity-static-recomp
     SDL3::SDL3-static
+    winmm
     user32
     gdi32
     comdlg32
     comctl32
+    shell32
 )
 target_compile_definitions(simcity-launcher PRIVATE
     UNICODE

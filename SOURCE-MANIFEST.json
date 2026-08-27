@@ -3,7 +3,7 @@
   "platform": "Windows",
   "version": "1.2.0",
   "file_count": 276,
-  "total_bytes": 19398631,
+  "total_bytes": 19357308,
   "files": [
     {
       "path": ".gitattributes",
@@ -27,13 +27,13 @@
     },
     {
       "path": "README-FIRST.txt",
-      "size": 730,
-      "sha256": "a5d14837e828e36249062ec75450f3f0e05ba4a9e83ea5708b8317b985d3de19"
+      "size": 708,
+      "sha256": "e7cb5609c271e6885f2f85f62e6aa3bd440651134a533a061a6d9f5673e33245"
     },
     {
       "path": "README.md",
-      "size": 3411,
-      "sha256": "40bde04e47c524ca3b00f7157a6a08639198f194586ed31c6e157c86024ac86b"
+      "size": 3893,
+      "sha256": "c032a21a65077a6ec2fbf09b311f10b19b61e2e9cff9585e4ba85f485ff8ef02"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
@@ -52,13 +52,23 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 670,
-      "sha256": "5d78e09ddc05501c58c125f9a6ad05c596c843bc9b126f465843280a3688c882"
+      "size": 1038,
+      "sha256": "03fa0513e7b6388d3923ea9643806ab429dbfd11018281e4f7836636f07d48fe"
+    },
+    {
+      "path": "frontend/common/simcity_input_latch.c",
+      "size": 1363,
+      "sha256": "ca32c9a00d07e1d4f5c013af12d41db79395310df5ecfd12ed8665dca2f45c9d"
+    },
+    {
+      "path": "frontend/common/simcity_input_latch.h",
+      "size": 627,
+      "sha256": "57597d6e8da4919a31e64d3d55e5d91c30943d83c42b7844d2cc32647f105dee"
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
-      "size": 3510,
-      "sha256": "e4d9a0a6fdc1322daee59166136d9037002c356ebd4663e4310dfd19760f13d0"
+      "size": 3648,
+      "sha256": "f63818904e91c61e4479304861a195e1601ba3157a9eceddaf35bdcb4bd52f48"
     },
     {
       "path": "frontend/windows/launcher_version.rc",
@@ -66,19 +76,29 @@
       "sha256": "6106c6ffe1746ab629d8582a4484526eabdaac58f92fe221785b7f64a4fd005c"
     },
     {
-      "path": "frontend/windows/simcity_audio_output_sdl3.c",
-      "size": 14293,
-      "sha256": "c1e2352a90e519e480a7e6f9672e35ee5b2867f97c4e7cd38826dce841ba6317"
+      "path": "frontend/windows/simcity_app_core.c",
+      "size": 3638,
+      "sha256": "9a23871a347fb5e0560e9f05a01b468f7045eaa87098c20e9af61755201f7331"
     },
     {
-      "path": "frontend/windows/simcity_audio_output_sdl3.h",
-      "size": 2703,
-      "sha256": "5a4c8b73a5b8bd601d0356b1d3e8c5f6794257b8e762d0fbb756bccffbe777ec"
+      "path": "frontend/windows/simcity_app_core.h",
+      "size": 467,
+      "sha256": "5cb2767485b7f7e9cf072382e1ef06f9d7981d66273ead6f00c4bd8d5fb6ffec"
+    },
+    {
+      "path": "frontend/windows/simcity_audio_output_winmm.c",
+      "size": 16971,
+      "sha256": "f32687754336170c40834bf65742522fff3e98302cab8e8ee784acaf5750b709"
+    },
+    {
+      "path": "frontend/windows/simcity_audio_output_winmm.h",
+      "size": 2499,
+      "sha256": "ff0179038152d5dbde3e60f8108a63e47e85581a2486e07e401f185f680f3d88"
     },
     {
       "path": "frontend/windows/simcity_audio_recorder_win32.c",
-      "size": 3352,
-      "sha256": "6e7528c2384eadb6664e80297959178d5d053e36025691eadffe0ff79051b3ce"
+      "size": 3347,
+      "sha256": "02f472066b77e7d80140d2135806b009c69f8dc0b132791337efb82533324fa3"
     },
     {
       "path": "frontend/windows/simcity_audio_recorder_win32.h",
@@ -86,39 +106,19 @@
       "sha256": "b13dd11c4db7e39d70ac1e52d750bde208f554d1ced702ab0c22b0ac8118cc62"
     },
     {
-      "path": "frontend/windows/simcity_diagnostics_log_win32.c",
-      "size": 12704,
-      "sha256": "e92e730242311802a93c32307f2ac6270092811062a952bd0de195071b138a8e"
-    },
-    {
-      "path": "frontend/windows/simcity_diagnostics_log_win32.h",
-      "size": 1229,
-      "sha256": "f369010c18fef6e3a69c2b963157aa49d46d2101700e5707c4c6a2ffeefd965d"
-    },
-    {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 42888,
-      "sha256": "f0337e17aec7e41ae55bb3b2281481a4567909d710c59e67dd867c5c8628c60a"
+      "size": 33295,
+      "sha256": "0a2dc4719fbcdfb2589cafd6ac8652c501d7dc74dba7b67a9b3cab190b286a60"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
-      "size": 2743,
-      "sha256": "1967b29b910e3f1d509525b9a1826882f688ef807ba90f933a788312e5f73983"
+      "size": 2175,
+      "sha256": "786112e52ba1f80ad0eae373d73e8998911277f712bf1dd4d8d613013b1a8f79"
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 140574,
-      "sha256": "2bfacd44247df67a816559f4178096ed9d17d601460274a8ba2a473df4a832af"
-    },
-    {
-      "path": "frontend/windows/simcity_video_output_sdl3.c",
-      "size": 9695,
-      "sha256": "d0ebf1ab2bbf97334d7c0bf2fcb9e69276e7c3161660be4cde32485d55a1198a"
-    },
-    {
-      "path": "frontend/windows/simcity_video_output_sdl3.h",
-      "size": 2034,
-      "sha256": "df127fab02cd9b9f703e93d867762870d5aa7a58ffc821c8704a198f0b57c29f"
+      "size": 130874,
+      "sha256": "5dc8713237d6d3836c8824ab6c2ebc2761f7358cdaa501c4f34a14187b57d71d"
     },
     {
       "path": "static-recomp/CMakeLists.txt",
@@ -1362,13 +1362,13 @@
     },
     {
       "path": "third_party/simcity-gamepad/simcity_gamepad_input_win32.c",
-      "size": 15268,
-      "sha256": "c5c5e9906d177c0b515b97df4b49c305b216c0150538f807e76df7f45da4805f"
+      "size": 10437,
+      "sha256": "0d387cf063824cb6c7cd686d73cbf9e493c1748e39665ed2db02fc6a6f05c498"
     },
     {
       "path": "third_party/simcity-gamepad/simcity_gamepad_input_win32.h",
-      "size": 2517,
-      "sha256": "cd87fc34c9b44b511f1182c9b649e4d3c0fec265d41b923e611701ed090c736f"
+      "size": 1990,
+      "sha256": "61906bc8d614b1a4a1b6d34f9e3becd39dc68100925b5a916d5f03958295ec81"
     },
     {
       "path": "tools/compact_generated_core.py",
@@ -1377,8 +1377,8 @@
     },
     {
       "path": "tools/generate_source_integrity.py",
-      "size": 1757,
-      "sha256": "e47213d2c5a392831a3f007af32e6267ceee4ae69156a78e844bda70fdbc30e3"
+      "size": 1785,
+      "sha256": "88c00c1661d83be294ef03eef3a77b7e7da2f815caeb402d5d52da78b54aaab4"
     },
     {
       "path": "tools/prune_shadowed_contexts.py",

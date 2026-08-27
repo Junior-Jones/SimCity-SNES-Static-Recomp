@@ -37,29 +37,18 @@ typedef struct SimCityGamepadInputWin32 {
     SDL_Gamepad *handle;
     int initialized;
     int startup_gamepad_found;
-    unsigned player_index;
     unsigned refresh_countdown;
-    uint32_t analog_latched;
-    char preferred_guid[64];
-    char guid[64];
     wchar_t name[160];
 } SimCityGamepadInputWin32;
 
 int simcity_gamepad_win32_initialize(SimCityGamepadInputWin32 *input,
-                                     const wchar_t *mapping_path,
-                                     unsigned player_index,
-                                     const wchar_t *preferred_guid);
+                                     const wchar_t *mapping_path);
 void simcity_gamepad_win32_shutdown(SimCityGamepadInputWin32 *input);
-void simcity_gamepad_win32_begin_frame(SimCityGamepadInputWin32 *inputs,
-                                       size_t input_count);
 uint16_t simcity_gamepad_win32_poll(
     SimCityGamepadInputWin32 *input,
-    const int bindings[SIMCITY_GAMEPAD_BINDING_COUNT],
-    int deadzone_percent);
+    const int bindings[SIMCITY_GAMEPAD_BINDING_COUNT]);
 int simcity_gamepad_win32_connected(const SimCityGamepadInputWin32 *input);
 const wchar_t *simcity_gamepad_win32_name(const SimCityGamepadInputWin32 *input);
-void simcity_gamepad_win32_guid(const SimCityGamepadInputWin32 *input,
-                                wchar_t *guid, size_t capacity);
 void simcity_gamepad_win32_default_bindings(
     int bindings[SIMCITY_GAMEPAD_BINDING_COUNT]);
 const wchar_t *simcity_gamepad_win32_control_name(int control);

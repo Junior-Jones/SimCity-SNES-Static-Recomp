@@ -26,7 +26,7 @@ def main() -> int:
     )
     paths = sorted(
         path for path in output.decode("utf-8").split("\0")
-        if path and path not in EXCLUDED
+        if path and path not in EXCLUDED and (root / path).is_file()
     )
     rows = []
     for relative in paths:

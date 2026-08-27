@@ -6,12 +6,11 @@
 #include <commdlg.h>
 #include <commctrl.h>
 
-#include "simcity_audio_output_sdl3.h"
+#include "simcity_audio_output_winmm.h"
 #include "simcity_audio_recorder_win32.h"
-#include "simcity_diagnostics_log_win32.h"
 #include "simcity_frontend_settings_win32.h"
-#include "simcity_static_recomp.h"
-#include "simcity_video_output_sdl3.h"
+#include "simcity_app_core.h"
+#include "simcity_input_latch.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -32,7 +31,6 @@
 #define HOST_TIMER_100NS_PER_SECOND 10000000u
 #define HOST_TIMER_HIGH_RESOLUTION 0x00000002u
 #define HOST_TIMER_ACCESS 0x001F0003u
-#define MAX_HOST_CATCHUP_FRAMES 8u
 #define HEADED_STATUS_INTERVAL_FRAMES 60u
 #define SRAM_IMAGE_BYTES 32768u
 #define SRAM_FLUSH_INTERVAL_FRAMES 120u
@@ -132,7 +130,7 @@ typedef struct SnapshotDialogState {
 } SnapshotDialogState;
 
 typedef struct InfoDialogState {
-    wchar_t body[8192];
+    const wchar_t *body;
     HWND text;
     HWND close_button;
 } InfoDialogState;
@@ -147,7 +145,6 @@ typedef struct GettingStartedDialogState {
 
 static HINSTANCE g_instance;
 static HWND g_window;
-static HWND g_video_surface;
 static HWND g_browse_button;
 static HWND g_pause_play_button;
 static HWND g_reset_button;
@@ -165,6 +162,7 @@ static SimCityRecomp *g_game;
 static HANDLE g_loader_thread;
 static volatile LONG g_loading;
 static int g_close_requested;
+static int g_shutting_down;
 static int g_paused = 1;
 static int g_presentation_hidden;
 static int g_fullscreen_active;
@@ -174,17 +172,12 @@ static WINDOWPLACEMENT g_saved_placement = {0};
 static int g_resume_after_failed_load;
 static int g_play_after_load;
 static int g_adjacent_rom_found;
-static uint16_t g_held_input;
-/* Mesen-style short-press safety: action-key transitions remain pending until
-   one emulated SNES frame has sampled them. Directions intentionally remain
-   held-state only so cursor movement cannot stick after a quick tap. */
-static uint16_t g_latched_input;
+static SimCityInputLatch g_keyboard_input;
 static uint16_t g_gamepad_input;
 static SimCityGamepadInputWin32 g_gamepad;
 static wchar_t g_executable_directory[PATH_CAPACITY];
 static wchar_t g_rom_directory[PATH_CAPACITY];
 static wchar_t g_saves_directory[PATH_CAPACITY];
-static wchar_t g_logs_directory[PATH_CAPACITY];
 static wchar_t g_sram_path[PATH_CAPACITY];
 static uint32_t g_sram_last_flush_frame;
 static wchar_t g_audio_ini_path[PATH_CAPACITY];
@@ -192,7 +185,6 @@ static wchar_t g_frontend_ini_path[PATH_CAPACITY];
 static SimCityAudioSettings g_audio_settings;
 static SimCityAudioOutput g_audio_output;
 static SimCityAudioRecorderWin32 g_audio_recorder;
-static SimCityVideoOutput g_video_output;
 static SimCityFrontendSettingsWin32 g_frontend_settings;
 static int g_settings_saved_on_exit;
 static int g_loaded_snapshot_slot = -1;
@@ -207,10 +199,10 @@ static uint64_t g_pacing_skipped_deadlines;
 static uint32_t g_pacing_max_batch;
 static uint64_t g_pacing_resyncs;
 static GettingStartedDialogState g_getting_started_state;
-static InfoDialogState g_info_dialog_state;
+static InfoDialogState g_info_state;
+static int g_info_resume_after;
 static int g_getting_started_mark_seen;
 static int g_startup_pending;
-static volatile LONG g_crash_log_started;
 
 static void start_rom_load(int play_after_load);
 static void pause_game(const wchar_t *message);
@@ -223,6 +215,9 @@ static void capture_window_screenshot(void);
 static int capture_window_screenshot_to(const wchar_t *base_directory,
                                         wchar_t *saved_path,
                                         size_t saved_capacity);
+static int write_screenshot_static_log(const wchar_t *screenshot_path,
+                                       wchar_t *saved_path,
+                                       size_t saved_capacity);
 static void reset_pacing_clock(void);
 static int arm_frame_timer(void);
 static void service_host_timer(void);
@@ -230,7 +225,6 @@ static int flush_battery_sram_win32(int force, wchar_t *saved_path,
                                       size_t saved_capacity);
 static void maybe_flush_battery_sram_win32(void);
 static void utf8_to_wide(const char *input, wchar_t *output, size_t capacity);
-static uint16_t current_gameplay_input(void);
 static void set_control_font(HWND control);
 static void show_snapshot_window(int save_mode);
 static void show_information_window(const wchar_t *title,
@@ -239,50 +233,6 @@ static void show_information_window(const wchar_t *title,
 static void show_getting_started_window(int mark_seen);
 static void show_first_run_rom_information(void);
 static void continue_startup_after_welcome(void);
-
-static void capture_host_diagnostic_state(SimCityHostDiagnosticState *state) {
-    if (!state) return;
-    memset(state, 0, sizeof(*state));
-    state->paused = g_paused;
-    state->presentation_hidden = g_presentation_hidden;
-    state->fullscreen_active = g_fullscreen_active;
-    state->loading = InterlockedCompareExchange(&g_loading, 0, 0) != 0;
-    state->integer_scale = g_frontend_settings.integer_scale;
-    state->correct_aspect = g_frontend_settings.correct_aspect;
-    state->vsync_enabled = g_frontend_settings.vsync_enabled;
-    state->audio_enabled = g_audio_settings.enabled;
-    state->audio_volume_percent = g_audio_settings.volume_percent;
-    state->audio_latency_ms = g_audio_settings.latency_ms;
-    state->held_input = g_held_input;
-    state->gamepad_input = g_gamepad_input;
-    state->effective_input = current_gameplay_input();
-    state->pacing_timer_ticks = g_pacing_timer_ticks;
-    state->pacing_skipped_deadlines = g_pacing_skipped_deadlines;
-    state->pacing_resyncs = g_pacing_resyncs;
-    state->pacing_max_batch = g_pacing_max_batch;
-    simcity_video_output_get_diagnostics(&g_video_output, &state->video);
-    simcity_audio_output_get_diagnostics(&g_audio_output, &state->audio);
-}
-
-static void write_diagnostic_event(const wchar_t *event_name,
-                                   const wchar_t *detail,
-                                   const wchar_t *artifact_path,
-                                   const EXCEPTION_POINTERS *exception) {
-    SimCityHostDiagnosticState state;
-    capture_host_diagnostic_state(&state);
-    (void)simcity_diagnostics_write(
-        g_logs_directory, event_name, detail, artifact_path, g_game, &state,
-        exception, NULL, 0u);
-}
-
-static LONG WINAPI launcher_unhandled_exception_filter(
-    EXCEPTION_POINTERS *exception) {
-    if (InterlockedCompareExchange(&g_crash_log_started, 1, 0) == 0)
-        write_diagnostic_event(L"process-crash",
-                               L"Unhandled Windows exception", NULL,
-                               exception);
-    return EXCEPTION_CONTINUE_SEARCH;
-}
 
 static void copy_wide(wchar_t *destination, size_t capacity,
                       const wchar_t *source) {
@@ -527,34 +477,28 @@ static void set_status_utf8(const char *text) {
     set_status(converted);
 }
 
-static uint16_t virtual_key_to_input(WPARAM key, LPARAM key_lparam) {
-    UINT physical_key = simcity_frontend_settings_win32_physical_key(
-        (UINT)key, key_lparam);
-    return simcity_frontend_settings_win32_input(
-        &g_frontend_settings, 0u, physical_key);
+static uint16_t virtual_key_to_input(WPARAM key) {
+    return simcity_frontend_settings_win32_input(&g_frontend_settings, (UINT)key);
 }
 
 static int keyboard_gameplay_active(void) {
-    return g_frontend_settings.input_source[0] != SIMCITY_INPUT_SOURCE_GAMEPAD ||
+    return g_frontend_settings.input_source == SIMCITY_INPUT_SOURCE_KEYBOARD ||
            !simcity_gamepad_win32_connected(&g_gamepad);
 }
 
-static uint16_t action_input_mask(void) {
-    return (uint16_t)(SIMCITY_INPUT_B | SIMCITY_INPUT_Y |
-                      SIMCITY_INPUT_SELECT | SIMCITY_INPUT_START |
-                      SIMCITY_INPUT_A | SIMCITY_INPUT_X |
-                      SIMCITY_INPUT_L | SIMCITY_INPUT_R);
+static uint16_t opposite_direction(uint16_t mask) {
+    if (mask == SIMCITY_INPUT_UP) return SIMCITY_INPUT_DOWN;
+    if (mask == SIMCITY_INPUT_DOWN) return SIMCITY_INPUT_UP;
+    if (mask == SIMCITY_INPUT_LEFT) return SIMCITY_INPUT_RIGHT;
+    if (mask == SIMCITY_INPUT_RIGHT) return SIMCITY_INPUT_LEFT;
+    return 0u;
 }
 
 static uint16_t current_gameplay_input(void) {
-    uint16_t keyboard_input = (uint16_t)(g_held_input | g_latched_input);
-    if (g_frontend_settings.input_source[0] == SIMCITY_INPUT_SOURCE_GAMEPAD &&
+    if (g_frontend_settings.input_source == SIMCITY_INPUT_SOURCE_GAMEPAD &&
         simcity_gamepad_win32_connected(&g_gamepad))
         return g_gamepad_input;
-    if (g_frontend_settings.input_source[0] == SIMCITY_INPUT_SOURCE_COMBINED &&
-        simcity_gamepad_win32_connected(&g_gamepad))
-        return (uint16_t)(keyboard_input | g_gamepad_input);
-    return keyboard_input;
+    return simcity_input_latch_sample(&g_keyboard_input);
 }
 
 static int read_rom_file(const wchar_t *path, uint8_t **rom,
@@ -801,8 +745,7 @@ static void pause_game(const wchar_t *message) {
     simcity_audio_output_pause(&g_audio_output);
     if (g_game) (void)simcity_recomp_audio_discard(g_game);
     g_paused = 1;
-    g_held_input = 0u;
-    g_latched_input = 0u;
+    simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
     restore_paused_presentation();
     SetWindowTextW(g_window, LAUNCHER_TITLE);
@@ -820,12 +763,8 @@ static void stop_game_on_core_failure(void) {
        stealing focus, or displaying an unnecessary modal warning. */
     simcity_audio_output_pause(&g_audio_output);
     g_paused = 1;
-    g_held_input = 0u;
-    g_latched_input = 0u;
+    simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
-    write_diagnostic_event(L"core-failure",
-                           L"The static core stopped on a fail-closed error.",
-                           NULL, NULL);
     set_status_utf8(simcity_recomp_last_error(g_game));
     InvalidateRect(g_window, NULL, FALSE);
     UpdateWindow(g_window);
@@ -836,8 +775,7 @@ static void play_game(void) {
     if (!g_game) return;
     g_paused = 0;
     SetWindowTextW(g_window, APP_TITLE);
-    g_held_input = 0u;
-    g_latched_input = 0u;
+    simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
     simcity_audio_output_resume(&g_audio_output);
     reset_pacing_clock();
@@ -938,7 +876,7 @@ static void start_rom_load(int play_after_load) {
     pause_game(NULL);
     close_audio();
     InterlockedExchange(&g_loading, 1);
-    set_status(L"Loading the ROM and advancing generated Full Static code to the title frame...");
+    set_status(L"Loading and verifying the exact SimCity ROM...");
     update_controls();
     g_loader_thread = CreateThread(NULL, 0u, loader_thread_proc,
                                    request, 0u, NULL);
@@ -1025,82 +963,6 @@ static int save_bgra_bmp(const wchar_t *path, const uint8_t *pixels,
     return 1;
 }
 
-/*
- * PrintWindow and BitBlt do not reliably capture an SDL GPU child window.
- * Keep the captured Win32 chrome, then composite the core's last completed
- * frame over the exact presentation rectangle used by the live renderer.
- */
-static int composite_stable_game_frame(HWND target_window,
-                                       const RECT *window_rectangle,
-                                       uint8_t *window_pixels,
-                                       int window_width,
-                                       int window_height,
-                                       int window_stride) {
-    const uint32_t *frame_pixels;
-    RECT client;
-    POINT client_origin = {0, 0};
-    int client_left;
-    int client_top;
-    int render_top;
-    int draw_x;
-    int draw_y;
-    int draw_width;
-    int draw_height;
-    int clear_left;
-    int clear_top;
-    int clear_right;
-    int clear_bottom;
-    int y;
-    if (target_window != g_window || !g_game || !window_rectangle ||
-        !window_pixels || window_width <= 0 || window_height <= 0 ||
-        window_stride < window_width * 4) return 0;
-    frame_pixels = simcity_recomp_frame_bgra(g_game);
-    if (!frame_pixels) return 0;
-    if (!GetClientRect(target_window, &client) ||
-        !ClientToScreen(target_window, &client_origin)) return 0;
-    client_left = client_origin.x - window_rectangle->left;
-    client_top = client_origin.y - window_rectangle->top;
-    render_top = g_presentation_hidden ? 0 : 80;
-    simcity_video_output_calculate_destination(
-        client.right - client.left, client.bottom - client.top, render_top,
-        g_frontend_settings.integer_scale,
-        g_frontend_settings.correct_aspect,
-        &draw_x, &draw_y, &draw_width, &draw_height);
-    draw_x += client_left;
-    draw_y += client_top;
-    clear_left = client_left < 0 ? 0 : client_left;
-    clear_top = client_top + render_top;
-    if (clear_top < 0) clear_top = 0;
-    clear_right = client_left + client.right - client.left;
-    if (clear_right > window_width) clear_right = window_width;
-    clear_bottom = client_top + client.bottom - client.top;
-    if (clear_bottom > window_height) clear_bottom = window_height;
-    for (y = clear_top; y < clear_bottom; ++y) {
-        if (clear_right > clear_left)
-            memset(window_pixels + (size_t)y * (size_t)window_stride +
-                       (size_t)clear_left * 4u,
-                   0, (size_t)(clear_right - clear_left) * 4u);
-    }
-    for (y = 0; y < draw_height; ++y) {
-        int destination_y = draw_y + y;
-        int source_y = y * SIMCITY_RECOMP_FRAME_HEIGHT / draw_height;
-        int x;
-        uint32_t *destination;
-        if (destination_y < 0 || destination_y >= window_height) continue;
-        destination = (uint32_t *)(window_pixels +
-            (size_t)destination_y * (size_t)window_stride);
-        for (x = 0; x < draw_width; ++x) {
-            int destination_x = draw_x + x;
-            int source_x;
-            if (destination_x < 0 || destination_x >= window_width) continue;
-            source_x = x * SIMCITY_RECOMP_FRAME_WIDTH / draw_width;
-            destination[destination_x] = frame_pixels[
-                (size_t)source_y * SIMCITY_RECOMP_FRAME_WIDTH + source_x];
-        }
-    }
-    return 1;
-}
-
 static int capture_window_screenshot_to(const wchar_t *base_directory,
                                         wchar_t *saved_path,
                                         size_t saved_capacity) {
@@ -1145,8 +1007,6 @@ static int capture_window_screenshot_to(const wchar_t *base_directory,
     pixels = (uint8_t *)malloc((size_t)width * (size_t)height * 4u);
     if (!pixels || !GetDIBits(memory_dc, bitmap, 0u, (UINT)height, pixels,
                               &info, DIB_RGB_COLORS)) goto cleanup;
-    (void)composite_stable_game_frame(target_window, &rectangle, pixels,
-                                      width, height, width * 4);
     if (base_directory && base_directory[0])
         join_wide_path(directory, PATH_CAPACITY, base_directory, L"Screenshots");
     else
@@ -1173,24 +1033,68 @@ cleanup:
     return success;
 }
 
+static int write_screenshot_static_log(const wchar_t *screenshot_path,
+                                       wchar_t *saved_path,
+                                       size_t saved_capacity) {
+    wchar_t screenshot_directory[PATH_CAPACITY];
+    wchar_t logs_directory[PATH_CAPACITY];
+    wchar_t log_path[PATH_CAPACITY];
+    wchar_t *separator;
+    wchar_t *extension;
+    const wchar_t *filename;
+    char narrow_log_path[PATH_CAPACITY * 3u];
+    char narrow_screenshot_path[PATH_CAPACITY * 3u];
+    char error[192];
+    if (saved_path && saved_capacity) saved_path[0] = L'\0';
+    if (!g_game || !screenshot_path || !screenshot_path[0]) return 0;
+    copy_wide(screenshot_directory, PATH_CAPACITY, screenshot_path);
+    separator = wcsrchr(screenshot_directory, L'\\');
+    if (!separator) return 0;
+    filename = separator + 1;
+    *separator = L'\0';
+    join_wide_path(logs_directory, PATH_CAPACITY,
+                   screenshot_directory, L"Logs");
+    if (!logs_directory[0] || !ensure_directory_tree(logs_directory))
+        return 0;
+    join_wide_path(log_path, PATH_CAPACITY, logs_directory, filename);
+    if (!log_path[0]) return 0;
+    extension = wcsrchr(log_path, L'.');
+    if (!extension) return 0;
+    copy_wide(extension, PATH_CAPACITY - (size_t)(extension - log_path),
+              L".txt");
+    if (!wide_to_utf8(log_path, narrow_log_path,
+                      sizeof(narrow_log_path)) ||
+        !wide_to_utf8(screenshot_path, narrow_screenshot_path,
+                      sizeof(narrow_screenshot_path)) ||
+        !simcity_recomp_write_diagnostic_log(
+            g_game, narrow_log_path, narrow_screenshot_path,
+            error, sizeof(error)))
+        return 0;
+    if (saved_path && saved_capacity)
+        copy_wide(saved_path, saved_capacity, log_path);
+    return 1;
+}
+
 static void capture_window_screenshot(void) {
     wchar_t path[PATH_CAPACITY];
-    wchar_t status[PATH_CAPACITY + 128u];
+    wchar_t log_path[PATH_CAPACITY];
+    wchar_t status[PATH_CAPACITY * 2u + 160u];
     uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
     if (!capture_window_screenshot_to(NULL, path,
                                       sizeof(path) / sizeof(path[0]))) {
-        write_diagnostic_event(L"screenshot-failed",
-                               L"The in-app whole-window screenshot failed.",
-                               NULL, NULL);
         set_status(L"Unable to save the whole-window screenshot.");
         return;
     }
-    write_diagnostic_event(L"screenshot",
-                           L"The in-app whole-window screenshot completed.",
-                           path, NULL);
-    (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
-                     L"Whole-window screenshot saved at frame %u: %s",
-                     frame, path);
+    if (!write_screenshot_static_log(path, log_path,
+                                     sizeof(log_path) / sizeof(log_path[0]))) {
+        (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
+                         L"Screenshot saved at frame %u, but its static-core log could not be written: %s",
+                         frame, path);
+    } else {
+        (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
+                         L"Screenshot and static-core log saved at frame %u: %s | %s",
+                         frame, path, log_path);
+    }
     status[(sizeof(status) / sizeof(status[0])) - 1u] = L'\0';
     set_status(status);
 }
@@ -1226,6 +1130,11 @@ static const wchar_t g_welcome_text[] =
     L"F9 - Start or stop audio recording";
 
 static void show_shortcuts(void) {
+    if (!IsWindow(g_info_window)) {
+        g_info_resume_after = g_game && !g_paused;
+        if (g_info_resume_after)
+            pause_game(L"Paused while Launcher Shortcut Keys is open.");
+    }
     show_information_window(L"Launcher Shortcut Keys", g_welcome_text, 680, 520);
 }
 
@@ -1238,8 +1147,6 @@ static void show_frontend_settings(void) {
                 &g_frontend_settings, g_frontend_ini_path))
             set_status(L"Settings changed, but the settings file could not be written.");
         else set_status(L"Settings changed and saved.");
-            (void)simcity_video_output_set_vsync(
-                &g_video_output, g_frontend_settings.vsync_enabled);
             SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
                          g_frontend_settings.auto_run_on_load ?
                          BST_CHECKED : BST_UNCHECKED, 0);
@@ -1264,13 +1171,12 @@ static int ensure_snapshot_directory(wchar_t *directory, size_t capacity) {
 
 static int snapshot_slot_path(int slot, wchar_t *path, size_t capacity) {
     wchar_t directory[PATH_CAPACITY];
-    if (!path || capacity == 0u || slot < 1 || slot > 5) {
+    if (slot < 1 || slot > 5 ||
+        !ensure_snapshot_directory(directory,
+                                   sizeof(directory) / sizeof(directory[0]))) {
         if (capacity) path[0] = L'\0';
         return 0;
     }
-    _snwprintf(directory, sizeof(directory) / sizeof(directory[0]),
-               L"%s\\Snapshots", g_executable_directory);
-    directory[(sizeof(directory) / sizeof(directory[0])) - 1u] = L'\0';
     _snwprintf(path, capacity, L"%s\\snapshot-slot-%d.scsnap",
                directory, slot);
     path[capacity - 1u] = L'\0';
@@ -1338,9 +1244,7 @@ static int save_snapshot_slot(int slot) {
     g_frontend_settings.snapshot_slot = slot;
     (void)simcity_frontend_settings_win32_save(
         &g_frontend_settings, g_frontend_ini_path);
-    if (!ensure_snapshot_directory(path,
-                                   sizeof(path) / sizeof(path[0])) ||
-        !snapshot_slot_path(slot, path,
+    if (!snapshot_slot_path(slot, path,
                             sizeof(path) / sizeof(path[0]))) {
         set_status(L"The Snapshots folder could not be created beside Launcher.exe.");
         return 0;
@@ -1590,10 +1494,18 @@ static void show_snapshot_window(int save_mode) {
     HWND dialog;
     MSG message;
     int message_result = 1;
+    wchar_t directory[PATH_CAPACITY];
     ZeroMemory(&message, sizeof(message));
     if (!g_game) {
         set_status(L"Load and run the ROM before using snapshots.");
         MessageBeep(MB_ICONWARNING);
+        return;
+    }
+    if (!ensure_snapshot_directory(directory,
+                                   sizeof(directory) / sizeof(directory[0]))) {
+        MessageBoxW(g_window,
+            L"The Snapshots folder could not be created beside Launcher.exe.",
+            APP_TITLE, MB_OK | MB_ICONERROR);
         return;
     }
     ZeroMemory(&state, sizeof(state));
@@ -1705,8 +1617,11 @@ static LRESULT CALLBACK info_dialog_proc(HWND window, UINT message,
         case WM_DESTROY:
             if (window == g_info_window) {
                 g_info_window = NULL;
-                g_info_dialog_state.text = NULL;
-                g_info_dialog_state.close_button = NULL;
+                ZeroMemory(&g_info_state, sizeof(g_info_state));
+                if (g_info_resume_after && !g_shutting_down && g_game &&
+                    IsWindow(g_window))
+                    play_game();
+                g_info_resume_after = 0;
             }
             return 0;
         default:
@@ -1719,39 +1634,33 @@ static void show_information_window(const wchar_t *title,
                                     const wchar_t *body,
                                     int width, int height) {
     HWND dialog;
-    wcsncpy_s(g_info_dialog_state.body,
-              sizeof(g_info_dialog_state.body) /
-                  sizeof(g_info_dialog_state.body[0]),
-              body ? body : L"", _TRUNCATE);
     if (IsWindow(g_info_window)) {
-        SetWindowTextW(g_info_window, title);
-        SetWindowTextW(g_info_dialog_state.text, g_info_dialog_state.body);
-        notify_accessible_value(g_info_dialog_state.text);
         ShowWindow(g_info_window, SW_RESTORE);
-        SetWindowPos(g_info_window, HWND_TOP, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        BringWindowToTop(g_info_window);
         SetForegroundWindow(g_info_window);
-        SetFocus(g_info_dialog_state.text);
-        NotifyWinEvent(EVENT_OBJECT_FOCUS, g_info_dialog_state.text,
-                       OBJID_CLIENT, CHILDID_SELF);
+        if (IsWindow(g_info_state.text)) SetFocus(g_info_state.text);
         return;
     }
-    g_info_dialog_state.text = NULL;
-    g_info_dialog_state.close_button = NULL;
+    ZeroMemory(&g_info_state, sizeof(g_info_state));
+    g_info_state.body = body;
     dialog = CreateWindowExW(
         WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
         INFO_CLASS_NAME, title,
         WS_CAPTION | WS_SYSMENU | WS_POPUP | WS_VISIBLE | WS_THICKFRAME,
         CW_USEDEFAULT, CW_USEDEFAULT, width, height,
-        g_window, NULL, g_instance, &g_info_dialog_state);
-    if (!dialog) return;
+        g_window, NULL, g_instance, &g_info_state);
+    if (!dialog) {
+        if (g_info_resume_after && g_game) play_game();
+        g_info_resume_after = 0;
+        return;
+    }
     g_info_window = dialog;
     SetWindowTextW(dialog, title);
     center_window_on_parent(dialog, g_window);
     ShowWindow(dialog, SW_SHOWNORMAL);
-    SetWindowPos(dialog, HWND_TOP, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    BringWindowToTop(dialog);
     SetForegroundWindow(dialog);
+    if (IsWindow(g_info_state.text)) SetFocus(g_info_state.text);
 }
 
 static HWND create_getting_started_text(HWND parent, const wchar_t *text,
@@ -2086,34 +1995,26 @@ static void reset_pacing_clock(void) {
 static int advance_frame_batch(uint32_t frame_count) {
     SimCityRecompFrameResult result;
     wchar_t message[512];
-    uint32_t frame_index;
-    const uint32_t *pixels;
+    uint32_t headless_count;
+    uint16_t input_mask;
     int recorder_was_active;
     if (!g_game || frame_count == 0u) return 1;
     memset(&result, 0, sizeof(result));
-    for (frame_index = 0u; frame_index < frame_count; ++frame_index) {
-        uint16_t input_mask = current_gameplay_input();
-        int final_frame = frame_index + 1u == frame_count;
-        int advanced;
-
-        memset(&result, 0, sizeof(result));
-        if (final_frame) {
-            advanced = simcity_recomp_advance(
-                g_game, input_mask, 1u, &result);
-        } else {
-            ++g_video_output.diagnostics.dropped_presentations;
-            advanced = simcity_recomp_advance_headless(
-                g_game, input_mask, 1u, &result);
-        }
-        if (!advanced) {
-            stop_game_on_core_failure();
-            return 0;
-        }
-        /* Clear only after a complete core frame consumes the transition. A
-           key released between Windows messages and this point still reaches
-           exactly one emulated frame. */
-        g_latched_input = 0u;
+    input_mask = current_gameplay_input();
+    headless_count = frame_count > 1u ? frame_count - 1u : 0u;
+    if (headless_count &&
+        !simcity_recomp_advance_headless(g_game, input_mask,
+                                         headless_count, &result)) {
+        stop_game_on_core_failure();
+        return 0;
     }
+    memset(&result, 0, sizeof(result));
+    if (!simcity_recomp_advance(g_game, input_mask, 1u, &result)) {
+        stop_game_on_core_failure();
+        return 0;
+    }
+    if (keyboard_gameplay_active())
+        simcity_input_latch_consume(&g_keyboard_input, input_mask);
     recorder_was_active = simcity_audio_recorder_win32_active(&g_audio_recorder);
     simcity_audio_output_pump(&g_audio_output, &g_audio_recorder, g_game);
     if (recorder_was_active &&
@@ -2137,27 +2038,14 @@ static int advance_frame_batch(uint32_t frame_count) {
                    L"The current frame is valid forced blank or not yet renderable; static execution continues.");
         return 1;
     }
-    pixels = simcity_recomp_frame_bgra(g_game);
-    if (pixels && simcity_video_output_available(&g_video_output) &&
-        simcity_video_output_submit(
-            &g_video_output, pixels, SIMCITY_RECOMP_FRAME_PIXELS) &&
-        simcity_video_output_present(
-            &g_video_output, 0,
-            g_frontend_settings.integer_scale,
-            g_frontend_settings.correct_aspect)) {
-        if (IsWindow(g_video_surface) && !IsWindowVisible(g_video_surface))
-            ShowWindow(g_video_surface, SW_SHOWNOACTIVATE);
-        return 1;
-    }
-    if (IsWindow(g_video_surface)) ShowWindow(g_video_surface, SW_HIDE);
     InvalidateRect(g_window, NULL, FALSE);
     return 1;
 }
 
 static void service_host_timer(void) {
     LARGE_INTEGER before;
+    LARGE_INTEGER after;
     uint64_t skipped = 0u;
-    uint32_t due_frames = 0u;
     if (!QueryPerformanceCounter(&before)) {
         (void)arm_frame_timer();
         return;
@@ -2168,22 +2056,18 @@ static void service_host_timer(void) {
     }
 
     ++g_pacing_timer_ticks;
-    do {
-        ++due_frames;
-        advance_frame_deadline();
-    } while (due_frames < MAX_HOST_CATCHUP_FRAMES &&
-             g_next_frame_deadline <= (uint64_t)before.QuadPart);
-    while (g_next_frame_deadline <= (uint64_t)before.QuadPart) {
-        advance_frame_deadline();
-        ++skipped;
-    }
-    simcity_gamepad_win32_begin_frame(&g_gamepad, 1u);
     g_gamepad_input = simcity_gamepad_win32_poll(
-        &g_gamepad, g_frontend_settings.gamepad_bindings[0],
-        g_frontend_settings.gamepad_deadzone_percent);
+        &g_gamepad, g_frontend_settings.gamepad_bindings);
     if (g_game && !g_paused) {
-        if (g_pacing_max_batch < due_frames) g_pacing_max_batch = due_frames;
-        (void)advance_frame_batch(due_frames);
+        if (g_pacing_max_batch < 1u) g_pacing_max_batch = 1u;
+        (void)advance_frame_batch(1u);
+    }
+    advance_frame_deadline();
+    if (QueryPerformanceCounter(&after)) {
+        while (g_next_frame_deadline <= (uint64_t)after.QuadPart) {
+            advance_frame_deadline();
+            ++skipped;
+        }
     }
     if (skipped) {
         g_pacing_skipped_deadlines += skipped;
@@ -2197,18 +2081,8 @@ static void service_host_timer(void) {
 static void layout_controls(HWND window) {
     RECT client;
     int width;
-    int height;
-    int video_top;
     GetClientRect(window, &client);
     width = client.right - client.left;
-    height = client.bottom - client.top;
-    video_top = g_presentation_hidden ? 0 : 80;
-    if (IsWindow(g_video_surface)) {
-        SetWindowPos(g_video_surface, HWND_BOTTOM, 0, video_top,
-                     width > 0 ? width : 1,
-                     height > video_top ? height - video_top : 1,
-                     SWP_NOACTIVATE);
-    }
     if (g_presentation_hidden) return;
     MoveWindow(g_browse_button, 8, 8, 116, 30, TRUE);
     MoveWindow(g_pause_play_button, 130, 8, 104, 30, TRUE);
@@ -2227,19 +2101,6 @@ static void paint_window(HWND window) {
     RECT client;
     RECT render_area;
     const uint32_t *pixels = simcity_recomp_frame_bgra(g_game);
-    if (pixels && simcity_video_output_available(&g_video_output) &&
-        simcity_video_output_submit(
-            &g_video_output, pixels, SIMCITY_RECOMP_FRAME_PIXELS) &&
-        simcity_video_output_present(
-            &g_video_output, 0,
-            g_frontend_settings.integer_scale,
-            g_frontend_settings.correct_aspect)) {
-        if (IsWindow(g_video_surface) && !IsWindowVisible(g_video_surface))
-            ShowWindow(g_video_surface, SW_SHOWNOACTIVATE);
-        EndPaint(window, &paint);
-        return;
-    }
-    if (IsWindow(g_video_surface)) ShowWindow(g_video_surface, SW_HIDE);
     GetClientRect(window, &client);
     FillRect(dc, &client, (HBRUSH)GetStockObject(BLACK_BRUSH));
     render_area.left = 0;
@@ -2249,15 +2110,26 @@ static void paint_window(HWND window) {
 
     if (g_game && pixels && render_area.bottom > render_area.top) {
         BITMAPINFO bitmap;
-        int draw_width;
-        int draw_height;
+        int available_width = render_area.right - render_area.left;
+        int available_height = render_area.bottom - render_area.top;
+        int draw_width = available_width;
+        int draw_height = draw_width * (int)SIMCITY_RECOMP_FRAME_HEIGHT /
+                          (int)SIMCITY_RECOMP_FRAME_WIDTH;
         int x;
         int y;
-        simcity_video_output_calculate_destination(
-            client.right - client.left, client.bottom - client.top,
-            render_area.top, g_frontend_settings.integer_scale,
-            g_frontend_settings.correct_aspect,
-            &x, &y, &draw_width, &draw_height);
+        if (g_frontend_settings.integer_scale >= 1 &&
+            g_frontend_settings.integer_scale <= 4) {
+            draw_width = (int)SIMCITY_RECOMP_FRAME_WIDTH *
+                         g_frontend_settings.integer_scale;
+            draw_height = (int)SIMCITY_RECOMP_FRAME_HEIGHT *
+                          g_frontend_settings.integer_scale;
+        } else if (draw_height > available_height) {
+            draw_height = available_height;
+            draw_width = draw_height * (int)SIMCITY_RECOMP_FRAME_WIDTH /
+                         (int)SIMCITY_RECOMP_FRAME_HEIGHT;
+        }
+        x = render_area.left + (available_width - draw_width) / 2;
+        y = render_area.top + (available_height - draw_height) / 2;
         ZeroMemory(&bitmap, sizeof(bitmap));
         bitmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
         bitmap.bmiHeader.biWidth = (LONG)SIMCITY_RECOMP_FRAME_WIDTH;
@@ -2622,7 +2494,7 @@ static HMENU create_menu_bar(void) {
     AppendMenuW(settings, MF_STRING, ID_AUTO_RUN,
                 L"&Auto-Run at Startup");
     AppendMenuW(help, MF_STRING, ID_GETTING_STARTED,
-                L"&Getting Started");
+                L"&Getting Started...");
     AppendMenuW(help, MF_STRING, ID_SHORTCUTS,
                 L"Launcher &Shortcut Keys\tF1");
     AppendMenuW(help, MF_SEPARATOR, 0, NULL);
@@ -2637,7 +2509,6 @@ static void initialize_paths_and_settings(void) {
     wchar_t module_path[PATH_CAPACITY];
     wchar_t default_rom[PATH_CAPACITY];
     wchar_t gamepad_database[PATH_CAPACITY];
-    wchar_t video_error[512];
     wchar_t *slash;
     DWORD length = GetModuleFileNameW(NULL, module_path,
                                      (DWORD)(sizeof(module_path) /
@@ -2645,7 +2516,6 @@ static void initialize_paths_and_settings(void) {
     simcity_audio_settings_defaults(&g_audio_settings);
     simcity_audio_output_initialize(&g_audio_output);
     simcity_audio_recorder_win32_init(&g_audio_recorder);
-    simcity_video_output_initialize(&g_video_output);
     simcity_frontend_settings_win32_defaults(&g_frontend_settings);
     if (length == 0u || length >= sizeof(module_path) / sizeof(module_path[0]))
         return;
@@ -2662,9 +2532,6 @@ static void initialize_paths_and_settings(void) {
     join_wide_path(g_saves_directory,
                    sizeof(g_saves_directory) / sizeof(g_saves_directory[0]),
                    g_executable_directory, L"Saves");
-    join_wide_path(g_logs_directory,
-                   sizeof(g_logs_directory) / sizeof(g_logs_directory[0]),
-                   g_executable_directory, L"Logs");
     join_wide_path(g_sram_path,
                    sizeof(g_sram_path) / sizeof(g_sram_path[0]),
                    g_saves_directory, L"SimCity-USA.srm");
@@ -2683,25 +2550,13 @@ static void initialize_paths_and_settings(void) {
     g_frontend_ini_path[(sizeof(g_frontend_ini_path) /
                          sizeof(g_frontend_ini_path[0])) - 1u] = L'\0';
     simcity_frontend_settings_win32_load(&g_frontend_settings,
-                                          g_frontend_ini_path);
-    video_error[0] = L'\0';
-    if (!simcity_video_output_open(
-            &g_video_output, g_video_surface,
-            g_frontend_settings.vsync_enabled,
-            video_error, sizeof(video_error) / sizeof(video_error[0])))
-        set_status(video_error[0] ? video_error :
-                   L"GPU presentation is unavailable; using the Win32 software fallback.");
+                                         g_frontend_ini_path);
     join_wide_path(gamepad_database,
                    sizeof(gamepad_database) / sizeof(gamepad_database[0]),
                    g_executable_directory, L"gamecontrollerdb.txt");
-    (void)simcity_gamepad_win32_initialize(
-        &g_gamepad, gamepad_database, 0u,
-        g_frontend_settings.gamepad_guid[0]);
-    simcity_gamepad_win32_guid(
-        &g_gamepad, g_frontend_settings.gamepad_guid[0],
-        SIMCITY_GAMEPAD_GUID_CAPACITY);
-    if (!g_frontend_settings.input_source_saved[0])
-        g_frontend_settings.input_source[0] = g_gamepad.startup_gamepad_found ?
+    (void)simcity_gamepad_win32_initialize(&g_gamepad, gamepad_database);
+    if (!g_frontend_settings.input_source_saved)
+        g_frontend_settings.input_source = g_gamepad.startup_gamepad_found ?
             SIMCITY_INPUT_SOURCE_GAMEPAD : SIMCITY_INPUT_SOURCE_KEYBOARD;
     SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
                  g_frontend_settings.auto_run_on_load ? BST_CHECKED : BST_UNCHECKED,
@@ -2827,9 +2682,6 @@ static void save_current_settings_on_exit(void) {
         g_frontend_settings.fullscreen_on_play =
             SendMessageW(g_fullscreen_checkbox, BM_GETCHECK, 0, 0) ==
             BST_CHECKED;
-    simcity_gamepad_win32_guid(
-        &g_gamepad, g_frontend_settings.gamepad_guid[0],
-        SIMCITY_GAMEPAD_GUID_CAPACITY);
     (void)simcity_frontend_settings_win32_save(
         &g_frontend_settings, g_frontend_ini_path);
     simcity_audio_settings_save(&g_audio_settings, g_audio_ini_path);
@@ -2840,11 +2692,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                                     WPARAM wparam, LPARAM lparam) {
     switch (message) {
         case WM_CREATE:
-            g_video_surface = CreateWindowExW(
-                WS_EX_NOACTIVATE, L"STATIC", L"",
-                WS_CHILD | WS_DISABLED | SS_BLACKRECT,
-                0, 80, 1, 1, window, NULL, g_instance, NULL);
-            if (!g_video_surface) return -1;
             g_browse_button = CreateWindowExW(
                 0, L"BUTTON", L"&Browse",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
@@ -2980,38 +2827,12 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 case ID_ABOUT:
                     {
                         static wchar_t about[4096];
-                        wchar_t renderer_name[128];
-                        SimCityAudioDiagnostics audio_diagnostics;
-                        SimCityVideoDiagnostics video_diagnostics;
-                        simcity_audio_output_get_diagnostics(
-                            &g_audio_output, &audio_diagnostics);
-                        simcity_video_output_get_diagnostics(
-                            &g_video_output, &video_diagnostics);
-                        utf8_to_wide(video_diagnostics.renderer_name,
-                                     renderer_name,
-                                     sizeof(renderer_name) /
-                                     sizeof(renderer_name[0]));
                         (void)_snwprintf(about, sizeof(about) / sizeof(about[0]),
-                            L"SimCity (SNES) Static Recomp 1.2.0\r\n\r\n"
+                            L"SimCity (SNES) Static Recomp\r\n\r\n"
                             L"Launcher file: Launcher.exe\r\n"
                             L"Game window: SimCity (SNES)\r\n\r\n"
-                            L"Generated static S-CPU execution with SDL3 video, controller and PCM host frontends. Full Static audio is the only linked audio path and fails closed.\r\n\r\n"
-                            L"The USA cartridge uses native NTSC hardware timing at approximately 60.098813897 frames per second and 32,040 native audio frames per second. F8 captures the active application window and F9 records Full Static WAV audio.\r\n\r\n"
-                            L"Runtime diagnostics\r\nRenderer: %s (%s), VSync %s\r\nFrames submitted/presented: %llu / %llu; intentionally dropped: %llu; presentation failures: %llu\r\nAudio device rate: %d Hz; queue: %u/%u native frames; underruns: %llu; playback ratio: %.6f\r\nTimer catch-up maximum: %u frames; skipped deadlines: %llu\r\n\r\n%s",
-                            renderer_name[0] ? renderer_name : L"unavailable",
-                            video_diagnostics.using_gpu ? L"GPU" : L"software",
-                            video_diagnostics.vsync_enabled ? L"on" : L"off",
-                            (unsigned long long)video_diagnostics.submitted_frames,
-                            (unsigned long long)video_diagnostics.presented_frames,
-                            (unsigned long long)video_diagnostics.dropped_presentations,
-                            (unsigned long long)video_diagnostics.presentation_failures,
-                            audio_diagnostics.device_sample_rate,
-                            audio_diagnostics.queue_depth_frames,
-                            audio_diagnostics.target_latency_frames,
-                            (unsigned long long)audio_diagnostics.underruns,
-                            audio_diagnostics.playback_ratio,
-                            MAX_HOST_CATCHUP_FRAMES,
-                            (unsigned long long)g_pacing_skipped_deadlines,
+                            L"Generated static S-CPU execution with native video, controller and PCM host frontends. Full Static audio is the only linked audio path and fails closed.\r\n\r\n"
+                            L"The USA cartridge uses native NTSC hardware timing at approximately 60.098813897 frames per second and 32,040 native audio frames per second. Valid forced-blank startup frames no longer pause the application. F8 captures the active application window and F9 records Full Static WAV audio.\r\n\r\n%s",
                             ROM_REQUIREMENTS_TEXT);
                         about[(sizeof(about) / sizeof(about[0])) - 1u] = L'\0';
                         show_information_window(L"About", about, 720, 560);
@@ -3052,12 +2873,11 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             if (wparam == '2') { load_current_snapshot(); return 0; }
             if (g_game && !g_paused && GetFocus() == g_window &&
                 keyboard_gameplay_active()) {
-                uint16_t mask = virtual_key_to_input(wparam, lparam);
+                uint16_t mask = virtual_key_to_input(wparam);
                 if (mask != 0u) {
-                    g_held_input = (uint16_t)(g_held_input | mask);
-                    if ((lparam & (1L << 30)) == 0)
-                        g_latched_input = (uint16_t)(
-                            g_latched_input | (mask & action_input_mask()));
+                    simcity_input_latch_press(
+                        &g_keyboard_input, mask, opposite_direction(mask),
+                        (lparam & (1L << 30)) != 0);
                     return 0;
                 }
             }
@@ -3066,18 +2886,16 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
         case WM_KEYUP:
             if (g_game && !g_paused && GetFocus() == g_window &&
                 keyboard_gameplay_active()) {
-                uint16_t mask = virtual_key_to_input(wparam, lparam);
+                uint16_t mask = virtual_key_to_input(wparam);
                 if (mask != 0u) {
-                    g_held_input = (uint16_t)(g_held_input &
-                                             (uint16_t)~mask);
+                    simcity_input_latch_release(&g_keyboard_input, mask);
                     return 0;
                 }
             }
             break;
 
         case WM_KILLFOCUS:
-            g_held_input = 0u;
-            g_latched_input = 0u;
+            simcity_input_latch_reset(&g_keyboard_input);
             g_gamepad_input = 0u;
             if (g_frontend_settings.pause_on_focus_loss &&
                 g_game && !g_paused)
@@ -3127,8 +2945,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             result->game = NULL;
             free(result);
             g_paused = 1;
-            g_held_input = 0u;
-            g_latched_input = 0u;
+            simcity_input_latch_reset(&g_keyboard_input);
             (void)open_audio(1);
             InvalidateRect(window, NULL, TRUE);
             update_controls();
@@ -3153,6 +2970,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 update_controls();
                 return 0;
             }
+            g_shutting_down = 1;
             save_current_settings_on_exit();
             DestroyWindow(window);
             return 0;
@@ -3167,7 +2985,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             (void)flush_battery_sram_win32(1, NULL, 0u);
             (void)simcity_audio_recorder_win32_stop(&g_audio_recorder);
             close_audio();
-            simcity_video_output_close(&g_video_output);
             if (g_loader_thread) {
                 WaitForSingleObject(g_loader_thread, INFINITE);
                 CloseHandle(g_loader_thread);
@@ -3289,7 +3106,6 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     if (!g_window) return 1;
 
     initialize_paths_and_settings();
-    SetUnhandledExceptionFilter(launcher_unhandled_exception_filter);
     ShowWindow(g_window, SW_MAXIMIZE);
     UpdateWindow(g_window);
     g_startup_pending = 1;
@@ -3362,11 +3178,6 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                     if (IsWindow(g_info_window) &&
                         (message.hwnd == g_info_window ||
                          IsChild(g_info_window, message.hwnd))) {
-                        if (message.message == WM_KEYDOWN &&
-                            message.wParam == VK_ESCAPE) {
-                            DestroyWindow(g_info_window);
-                            continue;
-                        }
                         if (IsDialogMessageW(g_info_window, &message))
                             continue;
                     }
@@ -3385,8 +3196,7 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                          message.message == WM_KEYUP) &&
                           GetFocus() == g_window && g_game && !g_paused &&
                           keyboard_gameplay_active() &&
-                        virtual_key_to_input(message.wParam,
-                                             message.lParam) != 0u;
+                        virtual_key_to_input(message.wParam) != 0u;
                     if (root_shortcut) {
                         if ((GetKeyState(VK_CONTROL) & 0x8000) != 0 &&
                             (message.wParam == 'O' || message.wParam == 'o'))
