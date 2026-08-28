@@ -1,10 +1,31 @@
 SimCity SNES Static Recomp
-Version: 1.2.0
+Version: 1.3.0
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32/GDI launcher and video; SDL3 gamepad input
-Audio: Full Static, 32,040 Hz stereo PCM through four native WinMM buffers
+Audio: Full Static, 32,040 Hz stereo PCM through a statically linked SDL3 audio stream
 ROM: required externally and not included
+
+Changes in 1.3.0:
+- Added a real 398x239 widescreen city view with 71 additional rendered pixels on both sides of the original 256x239 frame.
+- Limited widescreen expansion to the live city PPU layout so title, setup, scenario, tutorial, information, and modal screens retain their authentic presentation.
+- Extended BG1 and BG2 from the actual city tilemap instead of stretching or repeating the original framebuffer.
+- Clamped the widened camera against all four map boundaries so no black side gaps appear at the top-left, top-right, bottom-left, or bottom-right corners.
+- Extended the map cursor and building placement connector into both added side areas while preserving the selected world cell.
+- Added safe A+Left/Right camera rebasing so native panning can continue after the cursor enters a widened margin.
+- Preserved native Select and X toolbar commands from widened cursor positions by temporarily rebasing input into the core's safe coordinate range.
+- Kept the native HUD anchored at the physical left edge and separated map-cursor OAM entries from toolbar sprites.
+- Fixed hidden HUD sprites being misread as widened cursor objects, eliminating duplicate toolbar, RCI meter, and transition fragments.
+- Preserved toolbar hand ownership of shared WRAM coordinates and retained vertical scrolling while the connector consumes widened horizontal movement.
+- Completed missing exact static contexts reached by scenario and full-map widescreen traversal.
+- Added deterministic widescreen probes covering HUD show/hide, toolbar focus, side-area construction, return visits, camera traversal, Freeland, scenarios, and all four map corners.
+- Replaced the fixed WinMM playback buffers with a statically linked SDL3 audio stream while retaining the Full Static S-SMP/S-DSP core and native 32,040 Hz PCM source.
+- Added controlled stream priming, queue-depth monitoring, selected-device support, device-rate conversion, a short resume fade, and bounded drift correction.
+- Preserved queued audio across ordinary pause/resume transitions and flushed only when a reset or discontinuity requires it.
+- Kept the native-rate audio producer and Windows high-resolution frame deadline synchronized through screenshots, Escape navigation, idle gameplay, and focus changes.
+- Changed the toolbar order to Full screen, Wide Screen, Auto-Run and matched keyboard Tab order to the visible layout.
+- Added Wide Screen - 1.3.0.txt and Audio - 1.3.0.txt with reproducible implementation and verification details.
+- Confirmed widescreen and audio manually in windowed and full-screen gameplay, including screenshots, HUD transitions, Escape navigation, and extended idle testing.
 
 Changes in 1.2.0:
 - Compacted repeated generated-core bookkeeping into compile-time macros.

@@ -31,11 +31,33 @@ add_executable(simcity-launcher WIN32
     simcity_launcher_win32.c
     simcity_app_core.c
     launcher_version.rc
-    simcity_audio_output_winmm.c
+    simcity_audio_output_sdl3.c
     simcity_frontend_settings_win32.c
     ../common/simcity_input_latch.c
     "${SIMCITY_GAMEPAD_ADAPTER_DIR}/simcity_gamepad_input_win32.c"
 )
+
+add_executable(simcity-host-audio-stress
+    ../../tools/audio/host_audio_stress_win32.c
+    simcity_audio_output_sdl3.c
+)
+target_include_directories(simcity-host-audio-stress PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/static-recomp/include"
+)
+target_link_libraries(simcity-host-audio-stress PRIVATE
+    simcity-static-recomp
+    SDL3::SDL3-static
+    user32
+)
+target_compile_definitions(simcity-host-audio-stress PRIVATE
+    _CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+    target_compile_options(simcity-host-audio-stress PRIVATE /W4 /WX)
+else()
+    target_compile_options(simcity-host-audio-stress PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
 target_include_directories(simcity-launcher PRIVATE
     "${CMAKE_SOURCE_DIR}/frontend/common"
     "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -45,7 +67,6 @@ target_include_directories(simcity-launcher PRIVATE
 target_link_libraries(simcity-launcher PRIVATE
     simcity-static-recomp
     SDL3::SDL3-static
-    winmm
     user32
     gdi32
     comdlg32

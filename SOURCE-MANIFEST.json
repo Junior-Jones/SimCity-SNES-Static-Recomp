@@ -1,9 +1,9 @@
 {
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
-  "version": "1.2.0",
-  "file_count": 276,
-  "total_bytes": 19334547,
+  "version": "1.3.0",
+  "file_count": 280,
+  "total_bytes": 19434652,
   "files": [
     {
       "path": ".gitattributes",
@@ -21,19 +21,24 @@
       "sha256": "1cbd398f1899b8558e46bdf9a7ca80cb0934459e9d037041220ec0237892b64e"
     },
     {
+      "path": "Audio - 1.3.0.txt",
+      "size": 5589,
+      "sha256": "3358dc8adbc145222dd3c7fec5ac1dc0ca283248da5117c1f9ebb33a13b1b24a"
+    },
+    {
       "path": "CMakeLists.txt",
-      "size": 1682,
-      "sha256": "c56235c6a3c10de76cd83f0552da71cbf982bd958dc4c0bda22ac6c6cd7ebc2c"
+      "size": 2285,
+      "sha256": "9474c2abc3e4807f13442ef2d639ea7b646c8a45310f01d7d752502882612298"
     },
     {
       "path": "README-FIRST.txt",
-      "size": 852,
-      "sha256": "bc8350dc4bbf1006cfd3cf529b978a36a0a474082ad3bef680094a08f1673312"
+      "size": 868,
+      "sha256": "46930e937d66d287c00ffe1ddef1b10057c68a94884bed230e762af87b5e8f0b"
     },
     {
       "path": "README.md",
-      "size": 2832,
-      "sha256": "c1e44be10d15e82e739586d07a75667210552d5fd3e5d3c842065723197ada20"
+      "size": 2820,
+      "sha256": "5556022ee63ea9b1abc44aef1be2b08ef1bda6021bb0502a5a9073197dff228c"
     },
     {
       "path": "ROM-REQUIREMENTS.txt",
@@ -62,8 +67,13 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 2775,
-      "sha256": "1a239d9fd038f3b41f008eda3c632831bb926c88243843b2117aadfc496e8002"
+      "size": 5459,
+      "sha256": "7249709800a265b864e8130cf3b11d3e72bbc6d290419155486bdbe62ac34c67"
+    },
+    {
+      "path": "Wide Screen - 1.3.0.txt",
+      "size": 6389,
+      "sha256": "365da9716b55f1224279e74f22d5236dbc65c2d12cd78511cccddfaa3da48b67"
     },
     {
       "path": "frontend/common/simcity_input_latch.c",
@@ -77,18 +87,18 @@
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
-      "size": 4357,
-      "sha256": "4811f6ec5724dbf26f9c73f4ac24e9b4aaea545a0dfa35ea1f854b9a2e3aa9cc"
+      "size": 5019,
+      "sha256": "b069d3bbef551a0368090e321f3219d44aafb3fbec07fbe179328c9deeee4e1b"
     },
     {
       "path": "frontend/windows/launcher_version.rc",
       "size": 823,
-      "sha256": "6106c6ffe1746ab629d8582a4484526eabdaac58f92fe221785b7f64a4fd005c"
+      "sha256": "0073fe35170ba661a779834b120f6cfaf623a00b5cbbd81fe6d710d70251ef9e"
     },
     {
       "path": "frontend/windows/simcity_app_core.c",
-      "size": 3638,
-      "sha256": "9a23871a347fb5e0560e9f05a01b468f7045eaa87098c20e9af61755201f7331"
+      "size": 3705,
+      "sha256": "8acd53f60724f6f5be506f8eb98f995506a560deed14e63591a93985196fe657"
     },
     {
       "path": "frontend/windows/simcity_app_core.h",
@@ -96,29 +106,29 @@
       "sha256": "5cb2767485b7f7e9cf072382e1ef06f9d7981d66273ead6f00c4bd8d5fb6ffec"
     },
     {
-      "path": "frontend/windows/simcity_audio_output_winmm.c",
-      "size": 16387,
-      "sha256": "e98adbc773d1265bff49c67420a8cab6d3a8e0611546d30fb8960bf19aa2318e"
+      "path": "frontend/windows/simcity_audio_output_sdl3.c",
+      "size": 14870,
+      "sha256": "bf3ed66b089f7b58439876cd4af38eee9ddb62ed65eea2bfa8523f0f3fc63943"
     },
     {
-      "path": "frontend/windows/simcity_audio_output_winmm.h",
-      "size": 2389,
-      "sha256": "171ed48ddadf85b3aa542f32c239c155e663bd42545f7bb81049af30d27233d7"
+      "path": "frontend/windows/simcity_audio_output_sdl3.h",
+      "size": 2615,
+      "sha256": "1583afb39b4539cb6814f367c05f0f6a309b80df3cfb0a6f8fa82f412049be2d"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 33176,
-      "sha256": "a9b86a6c4d99c95384820976606d894d160a4fbab2bc1412bbb0374f17204254"
+      "size": 33349,
+      "sha256": "bfa4b533da9c0a3fadb3666c88755aac3ca70a1703ff7f05e1c51181a90699f6"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
-      "size": 2141,
-      "sha256": "ca37af5a7a691fde94b8f5947eb5690531baa3ca1d9d1f599411704187432b07"
+      "size": 2161,
+      "sha256": "0b74d8138014c7e3c2cba52ae5269a629fc0aadf83a2abb9fb31dd6645a4ce87"
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 111202,
-      "sha256": "ed0eaf7a061780a5140b8ad76576f17065c351ebafb390497cc1399cba95354a"
+      "size": 116953,
+      "sha256": "2cf560e762dc974a7742a8368b183b26175a5e5fca2cefaec42d2e6759037560"
     },
     {
       "path": "static-recomp/CMakeLists.txt",
@@ -127,13 +137,13 @@
     },
     {
       "path": "static-recomp/generated/SC-COMPACT-GENERATED-RECEIPT.json",
-      "size": 72547,
-      "sha256": "61d0f1ebd54ac585560224fb9d2c141587f742ca5f1e4277746b3aa8bed2d4ad"
+      "size": 70873,
+      "sha256": "d753148eca8b884ad3dc0d189ebbfcbe6e38caa7f5be5041f06f5ce95ea138bd"
     },
     {
       "path": "static-recomp/generated/SC-CONTEXT-PRUNING-RECEIPT.json",
-      "size": 660012,
-      "sha256": "994de8294be6351fb0d91b31f154223d3d781651b380b78a65fb5e48b22b4cc5"
+      "size": 634598,
+      "sha256": "e0a02ffb23cd89ffd28595aaed92c0b91cc51cf7c7862232fee6905189743b58"
     },
     {
       "path": "static-recomp/generated/audio/epoch-topology/sc_audio_epoch_registry.c",
@@ -437,8 +447,8 @@
     },
     {
       "path": "static-recomp/generated/v34-shards/sc_v34_group_00070.c",
-      "size": 96999,
-      "sha256": "ed161e6397b6709fd47d3062edd2b9b282aa6e72edbe95bcf0638fc75d5d6446"
+      "size": 97552,
+      "sha256": "8afe7a1717eeefa505125a47f60afccff21117ff09585f9fe9fbd2eaab06c946"
     },
     {
       "path": "static-recomp/generated/v34-shards/sc_v34_group_00071.c",
@@ -792,8 +802,8 @@
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_00070.c",
-      "size": 105394,
-      "sha256": "84f1fb0187d2b1c468ba548fa514f7be4eba6982b7ec74b28bebf2f1753b14d0"
+      "size": 105707,
+      "sha256": "46d010a98edc5b4c4e8a2b64e6797e780689617d4c315130915c7d39e68cd0b5"
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_00071.c",
@@ -962,8 +972,8 @@
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_000E2.c",
-      "size": 65757,
-      "sha256": "fdb5d51943c84e78deb37578429940f944ae70bc0f03ad344fc9b0959608febd"
+      "size": 66081,
+      "sha256": "cc8f36ce6f7fea881430e3598b8df15b06672352adc6019dd0b3fcceb03e0bdd"
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_000E3.c",
@@ -1017,8 +1027,8 @@
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_000ED.c",
-      "size": 92402,
-      "sha256": "b259fb67e5bc303577502a8a9e8348f38c4939fcefa9fb412d67d8a457648107"
+      "size": 95090,
+      "sha256": "61f6516134f4c42d878d3c04ad1391014202a3a04192168a627093e855eb3b56"
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_000EE.c",
@@ -1117,8 +1127,8 @@
     },
     {
       "path": "static-recomp/include/simcity_static_recomp.h",
-      "size": 9000,
-      "sha256": "e381aca58c35facf4948aa1cbb203d81298d7c3f66d7d0faf03d83f8f458672d"
+      "size": 9551,
+      "sha256": "171a2266a2202e1ce37b706b9f24b112f2757893b5f149a8e96e8376f61ff374"
     },
     {
       "path": "static-recomp/internal/include/sc_audio_clock_profile.h",
@@ -1142,8 +1152,8 @@
     },
     {
       "path": "static-recomp/internal/include/sc_v11_runtime.h",
-      "size": 9823,
-      "sha256": "9da792d21f943c5acd2a36811429e3eb3e7bbc7a88d74cd529d29adefb2674a8"
+      "size": 10011,
+      "sha256": "c50c3ccccf5404ad33e4198edfd92e73efac2b9eb2dba33e1dec06f30c7774a2"
     },
     {
       "path": "static-recomp/internal/include/sc_v11_video.h",
@@ -1152,8 +1162,8 @@
     },
     {
       "path": "static-recomp/internal/include/sc_v28_video.h",
-      "size": 1059,
-      "sha256": "e120d8c8782e3d20ed4d3fa2f05cacb18201ab2630e6fe560f61c665895656fa"
+      "size": 1363,
+      "sha256": "d475c58319c67d73affb55568bb473d7e988d071c83f206a3b808c5ccb175638"
     },
     {
       "path": "static-recomp/src/sc_audio_transport.c",
@@ -1167,8 +1177,8 @@
     },
     {
       "path": "static-recomp/src/sc_v11_bus.c",
-      "size": 28995,
-      "sha256": "4548ce7b1556a17c8a39b711703ea0afd827aa9011f0526f320910e230285b3a"
+      "size": 28994,
+      "sha256": "ae8f1190cf51c13422a4c9c8a978598ef0065b78061704a1c6a4655e099a3ae5"
     },
     {
       "path": "static-recomp/src/sc_v11_cpu.c",
@@ -1192,13 +1202,13 @@
     },
     {
       "path": "static-recomp/src/sc_v28_video.c",
-      "size": 24625,
-      "sha256": "7f110b952a2e38927446e4fd2619a22e60407303b37c01da633499fd491210df"
+      "size": 37708,
+      "sha256": "a85c9c1d04ffb9064afb613759dd2fd44d51d897b04a2e0ada8891030915a446"
     },
     {
       "path": "static-recomp/src/simcity_static_recomp.c",
-      "size": 34211,
-      "sha256": "367ae40b92fa41448253275a44abc2a99514a3cd97b45041e65b4a08eec7695d"
+      "size": 50544,
+      "sha256": "cbf0c33c7d438a9a6e52d88a7d90367379b565515c6a2c785ac3a2769e4f5c2a"
     },
     {
       "path": "static-recomp/static-audio/snes9x-bapu-aot/PROVENANCE.md",
@@ -1371,6 +1381,11 @@
       "sha256": "61906bc8d614b1a4a1b6d34f9e3becd39dc68100925b5a916d5f03958295ec81"
     },
     {
+      "path": "tools/audio/host_audio_stress_win32.c",
+      "size": 5750,
+      "sha256": "3f3aa5f994db662744d670341d79fac97a7e91c91e4512097a06dca3565c021e"
+    },
+    {
       "path": "tools/compact_generated_core.py",
       "size": 7002,
       "sha256": "d710c8b6b7d48cffd40f13a059b76cf25b153eec19f0f23ab8ac0ba76aad18ee"
@@ -1378,12 +1393,17 @@
     {
       "path": "tools/generate_source_integrity.py",
       "size": 1785,
-      "sha256": "88c00c1661d83be294ef03eef3a77b7e7da2f815caeb402d5d52da78b54aaab4"
+      "sha256": "c280400c95261df31890ed7dc06eeabc51ace77b295e209f5917455c75246962"
     },
     {
       "path": "tools/prune_shadowed_contexts.py",
       "size": 9033,
       "sha256": "d2dc25fcd67b1d5df31f51e3ed61744b6eac9248f2cd25ff66f59cd23b025e5f"
+    },
+    {
+      "path": "tools/widescreen/widescreen_probe.c",
+      "size": 66456,
+      "sha256": "c8a435eec66331ba92b5fd44e316b8ef4da115eedde17c3086b23153271b7f77"
     }
   ]
 }

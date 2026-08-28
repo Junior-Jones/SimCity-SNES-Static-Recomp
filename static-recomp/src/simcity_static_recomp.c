@@ -18,8 +18,15 @@
 struct SimCityRecomp {
     uint8_t *rom;
     SCV11Runtime *runtime;
-    uint16_t bgr555[SIMCITY_RECOMP_FRAME_PIXELS];
-    uint32_t bgra[SIMCITY_RECOMP_FRAME_PIXELS];
+    uint16_t bgr555[SIMCITY_RECOMP_MAX_FRAME_PIXELS];
+    uint32_t bgra[SIMCITY_RECOMP_MAX_FRAME_PIXELS];
+    uint8_t widescreen;
+    int16_t widescreen_cursor_extension_x;
+    int16_t widescreen_cursor_base_x;
+    int16_t widescreen_cursor_anchor_view_x;
+    uint16_t widescreen_cursor_anchor_fine_x;
+    uint8_t widescreen_cursor_anchor_valid;
+    uint8_t widescreen_cursor_input_rebased;
     SCV28VideoReport video;
     int16_t audio_pcm[SIMCITY_HOST_PCM_CAPACITY_FRAMES *
                       SIMCITY_RECOMP_AUDIO_CHANNELS];
@@ -107,6 +114,296 @@ static int static_cpu_step(SCV11Runtime *runtime) {
     return sc_v11_cpu_step(runtime);
 }
 
+static uint16_t connector_wram16(const SCV11Runtime *runtime,
+                                 size_t offset) {
+    return (uint16_t)(runtime->machine.wram[offset] |
+           ((uint16_t)runtime->machine.wram[offset + 1u] << 8));
+}
+
+static void connector_set_wram16(SCV11Runtime *runtime, size_t offset,
+                                 uint16_t value) {
+    runtime->machine.wram[offset] = (uint8_t)value;
+    runtime->machine.wram[offset + 1u] = (uint8_t)(value >> 8);
+}
+
+static int connector_city_view(const SCV11Runtime *runtime) {
+    return runtime &&
+        (runtime->machine.mmio[0x2105u - SC_MMIO_BASE] & 0x0fu) == 0x09u &&
+        runtime->machine.mmio[0x2107u - SC_MMIO_BASE] == 0x58u &&
+        runtime->machine.mmio[0x2108u - SC_MMIO_BASE] == 0x5cu;
+}
+
+static int connector_map_focus(const SCV11Runtime *runtime) {
+    return runtime && connector_wram16(runtime, 0x0201u) == 0x00ffu;
+}
+
+static int connector_cursor_right_base(const SCV11Runtime *runtime) {
+    /* $0261=2 is the 4x4 Coal Power placement cursor. Its anchor stops 24
+       pixels earlier so the complete footprint remains in the native view. */
+    return connector_wram16(runtime, 0x0261u) == 2u ? 208 : 232;
+}
+
+static int connector_cursor_left_base(const SCV11Runtime *runtime) {
+    (void)runtime;
+    /* The native city cursor begins at screen x=16. Widescreen contributes
+       another 71 pixels of real map view to its left. */
+    return 16;
+}
+
+static void restore_widescreen_cursor_camera(SimCityRecomp *instance) {
+    if (!instance || !instance->runtime ||
+        !instance->widescreen_cursor_anchor_valid)
+        return;
+    connector_set_wram16(instance->runtime, 0x01bdu,
+        (uint16_t)instance->widescreen_cursor_anchor_view_x);
+    connector_set_wram16(instance->runtime, 0x0139u,
+        instance->widescreen_cursor_anchor_fine_x);
+}
+
+static void cancel_widescreen_horizontal_scroll(SCV11Runtime *runtime) {
+    uint16_t scroll;
+    if (!runtime) return;
+    /* $01F5 bits 0/1 are the native right/left camera animation.  The host
+       connector consumes that motion while the cursor traverses a widened
+       margin, so leaving either bit set would permanently gate Select and X.
+       Preserve bits 2/3 so authentic vertical camera motion is unaffected. */
+    scroll = connector_wram16(runtime, 0x01f5u);
+    connector_set_wram16(runtime, 0x01f5u,
+        (uint16_t)(scroll & (uint16_t)~UINT16_C(0x0003)));
+}
+
+static void store_widescreen_cursor_extension(SimCityRecomp *instance) {
+    int cursor_x;
+    SCV11Runtime *runtime;
+    if (!instance || instance->widescreen_cursor_extension_x == 0 ||
+        !connector_city_view(instance->runtime) ||
+        !connector_map_focus(instance->runtime))
+        return;
+    runtime = instance->runtime;
+    restore_widescreen_cursor_camera(instance);
+    cursor_x = instance->widescreen_cursor_base_x +
+               instance->widescreen_cursor_extension_x;
+    connector_set_wram16(runtime, 0x01ebu, (uint16_t)cursor_x);
+    connector_set_wram16(runtime, 0x025du, (uint16_t)cursor_x);
+    connector_set_wram16(runtime, 0x007fu, (uint16_t)(cursor_x / 8));
+}
+
+static void prepare_widescreen_cursor_input(SimCityRecomp *instance,
+                                            uint16_t input_mask) {
+    SCV11Runtime *runtime;
+    int camera_pixels;
+    int view_x;
+    int fine_x;
+    int cursor_base;
+    uint16_t fine_word;
+    int native_rebase_required;
+    if (!instance || !instance->runtime) return;
+    instance->widescreen_cursor_input_rebased = 0u;
+    if (!connector_city_view(instance->runtime) ||
+        !connector_map_focus(instance->runtime))
+        return;
+    if (instance->widescreen_cursor_extension_x != 0 &&
+        (input_mask & SIMCITY_INPUT_A) != 0u &&
+        (input_mask & (SIMCITY_INPUT_LEFT | SIMCITY_INPUT_RIGHT)) != 0u &&
+        instance->widescreen_cursor_anchor_valid) {
+        /* A+Left/Right is the native camera-pan command.  Convert the
+           widened cursor extension into an equivalent permanent camera
+           offset first, keeping the selected world cell unchanged, then let
+           the core continue its normal pan from a native-safe cursor. */
+        runtime = instance->runtime;
+        camera_pixels = instance->widescreen_cursor_anchor_view_x * 8 +
+            (int)(instance->widescreen_cursor_anchor_fine_x & 7u) +
+            instance->widescreen_cursor_extension_x;
+        view_x = camera_pixels / 8;
+        fine_x = camera_pixels % 8;
+        if (fine_x < 0) {
+            --view_x;
+            fine_x += 8;
+        }
+        fine_word = (uint16_t)((instance->widescreen_cursor_anchor_fine_x &
+                                UINT16_C(0xfff8)) | (uint16_t)fine_x);
+        cursor_base = instance->widescreen_cursor_extension_x < 0 ?
+            connector_cursor_left_base(runtime) :
+            connector_cursor_right_base(runtime);
+        connector_set_wram16(runtime, 0x01bdu, (uint16_t)view_x);
+        connector_set_wram16(runtime, 0x0139u, fine_word);
+        connector_set_wram16(runtime, 0x01ebu, (uint16_t)cursor_base);
+        connector_set_wram16(runtime, 0x025du, (uint16_t)cursor_base);
+        connector_set_wram16(runtime, 0x007fu,
+            (uint16_t)(cursor_base / 8));
+        instance->widescreen_cursor_extension_x = 0;
+        instance->widescreen_cursor_anchor_valid = 0u;
+        cancel_widescreen_horizontal_scroll(runtime);
+        return;
+    }
+    native_rebase_required =
+        (instance->widescreen_cursor_extension_x < 0 &&
+         (input_mask & SIMCITY_INPUT_B) != 0u) ||
+        (instance->widescreen_cursor_extension_x != 0 &&
+         (input_mask & (SIMCITY_INPUT_SELECT | SIMCITY_INPUT_X)) != 0u);
+    if (instance->widescreen_cursor_extension_x != 0 &&
+        (input_mask & (SIMCITY_INPUT_SELECT | SIMCITY_INPUT_X)) != 0u)
+        cancel_widescreen_horizontal_scroll(instance->runtime);
+    if (!native_rebase_required ||
+        !instance->widescreen_cursor_anchor_valid) {
+        store_widescreen_cursor_extension(instance);
+        return;
+    }
+    /* Native city routines assume an 8-bit screen-space map cursor.  Rebase
+       the camera for only the input-processing frame so negative placement
+       confirms and Select/X HUD commands from either widened margin operate
+       on the same world cell.  The widened camera is restored at the frame
+       boundary. */
+    runtime = instance->runtime;
+    camera_pixels = instance->widescreen_cursor_anchor_view_x * 8 +
+        (int)(instance->widescreen_cursor_anchor_fine_x & 7u) +
+        instance->widescreen_cursor_extension_x;
+    view_x = camera_pixels / 8;
+    fine_x = camera_pixels % 8;
+    if (fine_x < 0) {
+        --view_x;
+        fine_x += 8;
+    }
+    fine_word = (uint16_t)((instance->widescreen_cursor_anchor_fine_x &
+                            UINT16_C(0xfff8)) | (uint16_t)fine_x);
+    cursor_base = instance->widescreen_cursor_extension_x < 0 ?
+        connector_cursor_left_base(runtime) :
+        connector_cursor_right_base(runtime);
+    connector_set_wram16(runtime, 0x01bdu, (uint16_t)view_x);
+    connector_set_wram16(runtime, 0x0139u, fine_word);
+    connector_set_wram16(runtime, 0x01ebu, (uint16_t)cursor_base);
+    connector_set_wram16(runtime, 0x025du, (uint16_t)cursor_base);
+    connector_set_wram16(runtime, 0x007fu, (uint16_t)(cursor_base / 8));
+    instance->widescreen_cursor_input_rebased = 1u;
+}
+
+static void apply_widescreen_cursor_connector(SimCityRecomp *instance,
+                                              uint16_t input_mask) {
+    SCV11Runtime *runtime;
+    int cursor_x;
+    int camera_x;
+    int world_x;
+    int step;
+    int cursor_base;
+    int left_base;
+    if (!instance || !instance->widescreen || !instance->runtime)
+        return;
+    runtime = instance->runtime;
+    if (!connector_city_view(runtime)) {
+        instance->widescreen_cursor_extension_x = 0;
+        instance->widescreen_cursor_anchor_valid = 0u;
+        instance->widescreen_cursor_input_rebased = 0u;
+        return;
+    }
+    if (instance->widescreen_cursor_input_rebased) {
+        restore_widescreen_cursor_camera(instance);
+        instance->widescreen_cursor_input_rebased = 0u;
+    }
+    /* $01EB/$01ED are the map cursor only while $0201 is $00FF.  Toolbar
+       focus reuses them for the hand cursor, so never overwrite the core's
+       toolbar coordinates or animation state. */
+    if (!connector_map_focus(runtime)) return;
+    cursor_x = (int)(int16_t)connector_wram16(runtime, 0x01ebu);
+    cursor_base = connector_cursor_right_base(runtime);
+    left_base = connector_cursor_left_base(runtime);
+    if (instance->widescreen_cursor_extension_x > 0 &&
+        instance->widescreen_cursor_base_x != cursor_base) {
+        instance->widescreen_cursor_extension_x = 0;
+        instance->widescreen_cursor_anchor_valid = 0u;
+    }
+    camera_x = (int)(int16_t)connector_wram16(runtime, 0x01bdu) * 8 +
+               (int)(connector_wram16(runtime, 0x0139u) & 7u);
+    if (instance->widescreen_cursor_extension_x < 0 &&
+        instance->widescreen_cursor_base_x != left_base) {
+        instance->widescreen_cursor_extension_x = 0;
+        instance->widescreen_cursor_anchor_valid = 0u;
+    }
+    world_x = camera_x +
+              (instance->widescreen_cursor_extension_x < 0 ? left_base :
+               (instance->widescreen_cursor_extension_x > 0 ? cursor_base :
+                cursor_x)) + instance->widescreen_cursor_extension_x;
+    if (camera_x < 0 && world_x < 0) {
+        /* Native camera panning can recenter the cursor outside the west map
+           edge. Preserve world pixel zero after LEFT is released as well;
+           otherwise subsequent vertical movement replaces the corrected
+           screen x position while the camera remains at its safety margin. */
+        cursor_x = -camera_x;
+        instance->widescreen_cursor_extension_x = 0;
+        instance->widescreen_cursor_anchor_valid = 0u;
+        connector_set_wram16(runtime, 0x01ebu, (uint16_t)cursor_x);
+        connector_set_wram16(runtime, 0x025du, (uint16_t)cursor_x);
+        connector_set_wram16(runtime, 0x007fu, (uint16_t)(cursor_x / 8));
+        connector_set_wram16(runtime, 0x01ffu,
+            (uint16_t)(connector_wram16(runtime, 0x01ffu) &
+                       (uint16_t)~SIMCITY_INPUT_LEFT));
+        return;
+    }
+    if ((input_mask & SIMCITY_INPUT_RIGHT) != 0u &&
+        instance->widescreen_cursor_extension_x < 0 &&
+        (input_mask & (SIMCITY_INPUT_LEFT | SIMCITY_INPUT_A)) == 0u) {
+        instance->widescreen_cursor_extension_x = (int16_t)(
+            instance->widescreen_cursor_extension_x + 2);
+        if (instance->widescreen_cursor_extension_x > 0)
+            instance->widescreen_cursor_extension_x = 0;
+        if (instance->widescreen_cursor_extension_x == 0)
+            instance->widescreen_cursor_anchor_valid = 0u;
+        cancel_widescreen_horizontal_scroll(runtime);
+    } else if ((input_mask & SIMCITY_INPUT_RIGHT) != 0u &&
+        (input_mask & (SIMCITY_INPUT_LEFT | SIMCITY_INPUT_A)) == 0u &&
+        (instance->widescreen_cursor_extension_x > 0 ||
+         cursor_x >= cursor_base) &&
+        world_x < 952) {
+        if (instance->widescreen_cursor_extension_x == 0) {
+            instance->widescreen_cursor_base_x = (int16_t)cursor_base;
+            instance->widescreen_cursor_anchor_view_x =
+                (int16_t)connector_wram16(runtime, 0x01bdu);
+            instance->widescreen_cursor_anchor_fine_x =
+                connector_wram16(runtime, 0x0139u);
+            instance->widescreen_cursor_anchor_valid = 1u;
+        }
+        step = 952 - world_x;
+        if (step > 2) step = 2;
+        instance->widescreen_cursor_extension_x = (int16_t)(
+            instance->widescreen_cursor_extension_x + step);
+        if (instance->widescreen_cursor_extension_x >
+            (int)SIMCITY_RECOMP_WIDESCREEN_MARGIN)
+            instance->widescreen_cursor_extension_x =
+                (int16_t)SIMCITY_RECOMP_WIDESCREEN_MARGIN;
+        cancel_widescreen_horizontal_scroll(runtime);
+    } else if ((input_mask & SIMCITY_INPUT_LEFT) != 0u &&
+               instance->widescreen_cursor_extension_x > 0) {
+        instance->widescreen_cursor_extension_x = (int16_t)(
+            instance->widescreen_cursor_extension_x - 2);
+        if (instance->widescreen_cursor_extension_x < 0)
+            instance->widescreen_cursor_extension_x = 0;
+        if (instance->widescreen_cursor_extension_x == 0)
+            instance->widescreen_cursor_anchor_valid = 0u;
+        cancel_widescreen_horizontal_scroll(runtime);
+    } else if ((input_mask & SIMCITY_INPUT_LEFT) != 0u &&
+               (input_mask & (SIMCITY_INPUT_RIGHT | SIMCITY_INPUT_A)) == 0u &&
+               (instance->widescreen_cursor_extension_x < 0 ||
+                cursor_x <= left_base) && world_x > 0) {
+        if (instance->widescreen_cursor_extension_x == 0) {
+            instance->widescreen_cursor_base_x = (int16_t)left_base;
+            instance->widescreen_cursor_anchor_view_x =
+                (int16_t)connector_wram16(runtime, 0x01bdu);
+            instance->widescreen_cursor_anchor_fine_x =
+                connector_wram16(runtime, 0x0139u);
+            instance->widescreen_cursor_anchor_valid = 1u;
+        }
+        step = world_x;
+        if (step > 2) step = 2;
+        instance->widescreen_cursor_extension_x = (int16_t)(
+            instance->widescreen_cursor_extension_x - step);
+        if (instance->widescreen_cursor_extension_x <
+            -(int)SIMCITY_RECOMP_WIDESCREEN_MARGIN)
+            instance->widescreen_cursor_extension_x =
+                -(int16_t)SIMCITY_RECOMP_WIDESCREEN_MARGIN;
+        cancel_widescreen_horizontal_scroll(runtime);
+    }
+    store_widescreen_cursor_extension(instance);
+}
+
 static int history_reserve(SimCityRecomp *instance, uint32_t needed) {
     uint32_t capacity;
     uint16_t *grown;
@@ -154,12 +451,16 @@ static void audio_sink(void *context, int16_t left, int16_t right) {
 
 static int render_current_frame(SimCityRecomp *instance, char *error,
                                 size_t error_capacity) {
+    unsigned width = instance->widescreen ? SIMCITY_RECOMP_WIDESCREEN_WIDTH :
+                                            SIMCITY_RECOMP_FRAME_WIDTH;
+    unsigned margin = instance->widescreen ? SIMCITY_RECOMP_WIDESCREEN_MARGIN : 0u;
     memset(&instance->video, 0, sizeof(instance->video));
     if (!sc_v28_render_first_visible_frame(instance->runtime,
+                                           width, margin,
                                            instance->bgr555,
-                                           SIMCITY_RECOMP_FRAME_PIXELS,
+                                           SIMCITY_RECOMP_MAX_FRAME_PIXELS,
                                            instance->bgra,
-                                           SIMCITY_RECOMP_FRAME_PIXELS,
+                                           SIMCITY_RECOMP_MAX_FRAME_PIXELS,
                                            &instance->video)) {
         set_error(instance,
                   instance->video.error[0] ? instance->video.error :
@@ -200,6 +501,9 @@ static int cold_reset(SimCityRecomp *instance, char *error,
     memset(instance->bgr555, 0, sizeof(instance->bgr555));
     memset(instance->bgra, 0, sizeof(instance->bgra));
     memset(&instance->video, 0, sizeof(instance->video));
+    instance->widescreen_cursor_extension_x = 0;
+    instance->widescreen_cursor_anchor_valid = 0u;
+    instance->widescreen_cursor_input_rebased = 0u;
     audio_queue_reset(instance);
     if (!instance->replaying_snapshot) instance->input_history_count = 0u;
     instance->last_error[0] = '\0';
@@ -357,6 +661,8 @@ static int advance_internal(SimCityRecomp *instance,
         return 0;
     }
     guard = SIMCITY_FRAME_INSTRUCTION_GUARD;
+    instance->runtime->host_widescreen_enabled = instance->widescreen;
+    prepare_widescreen_cursor_input(instance, input_mask);
     instance->runtime->joypad[0] = input_mask;
 
     {
@@ -375,6 +681,7 @@ static int advance_internal(SimCityRecomp *instance,
             if (!static_cpu_step(instance->runtime)) break;
             if (instance->runtime->scheduler.frame != guarded_frame) {
                 guarded_frame = instance->runtime->scheduler.frame;
+                apply_widescreen_cursor_connector(instance, input_mask);
                 guard = SIMCITY_FRAME_INSTRUCTION_GUARD;
             }
         }
@@ -406,11 +713,17 @@ static int advance_internal(SimCityRecomp *instance,
 
     if (render_frame) {
         memset(&instance->video, 0, sizeof(instance->video));
+        {
+            unsigned width = instance->widescreen ?
+                SIMCITY_RECOMP_WIDESCREEN_WIDTH : SIMCITY_RECOMP_FRAME_WIDTH;
+            unsigned margin = instance->widescreen ?
+                SIMCITY_RECOMP_WIDESCREEN_MARGIN : 0u;
         if (sc_v28_render_first_visible_frame(instance->runtime,
+                                              width, margin,
                                               instance->bgr555,
-                                              SIMCITY_RECOMP_FRAME_PIXELS,
+                                              SIMCITY_RECOMP_MAX_FRAME_PIXELS,
                                               instance->bgra,
-                                              SIMCITY_RECOMP_FRAME_PIXELS,
+                                              SIMCITY_RECOMP_MAX_FRAME_PIXELS,
                                               &instance->video)) {
             local.frame_rendered = 1u;
             instance->last_error[0] = '\0';
@@ -422,6 +735,7 @@ static int advance_internal(SimCityRecomp *instance,
                       local.renderer_error);
             core_logf(instance, "renderer-warning", "input=%04X error=%s",
                       input_mask, local.renderer_error);
+        }
         }
     } else {
         instance->last_error[0] = '\0';
@@ -623,12 +937,48 @@ int simcity_recomp_load_diagnostic_runtime_state(
     instance->runtime->rom=instance->rom;instance->runtime->rom_size=SIMCITY_RECOMP_ROM_SIZE;
     sc_v11_set_audio_sink(instance->runtime,audio_sink,instance);
     instance->input_history_count=0u;audio_queue_reset(instance);
+    instance->widescreen_cursor_extension_x=0;
+    instance->widescreen_cursor_anchor_valid=0u;
+    instance->widescreen_cursor_input_rebased=0u;
     if(!render_current_frame(instance,error,error_capacity))return 0;
     copy_text(error,error_capacity,"");return 1;
 }
 
 const uint32_t *simcity_recomp_frame_bgra(const SimCityRecomp *instance) {
     return instance ? instance->bgra : NULL;
+}
+
+uint32_t simcity_recomp_frame_width(const SimCityRecomp *instance) {
+    return instance && instance->widescreen ?
+        SIMCITY_RECOMP_WIDESCREEN_WIDTH : SIMCITY_RECOMP_FRAME_WIDTH;
+}
+
+int simcity_recomp_widescreen_enabled(const SimCityRecomp *instance) {
+    return instance && instance->widescreen != 0u;
+}
+
+int simcity_recomp_set_widescreen(SimCityRecomp *instance, int enabled,
+                                  char *error, size_t error_capacity) {
+    uint8_t value;
+    if (!instance || !instance->runtime) {
+        copy_text(error, error_capacity,
+                  "A loaded static core is required to change display geometry.");
+        return 0;
+    }
+    value = enabled ? 1u : 0u;
+    if (instance->widescreen == value) {
+        instance->runtime->host_widescreen_enabled = value;
+        copy_text(error, error_capacity, "");
+        return 1;
+    }
+    instance->widescreen = value;
+    instance->runtime->host_widescreen_enabled = value;
+    if (!value) {
+        instance->widescreen_cursor_extension_x = 0;
+        instance->widescreen_cursor_anchor_valid = 0u;
+        instance->widescreen_cursor_input_rebased = 0u;
+    }
+    return render_current_frame(instance, error, error_capacity);
 }
 
 uint32_t simcity_recomp_current_frame(const SimCityRecomp *instance) {

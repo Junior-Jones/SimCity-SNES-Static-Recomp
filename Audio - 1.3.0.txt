@@ -1,0 +1,108 @@
+SimCity SNES Static Recomp
+Audio - Version 1.3.0
+
+Problem
+Earlier builds could produce brief crackles, slow-sounding playback, or a short
+audio disturbance during otherwise normal use. Reports included idle gameplay,
+title/menu navigation with Escape, screenshots, and occasional transitions into
+gameplay. The fault was intermittent because it depended on the relationship
+between host scheduling and the fixed playback buffers.
+
+What was investigated
+- The original ROM's S-SMP and S-DSP behavior and SNES master timing.
+- The Full Static audio dispatch, generated audio routes, DSP state, and the
+  connector from the static core to host stereo PCM.
+- The uncompacted and compacted static-core material used by other working SNES
+  static recompilations, including Top Gear and Civilization frontend behavior.
+- Core PCM production rate, frame timing, buffer depth, pause/resume, reset,
+  screenshots, window messages, focus changes, and device output rate.
+- The previous WinMM implementation's four fixed buffers, refill timing, pre-roll,
+  and the effect of a delayed Windows message or rendering frame.
+
+Finding
+The Full Static S-SMP/S-DSP core continued to produce valid native stereo PCM.
+The recurring crackle was a host transport problem: four fixed WinMM playback
+buffers made refill timing too sensitive to short stalls in the UI/render loop.
+A screenshot, modal transition, Escape navigation, or ordinary scheduling delay
+could let a buffer boundary become audible. A small long-term difference between
+the native producer clock and a Windows device clock could also move the queue
+toward starvation or excess depth.
+
+Step-by-step fix
+
+1. Preserve the native audio authority
+   The static audio core remains fail-closed and continues to generate signed
+   16-bit stereo PCM at 32,040 Hz. No emulator audio fallback or prerecorded
+   audio was introduced.
+
+2. Replace fixed WinMM buffers
+   The four-buffer WinMM backend was removed. Playback now uses an SDL3 audio
+   stream linked statically into Launcher.exe, so no SDL DLL is required.
+
+3. Describe the real source format
+   The stream source is explicitly S16 stereo at 32,040 Hz. SDL3 converts only
+   the speaker side when the selected Windows device uses a different rate or
+   format. Core and diagnostic PCM remain at the native source rate.
+
+4. Use a target latency instead of buffer boundaries
+   The backend converts the selected latency in milliseconds into native PCM
+   frames and monitors the actual queued byte count. The default remains 60 ms,
+   with the existing supported range retained in the Audio window.
+
+5. Prime before playback
+   A newly opened or deliberately flushed stream remains paused until at least
+   half of its target queue has been filled. Playback therefore begins with
+   useful safety depth instead of racing the first refill.
+
+6. Drain the core continuously
+   Each audio pump reads all available core frames in bounded 4096-frame chunks
+   and submits them to SDL3. Queue failures and native frames submitted are
+   tracked for diagnostics.
+
+7. Preserve ordinary pause/resume audio
+   A normal pause records the queued depth and pauses the stream without
+   discarding valid samples. Resume continues that queue when possible. A reset
+   or discontinuity uses an explicit flush and fresh prime instead.
+
+8. Add a short resume fade
+   After a required flush, the first 10 ms of PCM is faded in. This prevents an
+   abrupt waveform edge from becoming a click while leaving ongoing playback
+   untouched.
+
+9. Correct slow clock drift
+   Queue depth is compared with the target using a 3 ms tolerance. Outside that
+   band, SDL3's stream frequency ratio moves gradually by no more than 0.25
+   percent. The correction is smoothed and returns toward 1.0 as the queue
+   stabilizes, preventing audible speed jumps.
+
+10. Keep host frame timing exact
+    The Windows launcher uses a high-resolution waitable timer and rational
+    presentation deadlines derived from the SNES frame rate. This avoids a
+    rounded millisecond cadence and keeps core production consistent while the
+    Windows message queue is serviced.
+
+11. Apply settings immediately
+    Enabled state, 0-100 volume, latency, and selected playback device remain in
+    the single settings.ini file. Applying Audio settings reopens or updates the
+    stream immediately rather than waiting for a game reset.
+
+12. Add diagnostics and stress coverage
+    The backend records queue depth, target depth, underruns, queue failures,
+    device reopens, native frames queued, device rate, and playback ratio. The
+    source includes a host audio stress tool, while gameplay probes verify that
+    the static core's PCM queue never overflows during long automated routes.
+
+Validation performed
+- Rebuilt the launcher and static core with MSVC warnings treated as errors.
+- Ran native and Wide Screen gameplay routes, map traversal, construction, HUD
+  transitions, scenarios, screenshots, and long frame sequences.
+- Confirmed zero static-core PCM overflow in the automated gameplay probes.
+- Manually tested title/menu Escape navigation, repeated screenshots, gameplay
+  idle time, and ordinary play without the previous crackle.
+- Confirmed that audio remained stable after the final Wide Screen build.
+
+Result
+Version 1.3.0 keeps the authentic Full Static audio core and native 32,040 Hz
+PCM generation, but uses a resilient queued SDL3 transport for Windows playback.
+The user-confirmed release candidate produced no screenshot crackle, navigation
+crackle, random idle crackle, or slow-sounding playback during final testing.

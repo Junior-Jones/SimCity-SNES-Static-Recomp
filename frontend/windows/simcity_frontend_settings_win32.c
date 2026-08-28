@@ -98,6 +98,7 @@ void simcity_frontend_settings_win32_defaults(SimCityFrontendSettingsWin32 *s) {
     if (!s) return;
     memset(s, 0, sizeof(*s));
     s->pause_on_focus_loss = 0;
+    s->widescreen = 1;
     s->snapshot_slot = 1;
     s->input_source = SIMCITY_INPUT_SOURCE_KEYBOARD;
     s->bindings[0]=VK_UP; s->bindings[1]=VK_DOWN;
@@ -128,6 +129,8 @@ void simcity_frontend_settings_win32_load(SimCityFrontendSettingsWin32 *s,
     s->auto_run_on_load=GetPrivateProfileIntW(L"General",L"AutoRunOnLoad",0,path)!=0;
     s->fullscreen_on_play=GetPrivateProfileIntW(
         L"General",L"FullScreenOnPlay",0,path)!=0;
+    s->widescreen=GetPrivateProfileIntW(
+        L"Display",L"Widescreen",1,path)!=0;
     s->snapshot_slot=GetPrivateProfileIntW(L"General",L"SnapshotSlot",1,path);
     s->welcome_shown=GetPrivateProfileIntW(
         L"General",L"WelcomeShown",
@@ -170,6 +173,7 @@ int simcity_frontend_settings_win32_save(const SimCityFrontendSettingsWin32 *s,
     ok&=write_int(L"General",L"PauseOnFocusLoss",s->pause_on_focus_loss,path);
     ok&=write_int(L"General",L"AutoRunOnLoad",s->auto_run_on_load,path);
     ok&=write_int(L"General",L"FullScreenOnPlay",s->fullscreen_on_play,path);
+    ok&=write_int(L"Display",L"Widescreen",s->widescreen,path);
     ok&=write_int(L"General",L"SnapshotSlot",s->snapshot_slot,path);
     ok&=write_int(L"General",L"WelcomeShown",s->welcome_shown,path);
     ok&=WritePrivateProfileStringW(

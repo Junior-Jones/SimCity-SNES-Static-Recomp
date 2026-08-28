@@ -11,9 +11,14 @@ extern "C" {
 #define SIMCITY_RECOMP_API_VERSION 1u
 #define SIMCITY_RECOMP_ROM_SIZE 524288u
 #define SIMCITY_RECOMP_FRAME_WIDTH 256u
+#define SIMCITY_RECOMP_WIDESCREEN_MARGIN 71u
+#define SIMCITY_RECOMP_WIDESCREEN_WIDTH \
+    (SIMCITY_RECOMP_FRAME_WIDTH + SIMCITY_RECOMP_WIDESCREEN_MARGIN * 2u)
 #define SIMCITY_RECOMP_FRAME_HEIGHT 239u
 #define SIMCITY_RECOMP_FRAME_PIXELS \
     (SIMCITY_RECOMP_FRAME_WIDTH * SIMCITY_RECOMP_FRAME_HEIGHT)
+#define SIMCITY_RECOMP_MAX_FRAME_PIXELS \
+    (SIMCITY_RECOMP_WIDESCREEN_WIDTH * SIMCITY_RECOMP_FRAME_HEIGHT)
 #define SIMCITY_RECOMP_TITLE_FRAME 840u
 #define SIMCITY_RECOMP_AUDIO_SAMPLE_RATE 32040u
 #define SIMCITY_RECOMP_PRESENTATION_FPS_NUMERATOR 39375000u
@@ -135,6 +140,10 @@ int simcity_recomp_render_current_frame(SimCityRecomp *instance,
                                         size_t error_capacity);
 
 const uint32_t *simcity_recomp_frame_bgra(const SimCityRecomp *instance);
+uint32_t simcity_recomp_frame_width(const SimCityRecomp *instance);
+int simcity_recomp_widescreen_enabled(const SimCityRecomp *instance);
+int simcity_recomp_set_widescreen(SimCityRecomp *instance, int enabled,
+                                  char *error, size_t error_capacity);
 uint32_t simcity_recomp_current_frame(const SimCityRecomp *instance);
 uint64_t simcity_recomp_instruction_count(const SimCityRecomp *instance);
 int simcity_recomp_failed(const SimCityRecomp *instance);

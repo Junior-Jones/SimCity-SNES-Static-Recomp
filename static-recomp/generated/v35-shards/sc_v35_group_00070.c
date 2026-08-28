@@ -1809,7 +1809,12 @@ int sc_v35_group_00070(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
   case 0x01C371u:
     if(m==0u&&x==1u&&e==0u){ /* C9 E8 00 ; generated town route */
       SC_STATIC_CONTEXT_BEGIN(0x01C371u,3u,0x00u,0xC374u);
-      sc_v11_op_compare(r,c->a,0x00E8u,16u);
+      /* Widescreen connector: preserve the original 232-pixel cursor/camera
+         handoff in 4:3, but let the real gameplay cursor enter the added
+         48-pixel right-side map area before camera scrolling begins. */
+      sc_v11_op_compare(r,c->a,
+                        r->host_widescreen_enabled ? 0x0118u : 0x00E8u,
+                        16u);
       SC_STATIC_CONTEXT_END();
     }
     else if(m==1u&&x==0u&&e==0u){ /* C9 E8 ; generated town route */

@@ -4,7 +4,7 @@ Place the exact matching .sfc ROM in the Rom folder, or use Browse to select it,
 
 Save data is written atomically beside Launcher.exe at Saves\SimCity-USA.srm.
 
-The Windows launcher uses a native static recompilation core with Win32/GDI presentation, SDL3 gamepad input, and Full Static audio at 32,040 Hz stereo PCM through native WinMM playback.
+The Windows launcher uses a native static recompilation core with Win32/GDI presentation, SDL3 gamepad input, and Full Static audio at 32,040 Hz stereo PCM through a statically linked SDL3 audio stream.
 
 Frontend, controls, audio, display, snapshot slot, remembered ROM path, and first-run Welcome status are stored together in settings.ini. Deleting settings.ini restores defaults and displays Welcome again.
 

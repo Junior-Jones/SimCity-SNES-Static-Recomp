@@ -6,7 +6,7 @@
 #include <commdlg.h>
 #include <commctrl.h>
 
-#include "simcity_audio_output_winmm.h"
+#include "simcity_audio_output_sdl3.h"
 #include "simcity_frontend_settings_win32.h"
 #include "simcity_app_core.h"
 #include "simcity_input_latch.h"
@@ -30,6 +30,7 @@
 #define HEADED_STATUS_INTERVAL_FRAMES 60u
 #define SRAM_IMAGE_BYTES 32768u
 #define SRAM_FLUSH_INTERVAL_FRAMES 120u
+#define MAX_HOST_CATCHUP_FRAMES 8u
 
 #define ID_BROWSE 1001
 #define ID_RUN 1002
@@ -48,6 +49,7 @@
 #define ID_FULLSCREEN 1020
 #define ID_SCREENSHOT 1021
 #define ID_AUTO_RUN 1022
+#define ID_WIDESCREEN 1023
 #define ID_SNAPSHOT_SAVE_CURRENT 1024
 #define ID_SNAPSHOT_LOAD_CURRENT 1025
 #define ID_SNAPSHOT_SLOT_BASE 5000
@@ -124,6 +126,7 @@ static HWND g_audio_button;
 static HWND g_settings_button;
 static HWND g_fullscreen_checkbox;
 static HWND g_auto_run_checkbox;
+static HWND g_widescreen_checkbox;
 static HWND g_rom_path;
 static HWND g_status;
 static HWND g_info_window;
@@ -596,6 +599,7 @@ static void set_toolbar_visible(int visible) {
     ShowWindow(g_settings_button, command);
     ShowWindow(g_fullscreen_checkbox, command);
     ShowWindow(g_auto_run_checkbox, command);
+    ShowWindow(g_widescreen_checkbox, command);
     ShowWindow(g_status, command);
 }
 
@@ -682,6 +686,7 @@ static void update_controls(void) {
     EnableWindow(g_settings_button, !loading);
     EnableWindow(g_fullscreen_checkbox, !loading);
     EnableWindow(g_auto_run_checkbox, !loading);
+    EnableWindow(g_widescreen_checkbox, !loading);
     set_accessible_control_text(g_browse_button,
                                 rom_path_known() ? L"&Run" : L"&Browse", 1);
     set_accessible_control_text(g_pause_play_button, L"&Play", 1);
@@ -742,7 +747,6 @@ static int open_audio(int show_error) {
 
 static void pause_game(const wchar_t *message) {
     simcity_audio_output_pause(&g_audio_output);
-    if (g_game) (void)simcity_recomp_audio_discard(g_game);
     g_paused = 1;
     simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
@@ -1079,8 +1083,15 @@ static void capture_window_screenshot(void) {
     wchar_t log_path[PATH_CAPACITY];
     wchar_t status[PATH_CAPACITY * 2u + 160u];
     uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
+    int resume_audio = g_game && !g_paused &&
+                       simcity_audio_output_is_open(&g_audio_output);
+    if (resume_audio) simcity_audio_output_pause(&g_audio_output);
     if (!capture_window_screenshot_to(NULL, path,
                                       sizeof(path) / sizeof(path[0]))) {
+        if (resume_audio) {
+            simcity_audio_output_resume(&g_audio_output);
+            reset_pacing_clock();
+        }
         set_status(L"Unable to save the whole-window screenshot.");
         return;
     }
@@ -1093,6 +1104,10 @@ static void capture_window_screenshot(void) {
         (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
                          L"Screenshot and static-core log saved at frame %u: %s | %s",
                          frame, path, log_path);
+    }
+    if (resume_audio) {
+        simcity_audio_output_resume(&g_audio_output);
+        reset_pacing_clock();
     }
     status[(sizeof(status) / sizeof(status[0])) - 1u] = L'\0';
     set_status(status);
@@ -1799,8 +1814,8 @@ static int advance_frame_batch(uint32_t frame_count) {
 
 static void service_host_timer(void) {
     LARGE_INTEGER before;
-    LARGE_INTEGER after;
     uint64_t skipped = 0u;
+    uint32_t due_frames = 0u;
     if (!QueryPerformanceCounter(&before)) {
         (void)arm_frame_timer();
         return;
@@ -1811,18 +1826,21 @@ static void service_host_timer(void) {
     }
 
     ++g_pacing_timer_ticks;
+    do {
+        ++due_frames;
+        advance_frame_deadline();
+    } while (due_frames < MAX_HOST_CATCHUP_FRAMES &&
+             g_next_frame_deadline <= (uint64_t)before.QuadPart);
+    while (g_next_frame_deadline <= (uint64_t)before.QuadPart) {
+        advance_frame_deadline();
+        ++skipped;
+    }
     g_gamepad_input = simcity_gamepad_win32_poll(
         &g_gamepad, g_frontend_settings.gamepad_bindings);
     if (g_game && !g_paused) {
-        if (g_pacing_max_batch < 1u) g_pacing_max_batch = 1u;
-        (void)advance_frame_batch(1u);
-    }
-    advance_frame_deadline();
-    if (QueryPerformanceCounter(&after)) {
-        while (g_next_frame_deadline <= (uint64_t)after.QuadPart) {
-            advance_frame_deadline();
-            ++skipped;
-        }
+        if (g_pacing_max_batch < due_frames)
+            g_pacing_max_batch = due_frames;
+        (void)advance_frame_batch(due_frames);
     }
     if (skipped) {
         g_pacing_skipped_deadlines += skipped;
@@ -1846,8 +1864,9 @@ static void layout_controls(HWND window) {
     MoveWindow(g_settings_button, 328, 8, 82, 30, TRUE);
     MoveWindow(g_keys_button, 416, 8, 62, 30, TRUE);
     MoveWindow(g_fullscreen_checkbox, 488, 10, 112, 26, TRUE);
-    MoveWindow(g_auto_run_checkbox, 610, 10,
-               width > 720 ? 100 : 92, 26, TRUE);
+    MoveWindow(g_widescreen_checkbox, 610, 10, 108, 26, TRUE);
+    MoveWindow(g_auto_run_checkbox, 724, 10,
+               width > 820 ? 88 : 82, 26, TRUE);
     MoveWindow(g_status, 12, 48, width - 24, 24, TRUE);
 }
 
@@ -1866,39 +1885,70 @@ static void paint_window(HWND window) {
 
     if (g_game && pixels && render_area.bottom > render_area.top) {
         BITMAPINFO bitmap;
+        int frame_width = (int)simcity_recomp_frame_width(g_game);
+        int source_height = (int)SIMCITY_RECOMP_FRAME_HEIGHT;
+        const uint32_t *bitmap_pixels = pixels;
         int available_width = render_area.right - render_area.left;
         int available_height = render_area.bottom - render_area.top;
         int draw_width = available_width;
         int draw_height = draw_width * (int)SIMCITY_RECOMP_FRAME_HEIGHT /
-                          (int)SIMCITY_RECOMP_FRAME_WIDTH;
+                          frame_width;
         int x;
         int y;
-        if (g_frontend_settings.integer_scale >= 1 &&
+        if (g_fullscreen_active &&
+            simcity_recomp_widescreen_enabled(g_game)) {
+            /* The stored SNES frame contains seven non-visible rows before
+             * the 224-line picture and eight after it.  In fullscreen
+             * widescreen mode, crop those overscan rows and cover the entire
+             * monitor.  The map itself is still rendered by the expanded
+             * core; only final presentation scaling changes here. */
+            source_height = 224;
+            bitmap_pixels += (size_t)7u * (size_t)frame_width;
+            draw_width = available_width;
+            draw_height = available_height;
+        } else if (g_frontend_settings.integer_scale >= 1 &&
             g_frontend_settings.integer_scale <= 4) {
-            draw_width = (int)SIMCITY_RECOMP_FRAME_WIDTH *
-                         g_frontend_settings.integer_scale;
-            draw_height = (int)SIMCITY_RECOMP_FRAME_HEIGHT *
-                          g_frontend_settings.integer_scale;
+            int scale = g_frontend_settings.integer_scale;
+            while (scale > 1 &&
+                   (frame_width * scale > available_width ||
+                    (int)SIMCITY_RECOMP_FRAME_HEIGHT * scale >
+                        available_height))
+                --scale;
+            if (frame_width * scale <= available_width &&
+                (int)SIMCITY_RECOMP_FRAME_HEIGHT * scale <=
+                    available_height) {
+                draw_width = frame_width * scale;
+                draw_height = (int)SIMCITY_RECOMP_FRAME_HEIGHT * scale;
+            } else {
+                draw_width = available_width;
+                draw_height = draw_width *
+                              (int)SIMCITY_RECOMP_FRAME_HEIGHT / frame_width;
+                if (draw_height > available_height) {
+                    draw_height = available_height;
+                    draw_width = draw_height * frame_width /
+                                 (int)SIMCITY_RECOMP_FRAME_HEIGHT;
+                }
+            }
         } else if (draw_height > available_height) {
             draw_height = available_height;
-            draw_width = draw_height * (int)SIMCITY_RECOMP_FRAME_WIDTH /
+            draw_width = draw_height * frame_width /
                          (int)SIMCITY_RECOMP_FRAME_HEIGHT;
         }
         x = render_area.left + (available_width - draw_width) / 2;
         y = render_area.top + (available_height - draw_height) / 2;
         ZeroMemory(&bitmap, sizeof(bitmap));
         bitmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bitmap.bmiHeader.biWidth = (LONG)SIMCITY_RECOMP_FRAME_WIDTH;
-        bitmap.bmiHeader.biHeight = -(LONG)SIMCITY_RECOMP_FRAME_HEIGHT;
+        bitmap.bmiHeader.biWidth = (LONG)frame_width;
+        bitmap.bmiHeader.biHeight = -(LONG)source_height;
         bitmap.bmiHeader.biPlanes = 1u;
         bitmap.bmiHeader.biBitCount = 32u;
         bitmap.bmiHeader.biCompression = BI_RGB;
         SetStretchBltMode(dc, COLORONCOLOR);
         (void)StretchDIBits(dc, x, y, draw_width, draw_height,
                             0, 0,
-                            (int)SIMCITY_RECOMP_FRAME_WIDTH,
-                            (int)SIMCITY_RECOMP_FRAME_HEIGHT,
-                            pixels, &bitmap, DIB_RGB_COLORS, SRCCOPY);
+                            frame_width,
+                            source_height,
+                            bitmap_pixels, &bitmap, DIB_RGB_COLORS, SRCCOPY);
     } else {
         const wchar_t *message =
             L"Browse for the exact SimCity (USA) ROM and choose Run.\r\n"
@@ -2264,6 +2314,9 @@ static void initialize_paths_and_settings(void) {
     SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
                  g_frontend_settings.auto_run_on_load ? BST_CHECKED : BST_UNCHECKED,
                  0);
+    SendMessageW(g_widescreen_checkbox, BM_SETCHECK,
+                 g_frontend_settings.widescreen ? BST_CHECKED : BST_UNCHECKED,
+                 0);
 
     default_rom[0] = L'\0';
     (void)GetPrivateProfileStringW(
@@ -2317,6 +2370,10 @@ static void save_current_settings_on_exit(void) {
         g_frontend_settings.fullscreen_on_play =
             SendMessageW(g_fullscreen_checkbox, BM_GETCHECK, 0, 0) ==
             BST_CHECKED;
+    if (IsWindow(g_widescreen_checkbox))
+        g_frontend_settings.widescreen =
+            SendMessageW(g_widescreen_checkbox, BM_GETCHECK, 0, 0) ==
+            BST_CHECKED;
     (void)simcity_frontend_settings_win32_save(
         &g_frontend_settings, g_settings_ini_path);
     simcity_audio_settings_save(&g_audio_settings, g_settings_ini_path);
@@ -2362,10 +2419,15 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
                 488, 10, 112, 26, window,
                 (HMENU)(INT_PTR)ID_FULLSCREEN, g_instance, NULL);
+            g_widescreen_checkbox = CreateWindowExW(
+                0, L"BUTTON", L"&Wide Screen",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+                610, 10, 108, 26, window,
+                (HMENU)(INT_PTR)ID_WIDESCREEN, g_instance, NULL);
             g_auto_run_checkbox = CreateWindowExW(
                 0, L"BUTTON", L"Auto-&Run",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-                610, 10, 100, 26, window,
+                724, 10, 88, 26, window,
                 (HMENU)(INT_PTR)ID_AUTO_RUN, g_instance, NULL);
             /* The ROM path remains internal. Status is exposed as native
                static text, not as an editable toolbar field. */
@@ -2387,10 +2449,12 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             set_control_font(g_settings_button);
             set_control_font(g_fullscreen_checkbox);
             set_control_font(g_auto_run_checkbox);
+            set_control_font(g_widescreen_checkbox);
             set_control_font(g_rom_path);
             set_control_font(g_status);
             SendMessageW(g_fullscreen_checkbox, BM_SETCHECK, BST_UNCHECKED, 0);
             SendMessageW(g_auto_run_checkbox, BM_SETCHECK, BST_UNCHECKED, 0);
+            SendMessageW(g_widescreen_checkbox, BM_SETCHECK, BST_CHECKED, 0);
             update_controls();
             return 0;
 
@@ -2455,6 +2519,39 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                         L"Auto-Run enabled for the next launch." :
                         L"Auto-Run disabled. Adjacent ROMs will load and wait for Play.");
                     return 0;
+                case ID_WIDESCREEN: {
+                    char error[256];
+                    if (lparam == 0) {
+                        LRESULT checked = SendMessageW(g_widescreen_checkbox,
+                                                       BM_GETCHECK, 0, 0);
+                        SendMessageW(g_widescreen_checkbox, BM_SETCHECK,
+                                     checked == BST_CHECKED ? BST_UNCHECKED :
+                                     BST_CHECKED, 0);
+                    }
+                    g_frontend_settings.widescreen =
+                        SendMessageW(g_widescreen_checkbox, BM_GETCHECK,
+                                     0, 0) == BST_CHECKED;
+                    memset(error, 0, sizeof(error));
+                    if (g_game && !simcity_recomp_set_widescreen(
+                            g_game, g_frontend_settings.widescreen,
+                            error, sizeof(error))) {
+                        g_frontend_settings.widescreen =
+                            simcity_recomp_widescreen_enabled(g_game);
+                        SendMessageW(g_widescreen_checkbox, BM_SETCHECK,
+                            g_frontend_settings.widescreen ? BST_CHECKED :
+                                                            BST_UNCHECKED, 0);
+                        set_status_utf8(error[0] ? error :
+                            "Unable to change widescreen geometry.");
+                    } else {
+                        (void)simcity_frontend_settings_win32_save(
+                            &g_frontend_settings, g_settings_ini_path);
+                        set_status(g_frontend_settings.widescreen ?
+                            L"Widescreen enabled: rendering 71 additional pixels on both sides." :
+                            L"Widescreen disabled: authentic 256-pixel presentation restored.");
+                        InvalidateRect(g_window, NULL, TRUE);
+                    }
+                    return 0;
+                }
                 case ID_SNAPSHOT_SAVE: show_snapshot_window(1); return 0;
                 case ID_SNAPSHOT_LOAD: show_snapshot_window(0); return 0;
                 case ID_SNAPSHOT_SAVE_CURRENT: save_current_snapshot(); return 0;
@@ -2575,6 +2672,23 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             (void)flush_battery_sram_win32(1, NULL, 0u);
             simcity_recomp_destroy(g_game);
             g_game = result->game;
+            {
+                char geometry_error[256];
+                memset(geometry_error, 0, sizeof(geometry_error));
+                if (!simcity_recomp_set_widescreen(
+                        g_game, g_frontend_settings.widescreen,
+                        geometry_error, sizeof(geometry_error))) {
+                    simcity_recomp_destroy(g_game);
+                    g_game = NULL;
+                    utf8_to_wide(geometry_error, result->error,
+                        sizeof(result->error) / sizeof(result->error[0]));
+                    MessageBoxW(window, result->error,
+                                APP_TITLE, MB_OK | MB_ICONERROR);
+                    free(result);
+                    update_controls();
+                    return 0;
+                }
+            }
             g_loaded_snapshot_slot = -1;
             g_sram_last_flush_frame = 0u;
             result->game = NULL;

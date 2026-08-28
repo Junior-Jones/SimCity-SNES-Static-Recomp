@@ -30,6 +30,20 @@ endif()
 
 add_subdirectory(static-recomp)
 
+add_executable(simcity-widescreen-probe
+    tools/widescreen/widescreen_probe.c)
+target_link_libraries(simcity-widescreen-probe PRIVATE simcity-static-recomp)
+target_include_directories(simcity-widescreen-probe PRIVATE
+    "${CMAKE_SOURCE_DIR}/static-recomp/include")
+target_compile_definitions(simcity-widescreen-probe PRIVATE
+    _CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+    target_compile_options(simcity-widescreen-probe PRIVATE /W4 /WX)
+else()
+    target_compile_options(simcity-widescreen-probe PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 if(WIN32)
     add_subdirectory(frontend/windows)
 else()
@@ -40,7 +54,8 @@ install(TARGETS simcity-static-recomp ARCHIVE DESTINATION lib
     COMPONENT Development)
 install(FILES static-recomp/include/simcity_static_recomp.h DESTINATION include
     COMPONENT Development)
-install(FILES README-FIRST.txt VERSION.txt ROM-REQUIREMENTS.txt DESTINATION .
+install(FILES README-FIRST.txt VERSION.txt ROM-REQUIREMENTS.txt
+    "Wide Screen - 1.3.0.txt" "Audio - 1.3.0.txt" DESTINATION .
     COMPONENT Runtime)
 install(FILES Rom/readme.txt DESTINATION Rom
     COMPONENT Runtime)

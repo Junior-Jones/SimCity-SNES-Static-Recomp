@@ -71,7 +71,8 @@ int simcity_recomp_write_diagnostic_log(
         simcity_recomp_current_frame(instance),
         (unsigned long long)simcity_recomp_instruction_count(instance),
         (unsigned long long)(pixels ? fnv1a64(
-            pixels, SIMCITY_RECOMP_FRAME_PIXELS * sizeof(*pixels)) : 0u),
+            pixels, (size_t)simcity_recomp_frame_width(instance) *
+                    SIMCITY_RECOMP_FRAME_HEIGHT * sizeof(*pixels)) : 0u),
         simcity_recomp_failed(instance),
         simcity_recomp_last_error(instance),
         audio_available, (unsigned)audio.current_epoch,

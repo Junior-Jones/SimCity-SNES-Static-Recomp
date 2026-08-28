@@ -1080,6 +1080,13 @@ int sc_v35_group_000E2(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
       SC_STATIC_CONTEXT_END();
     }
     break;
+  case 0x038A15u:
+    if(m==0u&&x==0u&&e==0u){ /* A5 00 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x038A15u,2u,0x00u,0x8A17u);
+      sc_v11_op_lda(r,sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x00u)),16u);if((c->d&0xffu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
   case 0x038A1Cu:
     if(m==0u&&x==0u&&e==0u){ /* A9 00 02 ; generated town route */
       SC_STATIC_CONTEXT_BEGIN(0x038A1Cu,3u,0x02u,0x8A1Fu);

@@ -651,4 +651,3 @@ void sc_v11_bus_write16(SCV11Runtime *runtime, uint32_t address, uint16_t value)
     sc_v11_bus_write8(runtime, address, (uint8_t)value);
     sc_v11_bus_write8(runtime, (address + 1u) & 0x00ffffffu, (uint8_t)(value >> 8));
 }
-

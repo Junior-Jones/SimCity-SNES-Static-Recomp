@@ -1,0 +1,122 @@
+SimCity SNES Static Recomp
+Wide Screen - Version 1.3.0
+
+Purpose
+This feature renders additional real city-map content on the left and right of
+the original SNES frame. It does not stretch, mirror, repeat, or invent pixels
+from the old 4:3 image. The original game remains the authority for simulation,
+map data, tiles, sprites, controls, and building placement.
+
+Final geometry
+- Native core frame: 256x239 pixels.
+- Wide Screen frame: 398x239 pixels.
+- Added map view: 71 pixels on the left and 71 pixels on the right.
+- Wide Screen is applied only to the live city gameplay PPU layout.
+- Title, setup, tutorial prompts, scenario selection, information panels, and
+  other non-city screens retain the authentic native presentation.
+
+Step-by-step implementation
+
+1. Establish a native reference
+   The unmodified 256x239 renderer and Mesen headless output were used as the
+   visual and behavioral reference. Gameplay routes, tutorial timing, scenario
+   loading, HUD use, cursor movement, and building placement were recorded
+   before widening the output.
+
+2. Trace the city display state
+   The static core, WRAM, PPU registers, OAM, VRAM, generated W65C816 routes,
+   and the SimCity disassembly were traced together. The live city view was
+   identified by its stable Mode 1 PPU layout and BG1/BG2 tilemap registers.
+   That signature prevents menus and modal screens from being widened.
+
+3. Expand the public framebuffer contract
+   The core gained a maximum frame size, a 398-pixel Wide Screen width, dynamic
+   frame-width reporting, and a runtime enable/disable function. The frontend
+   now reads the active width instead of assuming 256 pixels.
+
+4. Render real map data in the margins
+   BG1 and BG2 sampling was separated from the native screen coordinate. Each
+   Wide Screen output pixel is resolved against the city camera and the full
+   map tilemap. BG3 and BG4 remain native HUD layers rather than being repeated
+   into the new map area.
+
+5. Clamp the city camera to map data
+   The expanded display origin is clamped against the true city dimensions.
+   Near the left, right, top, and bottom boundaries, the renderer shifts the
+   visible map rectangle inward so the complete 398-pixel output remains backed
+   by valid map tiles. This removes black side gaps at every map corner.
+
+6. Preserve the native HUD
+   SimCity's upper status bar, construction palette, RCI meter, messages, and
+   information panels keep their native coordinates. They are anchored to the
+   physical left edge while the city background continues behind and beyond
+   the original right edge.
+
+7. Separate the map cursor from HUD sprites
+   OAM entries 0 through 3 are the four map-cursor quadrants only while WRAM
+   reports map focus. Remaining OAM entries belong to the HUD and other game
+   objects. This exact distinction replaces the earlier proximity heuristic.
+   It also respects the SNES signed 9-bit OAM X coordinate used by the game's
+   native HUD hide animation.
+
+8. Extend cursor movement into the new view
+   The connector tracks an additional horizontal cursor extension after the
+   native cursor reaches its original left or right handoff point. It writes
+   the map-cursor mirrors used by the core and stops at the true world-map
+   boundary. The extension is never applied while toolbar focus owns the same
+   WRAM coordinates.
+
+9. Preserve building placement
+   Building cursors have different footprints. In particular, the 4x4 Coal
+   Power cursor uses an earlier safe native anchor so the complete footprint
+   remains valid. Confirm actions in the negative left margin are temporarily
+   rebased to a native-safe camera/cursor pair without changing the selected
+   world cell.
+
+10. Preserve toolbar commands
+    Select and X enter, leave, show, or hide the in-game toolbars through native
+    routines. When either command is used from a widened margin, the connector
+    temporarily rebases the input frame, allows the original routine to run,
+    restores the camera, and leaves toolbar hand coordinates under core control.
+
+11. Preserve camera panning
+    A+Left and A+Right convert any active cursor extension into an equivalent
+    permanent camera offset, clear the extension, then continue through the
+    original camera-pan path. Only native horizontal scroll bits consumed by
+    the connector are cleared; vertical scrolling state is retained.
+
+12. Complete newly reachable static routes
+    Full-map and scenario traversal reached a small number of exact processor
+    contexts that the older gameplay corpus had not exercised. Those contexts
+    were added as fail-closed generated routes. Wide Screen mode also adjusts
+    the relevant native cursor/camera comparison thresholds while 4:3 retains
+    the original constants.
+
+13. Present without stretching
+    The Win32/GDI frontend receives the actual active framebuffer width. Window
+    and full-screen presentation use that geometry directly. Turning Wide Screen
+    off restores the original centered 4:3 frame with pillarboxing where needed.
+
+14. Add user control and persistence
+    Wide Screen is a toolbar checkbox and a Display value in settings.ini. It
+    can be changed while a game is loaded. Version 1.3.0 orders the toolbar as
+    Full screen, Wide Screen, Auto-Run, including the same keyboard Tab order.
+
+Verification performed
+- Compared native screenshots against Mesen headless reference output.
+- Ran the tutorial route into live city gameplay.
+- Toggled the HUD shown, hidden, transition, map-focus, and toolbar-focus states.
+- Moved the cursor through both added side areas and beyond the old 4:3 edges.
+- Built in newly visible land, moved away, built on the opposite side, and
+  returned to confirm the first structure remained in the correct world cell.
+- Traversed up and down after horizontal extension and after native camera pan.
+- Reached all four corners on scenario and Freeland maps.
+- Confirmed no black side gaps, repeated tiles, duplicated HUD sprites, or
+  stretched output in windowed and full-screen captures.
+- Confirmed that disabling Wide Screen restores the authentic 4:3 presentation.
+
+Release invariants
+- Wide Screen changes presentation and reachable screen space, not city rules.
+- The ROM is external and unmodified.
+- Native 4:3 behavior remains available and retains the original thresholds.
+- Unknown static CPU or audio states remain fail-closed.

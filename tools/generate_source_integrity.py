@@ -16,7 +16,7 @@ EXCLUDED = {"SOURCE-MANIFEST.json", "SHA256SUMS.txt"}
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument("--version", default="1.2.0")
+    parser.add_argument("--version", default="1.3.0")
     args = parser.parse_args()
     root = args.root.resolve()
 

@@ -1471,7 +1471,12 @@ int sc_v34_group_00070(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
   case 0x01C29Cu:
     if(m==0u&&x==0u&&e==0u){ /* C9 1E 00 Mesen corrected gameplay frame 4040; Version 34 gameplay route */
       SC_STATIC_CONTEXT_BEGIN(0x01C29Cu,3u,0x00u,0xC29Fu);
-      sc_v11_op_compare(r,c->a,0x001Eu,16u);
+      /* The native city view is 30 cells wide. Widescreen exposes six real
+         additional map cells, so delay cursor-led camera scrolling by the
+         same six cells while retaining the original 4:3 threshold. */
+      sc_v11_op_compare(r,c->a,
+                        r->host_widescreen_enabled ? 0x0024u : 0x001Eu,
+                        16u);
       SC_STATIC_CONTEXT_END();
     }
     break;
@@ -1507,7 +1512,9 @@ int sc_v34_group_00070(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
   case 0x01C2A6u:
     if(m==0u&&x==0u&&e==0u){ /* C9 F9 00 Mesen corrected gameplay frame 4040; Version 34 gameplay route */
       SC_STATIC_CONTEXT_BEGIN(0x01C2A6u,3u,0x00u,0xC2A9u);
-      sc_v11_op_compare(r,c->a,0x00F9u,16u);
+      sc_v11_op_compare(r,c->a,
+                        r->host_widescreen_enabled ? 0x0129u : 0x00F9u,
+                        16u);
       SC_STATIC_CONTEXT_END();
     }
     break;
@@ -1914,7 +1921,10 @@ int sc_v34_group_00070(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
   case 0x01C371u:
     if(m==0u&&x==0u&&e==0u){ /* C9 E8 00 Mesen corrected gameplay frame 3660; Version 34 gameplay route */
       SC_STATIC_CONTEXT_BEGIN(0x01C371u,3u,0x00u,0xC374u);
-      sc_v11_op_compare(r,c->a,0x00E8u,16u);
+      /* Widescreen connector for the active gameplay route. */
+      sc_v11_op_compare(r,c->a,
+                        r->host_widescreen_enabled ? 0x0118u : 0x00E8u,
+                        16u);
       SC_STATIC_CONTEXT_END();
     }
     break;

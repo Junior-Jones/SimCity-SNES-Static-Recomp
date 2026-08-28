@@ -46,11 +46,12 @@ typedef struct PpuObject {
 
 typedef struct PpuObjectLine {
     PpuObject object;
+    int16_t display_x;
     uint8_t line;
 } PpuObjectLine;
 
 typedef struct PpuObjectTile {
-    uint16_t x;
+    int16_t x;
     uint8_t priority;
     uint8_t palette;
     uint8_t hflip;
@@ -61,6 +62,16 @@ static const SCV11Runtime *g_runtime;
 static const uint8_t *g_vram;
 static const uint8_t *g_cgram;
 static const uint8_t *g_oam;
+
+#define SC_CITY_MAP_WIDTH 120
+#define SC_CITY_MAP_HEIGHT 100
+#define SC_CITY_MAP_WRAM_OFFSET 0x10200u
+#define SC_CITY_VIEW_X_OFFSET 0x01bdu
+#define SC_CITY_VIEW_Y_OFFSET 0x01bfu
+#define SC_CITY_FINE_X_OFFSET 0x0139u
+#define SC_CITY_FINE_Y_OFFSET 0x0137u
+#define SC_CITY_BG1_TABLE 0x02cf2du
+#define SC_CITY_BG2_TABLE 0x02d6a9u
 
 static uint8_t current_reg(uint16_t address) {
     return g_runtime->machine.mmio[address - SC_MMIO_BASE];
@@ -74,6 +85,23 @@ static uint8_t view_reg(const PpuLineView *view, uint16_t address) {
 static uint16_t read_vram16(uint32_t address) {
     return (uint16_t)(g_vram[address & 0xffffu] |
            ((uint16_t)g_vram[(address + 1u) & 0xffffu] << 8));
+}
+
+static uint16_t read_wram16(size_t address) {
+    return (uint16_t)(g_runtime->machine.wram[address] |
+           ((uint16_t)g_runtime->machine.wram[address + 1u] << 8));
+}
+
+static size_t lorom_offset(uint32_t address) {
+    return (size_t)(((address >> 16) & 0x7fu) * 0x8000u) +
+           (size_t)(address & 0x7fffu);
+}
+
+static uint16_t read_rom16(uint32_t address) {
+    size_t offset = lorom_offset(address);
+    if (!g_runtime->rom || offset + 1u >= g_runtime->rom_size) return 0u;
+    return (uint16_t)(g_runtime->rom[offset] |
+           ((uint16_t)g_runtime->rom[offset + 1u] << 8));
 }
 
 static uint16_t cgram_color(unsigned index) {
@@ -203,8 +231,130 @@ static uint16_t direct_color(uint8_t palette, uint8_t pixel) {
                       ((blue & 31u) << 10));
 }
 
+static unsigned wrap_coordinate(int value, unsigned extent) {
+    int remainder = value % (int)extent;
+    if (remainder < 0) remainder += (int)extent;
+    return (unsigned)remainder;
+}
+
+static uint16_t city_map_word(int map_x, int map_y) {
+    size_t offset;
+    if (map_x < 0 || map_x >= SC_CITY_MAP_WIDTH ||
+        map_y < 0 || map_y >= SC_CITY_MAP_HEIGHT)
+        return 0u;
+    offset = SC_CITY_MAP_WRAM_OFFSET +
+             ((size_t)map_y * SC_CITY_MAP_WIDTH + (size_t)map_x) * 2u;
+    return read_wram16(offset);
+}
+
+static uint16_t city_map_tile_entry(unsigned layer, int map_x, int map_y) {
+    uint16_t map_word = city_map_word(map_x, map_y);
+    uint16_t code = (uint16_t)(map_word & 0x03ffu);
+    if (map_x < 0 || map_x >= SC_CITY_MAP_WIDTH ||
+        map_y < 0 || map_y >= SC_CITY_MAP_HEIGHT)
+        return layer == 0u ? 0x0300u : 0x0301u;
+    if (layer == 0u && (map_word & 0x4000u)) {
+        uint16_t upper_left = city_map_word(map_x - 1, map_y - 1);
+        return (upper_left & 0x8000u) ? 0x0300u : 0x1376u;
+    }
+    return read_rom16((layer == 0u ? SC_CITY_BG1_TABLE :
+                       SC_CITY_BG2_TABLE) + (uint32_t)code * 2u);
+}
+
+static int city_background_pixel(const PpuLineView *view, unsigned layer,
+                                 int city_source_x, int y,
+                                 PpuPixel *pixel) {
+    unsigned mode = view_reg(view, 0x2105u) & 7u;
+    unsigned bpp = bg_bpp(mode, layer);
+    uint8_t nba;
+    uint32_t char_base;
+    int map_x;
+    int map_y;
+    unsigned px;
+    unsigned py;
+    uint16_t entry;
+    uint16_t tile;
+    uint8_t palette_group;
+    uint8_t color = 0u;
+    uint32_t row_address;
+    unsigned bit;
+    unsigned plane;
+    int sample_x = city_source_x;
+    int sample_y = y + 1;
+    unsigned mosaic_size;
+    int world_x;
+    int world_y;
+    int view_x;
+    int view_y;
+
+    memset(pixel, 0, sizeof(*pixel));
+    pixel->transparent = 1u;
+    if (layer > 1u || bpp == 0u) return 1;
+
+    mosaic_size = ((unsigned)view_reg(view, 0x2106u) >> 4) + 1u;
+    if ((view_reg(view, 0x2106u) & (1u << layer)) && mosaic_size > 1u) {
+        sample_x -= (int)wrap_coordinate(sample_x, mosaic_size);
+        sample_y -= (int)wrap_coordinate(sample_y, mosaic_size);
+    }
+
+    /*
+     * The city map is 120x100 8-pixel cells in WRAM.  The original game only
+     * streams a 32-cell-wide ring into VRAM, so reading that tilemap outside
+     * x=0..255 repeats unrelated columns.  Reconstruct margin cells from the
+     * authoritative map instead.  $01BD/$01BF are the top-left map cell and
+     * $0139/$0137 provide the sub-cell camera position.
+     */
+    view_x = (int)(int16_t)read_wram16(SC_CITY_VIEW_X_OFFSET);
+    view_y = (int)(int16_t)read_wram16(SC_CITY_VIEW_Y_OFFSET);
+    world_x = view_x * 8 +
+              (int)(read_wram16(SC_CITY_FINE_X_OFFSET) & 7u) + sample_x;
+    world_y = view_y * 8 +
+              (int)(read_wram16(SC_CITY_FINE_Y_OFFSET) & 7u) + (int)sample_y;
+
+    map_x = world_x >= 0 ? world_x / 8 : -((7 - world_x) / 8);
+    map_y = world_y >= 0 ? world_y / 8 : -((7 - world_y) / 8);
+    px = wrap_coordinate(world_x, 8u);
+    py = wrap_coordinate(world_y, 8u);
+    entry = city_map_tile_entry(layer, map_x, map_y);
+    tile = (uint16_t)(entry & 0x03ffu);
+    palette_group = (uint8_t)((entry >> 10) & 7u);
+    if (entry & 0x4000u) px = 7u - px;
+    if (entry & 0x8000u) py = 7u - py;
+
+    nba = view_reg(view, layer < 2u ? 0x210bu : 0x210cu);
+    char_base = (uint32_t)((layer & 1u) ? (nba >> 4) :
+                           (nba & 15u)) << 13;
+    row_address = char_base + (uint32_t)tile * (bpp * 8u) + py * 2u;
+    bit = 7u - px;
+    for (plane = 0u; plane < bpp; ++plane) {
+        uint32_t address = row_address + (plane >> 1) * 16u + (plane & 1u);
+        color |= (uint8_t)(((g_vram[address & 0xffffu] >> bit) & 1u) << plane);
+    }
+    if (!color) return 1;
+
+    pixel->transparent = 0u;
+    pixel->priority = bg_priority(mode, layer, (entry >> 13) & 1u,
+                                  (view_reg(view, 0x2105u) & 0x08u) != 0u);
+    pixel->layer = (uint8_t)layer;
+    pixel->palette_index = color;
+    if (bpp == 2u) {
+        unsigned base = mode == 0u ? layer * 32u : 0u;
+        pixel->palette_index = (uint8_t)(base + palette_group * 4u + color);
+        pixel->color = cgram_color(pixel->palette_index);
+    } else if (bpp == 4u) {
+        pixel->palette_index = (uint8_t)(palette_group * 16u + color);
+        pixel->color = cgram_color(pixel->palette_index);
+    } else {
+        pixel->palette_index = color;
+        pixel->color = (view_reg(view, 0x2130u) & 1u)
+            ? direct_color(palette_group, color)
+            : cgram_color(color);
+    }
+    return 1;
+}
+
 static int background_pixel(const PpuLineView *view, unsigned layer,
-                            unsigned x, unsigned y, PpuPixel *pixel) {
+                            int x, unsigned y, PpuPixel *pixel) {
     unsigned mode = view_reg(view, 0x2105u) & 7u;
     unsigned bpp = bg_bpp(mode, layer);
     uint8_t bgmode = view_reg(view, 0x2105u);
@@ -215,7 +365,7 @@ static int background_pixel(const PpuLineView *view, unsigned layer,
     unsigned map_height;
     unsigned world_width;
     unsigned world_height;
-    unsigned sample_x = x;
+    int sample_x = x;
     unsigned sample_y = y + 1u;
     unsigned mosaic_size;
     uint32_t map_base;
@@ -235,7 +385,7 @@ static int background_pixel(const PpuLineView *view, unsigned layer,
 
     mosaic_size = ((unsigned)view_reg(view, 0x2106u) >> 4) + 1u;
     if ((view_reg(view, 0x2106u) & (1u << layer)) && mosaic_size > 1u) {
-        sample_x -= sample_x % mosaic_size;
+        sample_x -= (int)wrap_coordinate(sample_x, mosaic_size);
         sample_y -= sample_y % mosaic_size;
     }
 
@@ -249,7 +399,8 @@ static int background_pixel(const PpuLineView *view, unsigned layer,
     if (mode == 5u || mode == 6u) tile_size = 16u;
     world_width = map_width * tile_size;
     world_height = map_height * tile_size;
-    world_x = (sample_x + view->scroll[layer * 2u]) % world_width;
+    world_x = wrap_coordinate(sample_x + (int)view->scroll[layer * 2u],
+                              world_width);
     world_y = (sample_y + view->scroll[layer * 2u + 1u]) % world_height;
     tile_x = world_x / tile_size;
     tile_y = world_y / tile_size;
@@ -341,7 +492,10 @@ static PpuObject decode_object(const PpuLineView *view, unsigned index) {
 }
 
 static void object_line(const PpuLineView *view, unsigned y,
-                        uint8_t palettes[256], uint8_t priorities[256]) {
+                        unsigned output_width, unsigned left_margin,
+                        int cursor_shift_x, int cursor_shift_y,
+                        uint8_t palettes[SC_V28_MAX_FRAME_WIDTH],
+                        uint8_t priorities[SC_V28_MAX_FRAME_WIDTH]) {
     PpuObjectLine items[32];
     PpuObjectTile tiles[34];
     unsigned item_count = 0u, tile_count = 0u;
@@ -349,17 +503,41 @@ static void object_line(const PpuLineView *view, unsigned y,
     uint8_t selection = view_reg(view, 0x2101u);
     unsigned first = g_runtime->machine.oam_priority_rotation
         ? ((unsigned)g_runtime->machine.oam_word_address >> 1) & 127u : 0u;
-    memset(palettes, 0, 256u);
-    memset(priorities, 0, 256u);
+    memset(palettes, 0, output_width);
+    memset(priorities, 0, output_width);
 
     for (scan = 0u; scan < 128u; ++scan) {
         unsigned index = (first + scan) & 127u;
         PpuObject object = decode_object(view, index);
-        uint8_t line = (uint8_t)((y + 1u - object.y) & 0xffu);
-        if ((object.x <= 256u || (uint32_t)object.x + object.width - 1u >= 512u) &&
+        uint8_t line;
+        int object_x = object.x >= 256u ? (int)object.x - 512 : (int)object.x;
+        int display_x = object_x;
+        int display_y = (int)object.y;
+        int cursor_object = read_wram16(0x0201u) == 0x00ffu && index < 4u;
+        int cursor_x = (int)(int16_t)read_wram16(0x025du);
+        int cursor_base = read_wram16(0x0261u) == 2u ? 208 : 232;
+        int cursor_extension = cursor_x > cursor_base ?
+                               cursor_x - cursor_base :
+                               (cursor_x < 16 ? cursor_x - 16 : 0);
+        if (cursor_object && (cursor_shift_x || cursor_shift_y) &&
+            cursor_x >= 256 && object.x >= 256u) {
+            /* OAM entries 0..3 are the four map-cursor quadrants. A widened
+               cursor legitimately uses the positive half of the SNES 9-bit
+               OAM X range; do not reinterpret it as -256..-1. */
+            display_x = (int)object.x + cursor_shift_x;
+        }
+        else if (cursor_object && (cursor_shift_x || cursor_shift_y)) {
+            display_x += cursor_shift_x + cursor_extension;
+        }
+        if (cursor_object) display_y += cursor_shift_y;
+        line = (uint8_t)((int)y + 1 - display_y);
+        if (display_x < (int)SIMCITY_RECOMP_FRAME_WIDTH +
+                           (int)(output_width - SIMCITY_RECOMP_FRAME_WIDTH - left_margin) &&
+            display_x + (int)object.width > -(int)left_margin &&
             line < object.height) {
             if (item_count >= 32u) break;
             items[item_count].object = object;
+            items[item_count].display_x = (int16_t)display_x;
             items[item_count].line = line;
             item_count++;
         }
@@ -368,7 +546,7 @@ static void object_line(const PpuLineView *view, unsigned y,
     for (i = item_count; i > 0u; --i) {
         PpuObject object = items[i - 1u].object;
         unsigned yy = items[i - 1u].line;
-        unsigned xx = object.x & 511u;
+        int xx = items[i - 1u].display_x;
         unsigned tile_base = (selection & 7u) << 13;
         unsigned cx = object.character & 15u;
         unsigned cy, tile_width, object_tile_x;
@@ -382,10 +560,9 @@ static void object_line(const PpuLineView *view, unsigned y,
         cy = (((object.character >> 4) + (yy >> 3)) & 15u) << 4;
         tile_width = object.width >> 3;
         for (object_tile_x = 0u; object_tile_x < tile_width; ++object_tile_x) {
-            unsigned ox = (xx + (object_tile_x << 3)) & 511u;
+            int ox = xx + (int)(object_tile_x << 3);
             unsigned mx, address, address0, address1;
             uint16_t word0, word1;
-            if (xx != 256u && ox >= 256u && ox + 7u < 512u) continue;
             mx = object.hflip ? tile_width - 1u - object_tile_x : object_tile_x;
             address = tile_base + ((cy + ((cx + mx) & 15u)) << 4);
             address = (address & 0xfff0u) + (yy & 7u);
@@ -394,7 +571,7 @@ static void object_line(const PpuLineView *view, unsigned y,
             word0 = read_vram16(address0);
             word1 = read_vram16(address1);
             if (tile_count >= 34u) break;
-            tiles[tile_count].x = (uint16_t)ox;
+            tiles[tile_count].x = (int16_t)ox;
             tiles[tile_count].priority = object.priority;
             tiles[tile_count].palette = (uint8_t)(128u + (object.palette << 4));
             tiles[tile_count].hflip = object.hflip;
@@ -405,20 +582,20 @@ static void object_line(const PpuLineView *view, unsigned y,
     }
 
     for (t = 0u; t < tile_count; ++t) {
-        unsigned xx = tiles[t].x;
+        int xx = tiles[t].x;
         for (p = 0u; p < 8u; ++p) {
             unsigned shift;
             uint8_t color;
-            xx &= 511u;
-            if (xx < 256u) {
+            int output_x = xx + (int)left_margin;
+            if (output_x >= 0 && output_x < (int)output_width) {
                 shift = tiles[t].hflip ? p : 7u - p;
                 color = (uint8_t)(((tiles[t].data >> shift) & 1u) |
                     (((tiles[t].data >> (shift + 8u)) & 1u) << 1) |
                     (((tiles[t].data >> (shift + 16u)) & 1u) << 2) |
                     (((tiles[t].data >> (shift + 24u)) & 1u) << 3));
                 if (color) {
-                    palettes[xx] = (uint8_t)(tiles[t].palette + color);
-                    priorities[xx] = tiles[t].priority;
+                    palettes[output_x] = (uint8_t)(tiles[t].palette + color);
+                    priorities[output_x] = tiles[t].priority;
                 }
             }
             xx++;
@@ -442,11 +619,11 @@ static unsigned layer_window_logic(const PpuLineView *view, unsigned layer) {
     return (view_reg(view, 0x212bu) >> 2) & 3u;
 }
 
-static int window_inside(unsigned x, unsigned left, unsigned right) {
-    return left <= right && x >= left && x <= right;
+static int window_inside(int x, unsigned left, unsigned right) {
+    return left <= right && x >= (int)left && x <= (int)right;
 }
 
-static int window_mask(const PpuLineView *view, unsigned layer, unsigned x) {
+static int window_mask(const PpuLineView *view, unsigned layer, int x) {
     uint8_t nibble = layer_window_nibble(view, layer);
     int enable1 = (nibble & 2u) != 0u;
     int enable2 = (nibble & 8u) != 0u;
@@ -473,7 +650,7 @@ static int region_applies(unsigned setting, int inside_color_window) {
 }
 
 static PpuPixel screen_pixel(const PpuLineView *view, unsigned screen_mask,
-                             unsigned window_enable, unsigned x, unsigned y,
+                             unsigned window_enable, int x, unsigned y,
                              uint8_t obj_palette, uint8_t obj_priority_value) {
     PpuPixel best;
     unsigned mode = view_reg(view, 0x2105u) & 7u;
@@ -511,6 +688,66 @@ static PpuPixel screen_pixel(const PpuLineView *view, unsigned screen_mask,
     return best;
 }
 
+static PpuPixel city_screen_pixel(const PpuLineView *view,
+                                  unsigned screen_mask,
+                                  unsigned window_enable,
+                                  int source_x, int city_source_x,
+                                  int city_source_y, unsigned y,
+                                  uint8_t obj_palette,
+                                  uint8_t obj_priority_value) {
+    PpuPixel best;
+    unsigned mode = view_reg(view, 0x2105u) & 7u;
+    unsigned layer;
+    int effect_x = source_x < 0 || source_x >= (int)SC_V28_FRAME_WIDTH
+        ? 128 : source_x;
+    memset(&best, 0, sizeof(best));
+    best.color = cgram_color(0u);
+    best.palette_index = 0u;
+    best.priority = 0u;
+    best.layer = 5u;
+    best.transparent = 0u;
+
+    /* BG1/BG2 come from the full city map. BG3/BG4 remain native-width HUD. */
+    for (layer = 0u; layer < 4u; ++layer) {
+        PpuPixel candidate;
+        if ((screen_mask & (1u << layer)) == 0u || bg_bpp(mode, layer) == 0u)
+            continue;
+        if (layer >= 2u &&
+            (source_x < 0 || source_x >= (int)SC_V28_FRAME_WIDTH))
+            continue;
+        if ((window_enable & (1u << layer)) &&
+            window_mask(view, layer, effect_x))
+            continue;
+        if (layer < 2u) {
+            if (!city_background_pixel(view, layer, city_source_x,
+                                       city_source_y,
+                                       &candidate))
+                continue;
+        } else if (!background_pixel(view, layer, source_x, y, &candidate)) {
+            continue;
+        }
+        if (!candidate.transparent && candidate.priority > best.priority)
+            best = candidate;
+    }
+
+    /* Preserve sprites only when their existing screen coordinates overlap a
+     * margin.  Do not wrap or duplicate OAM objects into invented positions. */
+    if ((screen_mask & 0x10u) && obj_palette) {
+        uint8_t priority = obj_priority(mode, obj_priority_value);
+        if (!((window_enable & 0x10u) &&
+              window_mask(view, 4u, effect_x)) &&
+            priority > best.priority) {
+            best.color = cgram_color(obj_palette);
+            best.palette_index = obj_palette;
+            best.priority = priority;
+            best.layer = 4u;
+            best.obj_palette = (uint8_t)((obj_palette - 128u) >> 4);
+            best.transparent = 0u;
+        }
+    }
+    return best;
+}
+
 static void analyze(const uint32_t *pixels, size_t count,
                     uint32_t *nonblack, uint32_t *unique) {
     uint32_t colors[1024];
@@ -529,6 +766,8 @@ static void analyze(const uint32_t *pixels, size_t count,
 }
 
 int sc_v28_render_first_visible_frame(const SCV11Runtime *runtime,
+                                      unsigned output_width,
+                                      unsigned left_margin,
                                       uint16_t *out555,
                                       size_t cap555,
                                       uint32_t *out32,
@@ -536,13 +775,19 @@ int sc_v28_render_first_visible_frame(const SCV11Runtime *runtime,
                                       SCV28VideoReport *report) {
     SCV28VideoReport result;
     unsigned y, x;
-    uint8_t object_palette[256], object_priority_value[256];
+    uint8_t object_palette[SC_V28_MAX_FRAME_WIDTH];
+    uint8_t object_priority_value[SC_V28_MAX_FRAME_WIDTH];
     unsigned supported_lines = 0u;
     unsigned scanline_states = 0u;
+    int expand_city_view;
 
     memset(&result, 0, sizeof(result));
+    size_t output_pixels = (size_t)output_width * SC_V28_FRAME_HEIGHT;
     if (!runtime || !out555 || !out32 || !report ||
-        cap555 < SC_V28_FRAME_PIXELS || cap32 < SC_V28_FRAME_PIXELS)
+        output_width < SC_V28_FRAME_WIDTH ||
+        output_width > SC_V28_MAX_FRAME_WIDTH ||
+        left_margin > output_width - SC_V28_FRAME_WIDTH ||
+        cap555 < output_pixels || cap32 < output_pixels)
         return 0;
 
     g_runtime = runtime;
@@ -555,8 +800,19 @@ int sc_v28_render_first_visible_frame(const SCV11Runtime *runtime,
     result.main_screen_mask = current_reg(0x212cu);
     result.sub_screen_mask = current_reg(0x212du);
     result.color_math = current_reg(0x2131u);
-    memset(out555, 0, SC_V28_FRAME_PIXELS * sizeof(*out555));
-    memset(out32, 0, SC_V28_FRAME_PIXELS * sizeof(*out32));
+    memset(out555, 0, output_pixels * sizeof(*out555));
+    memset(out32, 0, output_pixels * sizeof(*out32));
+
+    /*
+     * Keep non-gameplay screens at the authentic 256-pixel presentation.
+     * The live city view has a stable PPU layout that is distinct from the
+     * title, setup, scenario, and modal screens.  Widening only this layout
+     * avoids exposing repeated menu tilemaps in the side margins.
+     */
+    expand_city_view = output_width > SC_V28_FRAME_WIDTH &&
+        (current_reg(0x2105u) & 0x0fu) == 0x09u &&
+        current_reg(0x2107u) == 0x58u &&
+        current_reg(0x2108u) == 0x5cu;
 
     for (y = 0u; y < SC_V11_PPU_VISIBLE_LINES; ++y) {
         PpuLineView view = line_view(runtime, y);
@@ -570,6 +826,34 @@ int sc_v28_render_first_visible_frame(const SCV11Runtime *runtime,
         uint8_t cgadsub = view_reg(&view, 0x2131u);
         unsigned brightness = inidisp & 15u;
         int forced_blank = (inidisp & 0x80u) != 0u;
+        int native_camera_x =
+            (int)(int16_t)read_wram16(SC_CITY_VIEW_X_OFFSET) * 8 +
+            (int)(read_wram16(SC_CITY_FINE_X_OFFSET) & 7u);
+        int native_camera_y =
+            (int)(int16_t)read_wram16(SC_CITY_VIEW_Y_OFFSET) * 8 +
+            (int)(read_wram16(SC_CITY_FINE_Y_OFFSET) & 7u);
+        int display_left_x = native_camera_x - (int)left_margin;
+        int display_top_y = native_camera_y;
+        int max_display_left_x = SC_CITY_MAP_WIDTH * 8 - (int)output_width;
+        int max_display_top_y = SC_CITY_MAP_HEIGHT * 8 -
+                                (int)SC_V11_PPU_VISIBLE_LINES;
+        int cursor_shift_x = 0;
+        int cursor_shift_y = 0;
+        unsigned object_left_margin = left_margin;
+
+        if (display_left_x < 0) display_left_x = 0;
+        if (display_left_x > max_display_left_x)
+            display_left_x = max_display_left_x;
+        if (display_top_y < 0) display_top_y = 0;
+        if (display_top_y > max_display_top_y)
+            display_top_y = max_display_top_y;
+        if (expand_city_view) {
+            /* Anchor the native HUD at the physical left edge. World objects
+             * retain their map position through the separate camera shift. */
+            object_left_margin = 0u;
+            cursor_shift_x = native_camera_x - display_left_x;
+            cursor_shift_y = native_camera_y - display_top_y;
+        }
 
         if (runtime->ppu_completed_frame == runtime->scheduler.frame &&
             runtime->ppu_completed_line_state[y].valid &&
@@ -585,24 +869,45 @@ int sc_v28_render_first_visible_frame(const SCV11Runtime *runtime,
         supported_lines++;
         if (forced_blank) continue;
 
-        object_line(&view, y, object_palette, object_priority_value);
-        for (x = 0u; x < 256u; ++x) {
-            PpuPixel main_pixel = screen_pixel(&view, main_mask, main_windows,
-                                                x, y, object_palette[x],
-                                                object_priority_value[x]);
+        object_line(&view, y, output_width, object_left_margin,
+                    cursor_shift_x, cursor_shift_y,
+                    object_palette, object_priority_value);
+        for (x = 0u; x < output_width; ++x) {
+            int source_x = (int)x - (int)left_margin;
+            int city_source_x = display_left_x + (int)x - native_camera_x;
+            int city_source_y = display_top_y + (int)y - native_camera_y;
+            int in_margin = source_x < 0 ||
+                            source_x >= (int)SC_V28_FRAME_WIDTH;
+            int effect_x = expand_city_view
+                ? (x < SC_V28_FRAME_WIDTH ? (int)x : 128)
+                : (in_margin ? 128 : source_x);
+            if (!expand_city_view &&
+                in_margin)
+                continue;
+            PpuPixel main_pixel = expand_city_view
+                ? city_screen_pixel(&view, main_mask, main_windows,
+                                    (int)x, city_source_x, city_source_y, y,
+                                    object_palette[x], object_priority_value[x])
+                : screen_pixel(&view, main_mask, main_windows, source_x, y,
+                               object_palette[x], object_priority_value[x]);
             PpuPixel sub_pixel;
             uint16_t color = main_pixel.color;
             uint16_t addend = view.fixed_color;
-            int color_window = window_mask(&view, 5u, x);
+            int color_window = window_mask(&view, 5u, effect_x);
             int clip_main = region_applies((cgwsel >> 6) & 3u, color_window);
             int prevent_math = region_applies((cgwsel >> 4) & 3u, color_window);
             int math_enabled = (cgadsub & (1u << main_pixel.layer)) != 0u;
 
             if (clip_main) color = 0u;
             if (cgwsel & 0x02u) {
-                sub_pixel = screen_pixel(&view, sub_mask, sub_windows,
-                                         x, y, object_palette[x],
-                                         object_priority_value[x]);
+                sub_pixel = expand_city_view
+                    ? city_screen_pixel(&view, sub_mask, sub_windows,
+                                        (int)x, city_source_x, city_source_y, y,
+                                        object_palette[x],
+                                        object_priority_value[x])
+                    : screen_pixel(&view, sub_mask, sub_windows, source_x, y,
+                                   object_palette[x],
+                                   object_priority_value[x]);
                 addend = sub_pixel.color;
             }
             if (main_pixel.layer == 4u && main_pixel.obj_palette < 4u)
@@ -617,20 +922,20 @@ int sc_v28_render_first_visible_frame(const SCV11Runtime *runtime,
                                       (cgadsub & 0x40u) != 0u);
             }
             color = apply_brightness(color, brightness);
-            out555[(y + 7u) * SC_V28_FRAME_WIDTH + x] = color;
-            out32[(y + 7u) * SC_V28_FRAME_WIDTH + x] = bgra(color);
+            out555[(y + 7u) * output_width + x] = color;
+            out32[(y + 7u) * output_width + x] = bgra(color);
         }
     }
 
     result.reached_feature_set_supported =
         (uint8_t)(supported_lines == SC_V11_PPU_VISIBLE_LINES);
-    analyze(out32, SC_V28_FRAME_PIXELS,
+    analyze(out32, output_pixels,
             &result.nonblack_pixels, &result.unique_colors);
     sc_sha256_bytes((const unsigned char *)out555,
-                    SC_V28_FRAME_PIXELS * sizeof(*out555),
+                    output_pixels * sizeof(*out555),
                     result.bgr555_sha256);
     sc_sha256_bytes((const unsigned char *)out32,
-                    SC_V28_FRAME_PIXELS * sizeof(*out32),
+                    output_pixels * sizeof(*out32),
                     result.bgra_sha256);
     if (scanline_states != 0u && scanline_states != SC_V11_PPU_VISIBLE_LINES) {
         (void)snprintf(result.error, sizeof(result.error),

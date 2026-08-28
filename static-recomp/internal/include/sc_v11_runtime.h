@@ -126,6 +126,9 @@ typedef struct SCV11Runtime {
     uint8_t mul_a,mul_b; uint16_t dividend; uint8_t divisor; uint16_t quotient,remainder;
     uint16_t joypad[4];
     uint16_t auto_joypad_result[4];
+    /* Host display geometry used only by game-specific connector patches.
+       It is not SNES state and is refreshed by the public core wrapper. */
+    uint8_t host_widescreen_enabled;
     uint64_t auto_joypad_end_master_clock;
     uint32_t auto_joypad_poll_count;
     uint32_t cpu_apu_read_ordinal,current_instruction_address;

@@ -1,4 +1,4 @@
-# SimCity SNES Static Recomp 1.2.0
+# SimCity SNES Static Recomp 1.3.0
 
 Native Windows static recompilation frontend and core for SimCity on the Super Nintendo Entertainment System.
 
@@ -25,11 +25,11 @@ The complete runtime includes:
 - Native DMA, HDMA, controller and CPU-I/O handling.
 - NTSC scheduling, refresh, NMI, IRQ and scanline events.
 - Fail-closed Full Static S-SMP and S-DSP audio.
-- Native 32,040 Hz stereo PCM generation and WinMM playback.
+- Native 32,040 Hz stereo PCM generation and statically linked SDL3 playback.
 - Battery-backed SRAM persistence and deterministic snapshots.
 - Exact-ROM validation and runtime integrity checks.
-- An accessible native Windows launcher with Win32/GDI presentation,
-  WinMM audio and statically linked SDL gamepad support.
+- An accessible native Windows launcher with Win32/GDI presentation and
+  statically linked SDL3 audio and gamepad support.
 
 "Fully static" does not mean that the city simulation, graphics or audio are
 prerecorded. The simulation advances live according to player decisions and
@@ -56,4 +56,4 @@ cmake --build build --config Release --target simcity-launcher
 
 The resulting portable `Launcher.exe` is placed in `build/release`.
 
-SDL is downloaded from its official `release-3.4.10` tag and checked against a pinned SHA-256 before it is used. It supplies statically linked gamepad support; no SDL DLL is required beside `Launcher.exe`. Video presentation uses native Win32/GDI and audio playback uses native WinMM. The controller database and project adapter are included under `third_party`.
+SDL is downloaded from its official `release-3.4.10` tag and checked against a pinned SHA-256 before it is used. It supplies statically linked gamepad and audio support; no SDL DLL is required beside `Launcher.exe`. Video presentation uses native Win32/GDI. The controller database and project adapter are included under `third_party`.

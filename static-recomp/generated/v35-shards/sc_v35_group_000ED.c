@@ -1852,6 +1852,71 @@ int sc_v35_group_000ED(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
       SC_STATIC_CONTEXT_END();
     }
     break;
+  case 0x03B6E3u:
+    if(m==0u&&x==0u&&e==0u){ /* A5 00 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6E3u,2u,0x00u,0xB6E5u);
+      sc_v11_op_lda(r,sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x00u)),16u);if((c->d&0xffu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6E5u:
+    if(m==0u&&x==0u&&e==0u){ /* 38 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6E5u,1u,0x38u,0xB6E6u);
+      c->p=(uint8_t)(c->p|SC_FLAG_C);sc_v11_scheduler_idle_or_read(r);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6E6u:
+    if(m==0u&&x==0u&&e==0u){ /* E9 00 01 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6E6u,3u,0x01u,0xB6E9u);
+      sc_v11_op_sbc(r,0x0100u,16u);if((c->p&SC_FLAG_D)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6E9u:
+    if(m==0u&&x==0u&&e==0u){ /* C9 FF 00 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6E9u,3u,0x00u,0xB6ECu);
+      sc_v11_op_compare(r,c->a,0x00FFu,16u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6ECu:
+    if(m==0u&&x==0u&&e==0u){ /* 90 08 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6ECu,2u,0x08u,0xB6EEu);
+      if((c->p&SC_FLAG_C)==0u){c->pc=0xB6F6u;}
+      if(c->pc!=0xB6EEu){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0xB6EEu^c->pc)&0xff00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6EEu:
+    if(m==0u&&x==0u&&e==0u){ /* A9 FF 00 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6EEu,3u,0x00u,0xB6F1u);
+      sc_v11_op_lda(r,0x00FFu,16u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6F1u:
+    if(m==0u&&x==0u&&e==0u){ /* 80 03 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6F1u,2u,0x03u,0xB6F3u);
+      if(1){c->pc=0xB6F6u;}
+      if(c->pc!=0xB6F3u){sc_v11_scheduler_internal_cycle(r,1u);if(c->emulation&&((0xB6F3u^c->pc)&0xff00u)!=0u)sc_v11_scheduler_internal_cycle(r,1u);}
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6F3u:
+    if(m==0u&&x==0u&&e==0u){ /* A9 00 00 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6F3u,3u,0x00u,0xB6F6u);
+      sc_v11_op_lda(r,0x0000u,16u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x03B6F6u:
+    if(m==0u&&x==0u&&e==0u){ /* 60 ; scenario four-corner route */
+      SC_STATIC_CONTEXT_BEGIN(0x03B6F6u,1u,0x60u,0xB6F7u);
+      {uint16_t q;sc_v11_scheduler_internal_cycle(r,2u);q=sc_v11_pop16(r);sc_v11_scheduler_internal_cycle(r,1u);c->pc=(uint16_t)(q+1u);}
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
   case 0x03B6F7u:
     if(m==0u&&x==1u&&e==0u){ /* AD 01 0E ; generated town route */
       SC_STATIC_CONTEXT_BEGIN(0x03B6F7u,3u,0x0Eu,0xB6FAu);
