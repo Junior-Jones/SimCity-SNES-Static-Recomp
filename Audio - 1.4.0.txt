@@ -1,0 +1,74 @@
+SimCity SNES Static Recomp
+Audio - Version 1.4.0
+
+Audio ownership
+
+SimCity's ROM supplies its S-SMP driver, sequences, instruments and BRR sample
+data. The static core owns guest master time, exact-PC SPC700 execution, ARAM,
+S-DSP state and native signed 16-bit stereo PCM at 32,040 Hz. The Windows
+frontend owns only speaker resampling, buffering, device selection and volume.
+
+Static S-SMP
+
+- SimCity's existing ROM-derived PC/opcode lookup, generated dispatcher and
+  protected-code bitmap remain the only production S-SMP authority.
+- The generic SPC700 runtime switch is excluded.
+- Unknown PCs, opcode mismatches, unemitted forms, semantic reads of unknown
+  ARAM and writes to protected driver code fail closed with diagnostics.
+- ARAM knownness is preserved across writes and snapshots.
+- SPC700 stores perform their discarded bus read through an explicit lane so
+  MMIO timing and side effects remain correct without treating an unobserved
+  ordinary-ARAM value as program input.
+
+Project-owned S-DSP
+
+Version 1.4.0 removes the former Snes9x/Shay Green SPC_DSP runtime source from
+the production tree. Its replacement is the same project-owned hardware model
+used by the newer SNES static recompilations, namespaced and built for SimCity.
+It implements:
+
+- All 32 S-DSP phases and their register visibility points.
+- Eight voices, BRR decode and the fixed Gaussian interpolation table.
+- ADSR/gain envelopes, key-on/key-off timing, pitch modulation and noise.
+- Echo RAM access, eight-tap FIR, feedback and output mixing.
+- Native 32,040 Hz PCM, per-frame knownness, overflow counts and FNV-1a hashes.
+- Complete deterministic snapshot state for exact PCM continuation.
+
+Windows speaker path
+
+The current Jungle Strike frontend audio architecture was ported to SimCity.
+It uses DirectSound play/write cursors and a circular speaker buffer. The
+design follows Mesen's proven method: guest time remains authoritative while
+measured device latency drives bounded speaker-side correction.
+
+- Native core PCM is drained during long guest frames and at frame completion.
+- Output can be 32,040, 44,100, 48,000 or 96,000 Hz.
+- Cubic Hermite (default), linear and nearest-neighbour resampling are offered.
+- The default output rate is 48,000 Hz.
+- Extra forced latency is disabled by default; when enabled it is 0-40 ms.
+- A configurable safety target, ring size and pre-roll prevent starvation.
+- Averaged cursor latency, tolerance and bounded PPM correction handle device
+  clock drift without changing guest master-clock or PCM production.
+- Optional integral correction, threshold recovery, underrun realignment and
+  resume fade are available in Audio Settings.
+- Pause preserves valid queued sound by default. Reset and snapshot load flush
+  discontinuous host data and prime from the newly authoritative guest state.
+
+Verification
+
+- Project-owned DSP phase/microtiming tests pass.
+- Linked-library purity rejects former SPC_DSP sources and symbols.
+- A real-ROM direct snapshot produced identical frame, instruction count,
+  master clock, static-audio status and PCM after load/replay.
+- A 10,000-frame neutral run produced 5,331,145 native PCM frames with zero
+  core overflow.
+- Tutorial, construction, HUD, toolbar, scenario, Freeland and map-corner
+  routes completed with zero PCM overflow.
+- The tested direct-snapshot route produced zero unknown PCM frames; all
+  produced frames were marked known.
+- Final interactive windowed, fullscreen and widescreen testing reported clear,
+  synchronized audio with no crackling, stutter, delay or other sound issue.
+
+Mesen and Snes9x were used as open-source behavioural references. Neither is
+linked as an emulator fallback. Snes9x-derived S-SMP execution semantics retain
+their original license and are constrained by SimCity's static authority.

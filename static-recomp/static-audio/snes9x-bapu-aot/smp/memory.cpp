@@ -4,7 +4,9 @@ unsigned SMP::port_read(unsigned addr) {
 }
 
 void SMP::port_write(unsigned addr, unsigned data) {
-  apuram[0xf4 + (addr & 3)] = data;
+  const uint16 target=(uint16)(0xf4 + (addr & 3));
+  apuram[target] = data;
+  mark_aram_known(target);
 }
 
 unsigned SMP::mmio_read(unsigned addr) {

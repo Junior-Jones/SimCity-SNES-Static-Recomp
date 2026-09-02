@@ -1,5 +1,5 @@
 SimCity SNES Static Recomp
-Wide Screen - Version 1.3.0
+Wide Screen - Version 1.4.0
 
 Purpose
 This feature renders additional real city-map content on the left and right of
@@ -14,6 +14,10 @@ Final geometry
 - Wide Screen is applied only to the live city gameplay PPU layout.
 - Title, setup, tutorial prompts, scenario selection, information panels, and
   other non-city screens retain the authentic native presentation.
+- Final F8 captures confirmed native fullscreen, widescreen fullscreen and
+  windowed output. The 256x239 native capture matches the dimensions of known
+  SNES reference captures, while 398x239 adds real map content without stretch,
+  repeated edges, seams or clipped HUD elements.
 
 Step-by-step implementation
 
@@ -99,7 +103,7 @@ Step-by-step implementation
 
 14. Add user control and persistence
     Wide Screen is a toolbar checkbox and a Display value in settings.ini. It
-    can be changed while a game is loaded. Version 1.3.0 orders the toolbar as
+    can be changed while a game is loaded. Version 1.4.0 orders the toolbar as
     Full screen, Wide Screen, Auto-Run, including the same keyboard Tab order.
 
 Verification performed
@@ -114,6 +118,8 @@ Verification performed
 - Confirmed no black side gaps, repeated tiles, duplicated HUD sprites, or
   stretched output in windowed and full-screen captures.
 - Confirmed that disabling Wide Screen restores the authentic 4:3 presentation.
+- Confirmed windowed F8 captures preserve the active 398-pixel core frame and
+  fullscreen F8 captures the exact borderless widescreen presentation.
 
 Release invariants
 - Wide Screen changes presentation and reachable screen space, not city rules.

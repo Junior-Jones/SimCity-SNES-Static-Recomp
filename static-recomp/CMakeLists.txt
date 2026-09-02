@@ -50,6 +50,7 @@ set(SIMCITY_STATIC_RECOMP_SOURCES
     ${SIMCITY_V34_SHARD_SOURCES}
     generated/sc_v35_town_route_index.c
     ${SIMCITY_V35_SHARD_SOURCES}
+    static-audio/simcity-project-dsp/simcity_dsp.c
     static-audio/snes9x-bapu-aot/smp/smp.cpp
     static-audio/snes9x-bapu-aot/dsp/sdsp.cpp
     static-audio/snes9x-bapu-aot/sc_static_apu.cpp
@@ -70,6 +71,7 @@ target_include_directories(simcity-static-recomp
         "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot"
         "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot/smp"
         "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot/dsp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/simcity-project-dsp/include"
 )
 
 if(MSVC)
@@ -114,13 +116,64 @@ else()
     )
 endif()
 
+if(BUILD_TESTING)
+    add_executable(simcity-project-dsp-phase
+        tests/test_project_dsp_phase.c)
+    target_include_directories(simcity-project-dsp-phase PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/simcity-project-dsp/include")
+    target_link_libraries(simcity-project-dsp-phase PRIVATE
+        simcity-static-recomp)
+    if(MSVC)
+        target_compile_options(simcity-project-dsp-phase PRIVATE /W4 /WX)
+    else()
+        target_compile_options(simcity-project-dsp-phase PRIVATE
+            -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME simcity-project-dsp-phase COMMAND simcity-project-dsp-phase)
+
+    set(SIMCITY_TEST_ROM "" CACHE FILEPATH
+        "Optional exact SimCity USA ROM used only by local integration tests")
+    if(SIMCITY_TEST_ROM)
+        add_executable(simcity-audio-snapshot-continuation
+            tests/test_audio_snapshot_continuation.c)
+        target_link_libraries(simcity-audio-snapshot-continuation PRIVATE
+            simcity-static-recomp)
+        if(MSVC)
+            target_compile_definitions(simcity-audio-snapshot-continuation PRIVATE
+                _CRT_SECURE_NO_WARNINGS)
+            target_compile_options(simcity-audio-snapshot-continuation PRIVATE
+                /W4 /WX)
+        else()
+            target_compile_options(simcity-audio-snapshot-continuation PRIVATE
+                -Wall -Wextra -Wpedantic -Werror)
+        endif()
+        add_test(NAME simcity-audio-snapshot-continuation
+            COMMAND simcity-audio-snapshot-continuation
+                    "${SIMCITY_TEST_ROM}"
+                    "${CMAKE_CURRENT_BINARY_DIR}/simcity-audio-continuation.scsnap")
+    endif()
+
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        get_filename_component(SIMCITY_COMPILER_BIN_DIR
+            "${CMAKE_CXX_COMPILER}" DIRECTORY)
+        set(SIMCITY_DUMPBIN "${SIMCITY_COMPILER_BIN_DIR}/dumpbin.exe")
+        add_test(NAME simcity-static-audio-purity
+            COMMAND "${Python3_EXECUTABLE}" -B
+                    "${CMAKE_SOURCE_DIR}/tools/audio/verify_static_audio_purity.py"
+                    --root "${CMAKE_SOURCE_DIR}"
+                    --library "$<TARGET_FILE:simcity-static-recomp>"
+                    --dumpbin "${SIMCITY_DUMPBIN}")
+    endif()
+endif()
+
 target_compile_definitions(simcity-static-recomp PRIVATE SC_SMP_AOT)
 
 set_source_files_properties(
     static-audio/snes9x-bapu-aot/smp/smp.cpp
     static-audio/snes9x-bapu-aot/dsp/sdsp.cpp
     static-audio/snes9x-bapu-aot/sc_static_apu.cpp
-    PROPERTIES COMPILE_DEFINITIONS "SC_STATIC_SDSP_PRIMITIVES;SCStaticSPC_DSP_CUSTOM_RUN=1"
+    PROPERTIES COMPILE_DEFINITIONS "SC_STATIC_SDSP_PRIMITIVES"
 )
 
 set_source_files_properties(

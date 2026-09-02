@@ -47,6 +47,8 @@ enum SimCityRecompInput {
 };
 
 typedef struct SimCityRecomp SimCityRecomp;
+typedef void (*SimCityRecompAudioProgressCallback)(
+    SimCityRecomp *instance, void *opaque);
 
 typedef struct SimCityRecompAudioTransportStatus {
     uint8_t ready_observed;
@@ -79,6 +81,11 @@ typedef struct SimCityRecompAudioStaticStatus {
     uint32_t opcode_mismatches;
     uint32_t code_write_barriers;
     uint64_t validated_instructions;
+    uint64_t pcm_frames;
+    uint64_t pcm_known_frames;
+    uint64_t pcm_unknown_frames;
+    uint64_t pcm_hash;
+    uint64_t pcm_overflows;
     char manifest_sha256[65];
 } SimCityRecompAudioStaticStatus;
 
@@ -127,6 +134,14 @@ int simcity_recomp_advance(SimCityRecomp *instance,
                            uint32_t frame_count,
                            SimCityRecompFrameResult *result);
 
+/* Advances natural guest frames while permitting the host to drain already
+   produced PCM during a long frame. The callback is observational and must
+   never advance or modify guest state. */
+int simcity_recomp_advance_streamed(
+    SimCityRecomp *instance, uint16_t input_mask, uint32_t frame_count,
+    SimCityRecompAudioProgressCallback audio_progress, void *opaque,
+    SimCityRecompFrameResult *result);
+
 /* Headless frame advance. CPU, PPU timing, S-SMP, S-DSP, controller
    history, and all SNES state advance identically, but the expensive host
    frame conversion is deferred. Call simcity_recomp_render_current_frame()
@@ -146,6 +161,7 @@ int simcity_recomp_set_widescreen(SimCityRecomp *instance, int enabled,
                                   char *error, size_t error_capacity);
 uint32_t simcity_recomp_current_frame(const SimCityRecomp *instance);
 uint64_t simcity_recomp_instruction_count(const SimCityRecomp *instance);
+uint64_t simcity_recomp_master_clock(const SimCityRecomp *instance);
 int simcity_recomp_failed(const SimCityRecomp *instance);
 
 /* Bounds-checked read of the native 128 KiB SNES WRAM image. This never
@@ -177,10 +193,10 @@ int simcity_recomp_audio_transport_status(const SimCityRecomp *instance,
                                           SimCityRecompAudioTransportStatus *status);
 
 
-/* Deterministic replay snapshots store the exact per-frame controller history
-   from cold reset. Loading cold-resets the Full Static core and replays
-   that history, reproducing CPU, S-SMP, S-DSP and timing state without copying
-   host pointers or recorder buffers. */
+/* Current snapshots store direct static-core runtime and audio state plus the exact
+   controller history needed for continued deterministic saves. Legacy version 10
+   replay snapshots are still accepted, deterministically replayed once, and upgraded
+   in place to the direct version 11 format. */
 int simcity_recomp_snapshot_save(const SimCityRecomp *instance,
                                  const char *path,
                                  char *error, size_t error_capacity);
@@ -206,6 +222,8 @@ int simcity_recomp_load_diagnostic_runtime_state(
     SimCityRecomp *instance,const char *path,char *error,size_t error_capacity);
 
 int simcity_recomp_audio_overflowed(const SimCityRecomp *instance);
+uint64_t simcity_recomp_audio_dropped_frames(
+    const SimCityRecomp *instance);
 void simcity_recomp_audio_clear_overflow(SimCityRecomp *instance);
 
 #ifdef __cplusplus

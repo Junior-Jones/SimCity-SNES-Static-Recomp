@@ -25,7 +25,17 @@ typedef struct SCStaticApuStatus {
     uint64_t smp_instructions;
     uint64_t aot_validated_instructions;
     uint64_t pcm_frames;
+    uint64_t pcm_known_frames;
+    uint64_t pcm_unknown_frames;
+    uint64_t pcm_hash;
+    uint64_t pcm_overflows;
+    size_t pcm_available;
     uint16_t smp_pc;
+    uint8_t smp_a;
+    uint8_t smp_x;
+    uint8_t smp_y;
+    uint8_t smp_sp;
+    uint8_t smp_psw;
     uint16_t aot_fail_pc;
     uint8_t expected_opcode;
     uint8_t actual_opcode;
@@ -72,10 +82,17 @@ void sc_static_apu_trace_dsp_write_event(uint8_t address,uint8_t value);
 void sc_static_apu_trace_port_event(uint8_t direction,uint8_t port,uint8_t value);
 void sc_static_sdsp_primitive_step(uint8_t phase);
 int sc_static_sdsp_brr_step(uint16_t address,const uint8_t *aram);
+void sc_static_sdsp_report_failure(uint32_t reason,uint8_t phase);
 int sc_static_apu_sync_to_master(uint64_t master_clock,char *error,size_t error_capacity);
 int sc_static_apu_cpu_write_port(uint64_t master_clock,unsigned port,uint8_t value,char *error,size_t error_capacity);
 uint8_t sc_static_apu_cpu_read_port(uint64_t master_clock,unsigned port,int *ok,char *error,size_t error_capacity);
 int sc_static_apu_status(SCStaticApuStatus *status);
+int sc_static_apu_read_aram(uint32_t offset,void *output,size_t bytes);
+int sc_static_apu_read_dsp_register(uint8_t address,uint8_t *value);
+size_t sc_static_apu_pcm_available(void);
+size_t sc_static_apu_pcm_read(int16_t *interleaved_stereo,uint8_t *frame_known,
+                              size_t capacity_frames);
+uint64_t sc_static_apu_pcm_overflow_count(void);
 size_t sc_static_apu_snapshot_size(void);
 int sc_static_apu_snapshot_save(void *data,size_t capacity);
 int sc_static_apu_snapshot_load(const void *data,size_t size,

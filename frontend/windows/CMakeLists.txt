@@ -2,9 +2,6 @@ include(FetchContent)
 
 set(SIMCITY_GAMEPAD_ADAPTER_DIR
     "${CMAKE_SOURCE_DIR}/third_party/simcity-gamepad")
-set(SIMCITY_GAMEPAD_DATABASE
-    "${CMAKE_SOURCE_DIR}/third_party/gamecontrollerdb.txt")
-
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
@@ -31,33 +28,87 @@ add_executable(simcity-launcher WIN32
     simcity_launcher_win32.c
     simcity_app_core.c
     launcher_version.rc
-    simcity_audio_output_sdl3.c
+    simcity_audio_output_dsound_win32.c
+    simcity_audio_resampler.c
     simcity_frontend_settings_win32.c
     ../common/simcity_input_latch.c
     "${SIMCITY_GAMEPAD_ADAPTER_DIR}/simcity_gamepad_input_win32.c"
 )
 
-add_executable(simcity-host-audio-stress
-    ../../tools/audio/host_audio_stress_win32.c
-    simcity_audio_output_sdl3.c
+add_executable(simcity-input-contract-test
+    ../common/simcity_input_contract_test.c
+    ../common/simcity_input_latch.c
 )
-target_include_directories(simcity-host-audio-stress PRIVATE
+target_include_directories(simcity-input-contract-test PRIVATE
+    "${CMAKE_SOURCE_DIR}/frontend/common"
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_SOURCE_DIR}/static-recomp/include"
 )
-target_link_libraries(simcity-host-audio-stress PRIVATE
-    simcity-static-recomp
-    SDL3::SDL3-static
-    user32
-)
-target_compile_definitions(simcity-host-audio-stress PRIVATE
-    _CRT_SECURE_NO_WARNINGS)
 if(MSVC)
-    target_compile_options(simcity-host-audio-stress PRIVATE /W4 /WX)
+    target_compile_options(simcity-input-contract-test PRIVATE /W4 /WX)
 else()
-    target_compile_options(simcity-host-audio-stress PRIVATE
+    target_compile_options(simcity-input-contract-test PRIVATE
         -Wall -Wextra -Wpedantic -Werror)
 endif()
+add_test(NAME simcity-input-contract COMMAND simcity-input-contract-test)
+
+add_executable(simcity-settings-input-contract-test
+    simcity_settings_input_contract_test.c
+    simcity_frontend_settings_win32.c
+    "${SIMCITY_GAMEPAD_ADAPTER_DIR}/simcity_gamepad_input_win32.c"
+)
+target_include_directories(simcity-settings-input-contract-test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/static-recomp/include"
+    "${SIMCITY_GAMEPAD_ADAPTER_DIR}"
+)
+target_link_libraries(simcity-settings-input-contract-test PRIVATE
+    SDL3::SDL3-static user32 comctl32)
+target_compile_definitions(simcity-settings-input-contract-test PRIVATE
+    UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+    target_compile_options(simcity-settings-input-contract-test PRIVATE /W4 /WX)
+else()
+    target_compile_options(simcity-settings-input-contract-test PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_test(NAME simcity-settings-input-contract
+    COMMAND simcity-settings-input-contract-test)
+
+add_executable(simcity-audio-resampler-test
+    simcity_audio_resampler_test.c
+    simcity_audio_resampler.c)
+target_include_directories(simcity-audio-resampler-test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}")
+if(MSVC)
+    target_compile_options(simcity-audio-resampler-test PRIVATE /W4 /WX)
+else()
+    target_compile_options(simcity-audio-resampler-test PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_test(NAME simcity-audio-resampler COMMAND simcity-audio-resampler-test)
+
+add_executable(simcity-audio-settings-contract-test
+    simcity_audio_settings_contract_test.c
+    simcity_audio_output_dsound_win32.c
+    simcity_audio_resampler.c
+)
+target_include_directories(simcity-audio-settings-contract-test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/static-recomp/include")
+target_link_libraries(simcity-audio-settings-contract-test PRIVATE
+    simcity-static-recomp user32 dsound dxguid winmm)
+target_compile_definitions(simcity-audio-settings-contract-test PRIVATE
+    UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+    target_compile_options(simcity-audio-settings-contract-test PRIVATE /W4 /WX)
+else()
+    target_compile_options(simcity-audio-settings-contract-test PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_test(NAME simcity-audio-settings-contract
+    COMMAND simcity-audio-settings-contract-test)
+
 target_include_directories(simcity-launcher PRIVATE
     "${CMAKE_SOURCE_DIR}/frontend/common"
     "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -72,6 +123,9 @@ target_link_libraries(simcity-launcher PRIVATE
     comdlg32
     comctl32
     shell32
+    dsound
+    dxguid
+    winmm
 )
 target_compile_definitions(simcity-launcher PRIVATE
     UNICODE
@@ -101,26 +155,16 @@ add_custom_command(TARGET simcity-launcher POST_BUILD
         "${CMAKE_SOURCE_DIR}/Screenshots/Readme.txt"
         "$<TARGET_FILE_DIR:simcity-launcher>/Screenshots/Readme.txt"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-        "${SIMCITY_GAMEPAD_DATABASE}"
-        "$<TARGET_FILE_DIR:simcity-launcher>/gamecontrollerdb.txt"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${SIMCITY_SDL_SOURCE_DIR}/LICENSE.txt"
         "$<TARGET_FILE_DIR:simcity-launcher>/SDL-LICENSE.txt"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-        "${CMAKE_SOURCE_DIR}/third_party/SDL_GameControllerDB-LICENSE.txt"
-        "$<TARGET_FILE_DIR:simcity-launcher>/SDL_GameControllerDB-LICENSE.txt"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
         "$<TARGET_FILE_DIR:simcity-launcher>/THIRD-PARTY-NOTICES.txt"
     VERBATIM
 )
 install(TARGETS simcity-launcher RUNTIME DESTINATION . COMPONENT Runtime)
-install(FILES "${SIMCITY_GAMEPAD_DATABASE}"
-    DESTINATION . RENAME gamecontrollerdb.txt COMPONENT Runtime)
 install(FILES "${SIMCITY_SDL_SOURCE_DIR}/LICENSE.txt"
     DESTINATION . RENAME SDL-LICENSE.txt COMPONENT Runtime)
-install(FILES "${CMAKE_SOURCE_DIR}/third_party/SDL_GameControllerDB-LICENSE.txt"
-    DESTINATION . COMPONENT Runtime)
 install(FILES "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
     DESTINATION . COMPONENT Runtime)
 install(FILES "${CMAKE_SOURCE_DIR}/Saves/Readme.txt"

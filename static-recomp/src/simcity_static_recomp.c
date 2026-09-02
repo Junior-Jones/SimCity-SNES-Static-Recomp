@@ -34,6 +34,7 @@ struct SimCityRecomp {
     uint32_t audio_write_frame;
     uint32_t audio_available_frames;
     uint8_t audio_overflow;
+    uint64_t audio_dropped_frames;
     uint8_t static_acquired;
     char last_error[256];
     uint16_t *input_history;
@@ -438,6 +439,7 @@ static void audio_sink(void *context, int16_t left, int16_t right) {
     if (instance->audio_available_frames >=
         SIMCITY_HOST_PCM_CAPACITY_FRAMES) {
         instance->audio_overflow = 1u;
+        instance->audio_dropped_frames++;
         return;
     }
 
@@ -505,6 +507,7 @@ static int cold_reset(SimCityRecomp *instance, char *error,
     instance->widescreen_cursor_anchor_valid = 0u;
     instance->widescreen_cursor_input_rebased = 0u;
     audio_queue_reset(instance);
+    instance->audio_dropped_frames = 0u;
     if (!instance->replaying_snapshot) instance->input_history_count = 0u;
     instance->last_error[0] = '\0';
 
@@ -631,7 +634,9 @@ static int advance_internal(SimCityRecomp *instance,
                             uint16_t input_mask,
                             uint32_t frame_count,
                             SimCityRecompFrameResult *result,
-                            int render_frame) {
+                            int render_frame,
+                            SimCityRecompAudioProgressCallback audio_progress,
+                            void *progress_opaque) {
     SimCityRecompFrameResult local;
     uint32_t target_frame;
     uint64_t guard;
@@ -679,6 +684,8 @@ static int advance_internal(SimCityRecomp *instance,
             }
             --guard;
             if (!static_cpu_step(instance->runtime)) break;
+            if (audio_progress && (guard & UINT64_C(255)) == 0u)
+                audio_progress(instance, progress_opaque);
             if (instance->runtime->scheduler.frame != guarded_frame) {
                 guarded_frame = instance->runtime->scheduler.frame;
                 apply_widescreen_cursor_connector(instance, input_mask);
@@ -693,6 +700,7 @@ static int advance_internal(SimCityRecomp *instance,
             instance->runtime->scheduler.master_clock)) {
         instance->runtime->route_failed = 1u;
     }
+    if (audio_progress) audio_progress(instance, progress_opaque);
 
     local.end_frame = instance->runtime->scheduler.frame;
     local.route_continued = (uint8_t)(
@@ -759,14 +767,24 @@ int simcity_recomp_advance(SimCityRecomp *instance,
                            uint16_t input_mask,
                            uint32_t frame_count,
                            SimCityRecompFrameResult *result) {
-    return advance_internal(instance, input_mask, frame_count, result, 1);
+    return advance_internal(instance, input_mask, frame_count, result, 1,
+                            NULL, NULL);
+}
+
+int simcity_recomp_advance_streamed(
+    SimCityRecomp *instance, uint16_t input_mask, uint32_t frame_count,
+    SimCityRecompAudioProgressCallback audio_progress, void *opaque,
+    SimCityRecompFrameResult *result) {
+    return advance_internal(instance, input_mask, frame_count, result, 1,
+                            audio_progress, opaque);
 }
 
 int simcity_recomp_advance_headless(SimCityRecomp *instance,
                                     uint16_t input_mask,
                                     uint32_t frame_count,
                                     SimCityRecompFrameResult *result) {
-    return advance_internal(instance, input_mask, frame_count, result, 0);
+    return advance_internal(instance, input_mask, frame_count, result, 0,
+                            NULL, NULL);
 }
 
 int simcity_recomp_render_current_frame(SimCityRecomp *instance,
@@ -991,6 +1009,11 @@ uint64_t simcity_recomp_instruction_count(const SimCityRecomp *instance) {
            instance->runtime->scheduler.cpu_instructions : 0u;
 }
 
+uint64_t simcity_recomp_master_clock(const SimCityRecomp *instance) {
+    return instance && instance->runtime ?
+        instance->runtime->scheduler.master_clock : 0u;
+}
+
 int simcity_recomp_failed(const SimCityRecomp *instance) {
     return !instance || !instance->runtime ||
            instance->runtime->route_failed != 0u;
@@ -1041,6 +1064,11 @@ int simcity_recomp_audio_overflowed(const SimCityRecomp *instance) {
     return instance && instance->audio_overflow != 0u;
 }
 
+uint64_t simcity_recomp_audio_dropped_frames(
+    const SimCityRecomp *instance) {
+    return instance ? instance->audio_dropped_frames : 0u;
+}
+
 void simcity_recomp_audio_clear_overflow(SimCityRecomp *instance) {
     if (instance) instance->audio_overflow = 0u;
 }
@@ -1057,6 +1085,11 @@ int simcity_recomp_audio_static_status(const SimCityRecomp *instance,
     status->compiled_driver_instruction_count=SC_INITIAL_SMP_AOT_DRIVER_INSTRUCTIONS;
     status->observed_instruction_count=observed;status->opcode_mismatches=(uint32_t)(source.aot_fail_reason==2u);
     status->code_write_barriers=source.code_write_barriers;status->validated_instructions=source.aot_validated_instructions;
+    status->pcm_frames=source.pcm_frames;
+    status->pcm_known_frames=source.pcm_known_frames;
+    status->pcm_unknown_frames=source.pcm_unknown_frames;
+    status->pcm_hash=source.pcm_hash;
+    status->pcm_overflows=source.pcm_overflows;
     copy_text(status->manifest_sha256, sizeof(status->manifest_sha256),
               SC_INITIAL_SMP_AOT_AUTHORITY_SHA256);
     return 1;

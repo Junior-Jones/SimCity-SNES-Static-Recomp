@@ -83,36 +83,36 @@ static int control_pressed(SDL_Gamepad *gamepad, int control) {
     Sint16 axis;
     if (!gamepad) return 0;
     switch (control) {
-        case SC_GAMEPAD_DPAD_UP: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP);
-        case SC_GAMEPAD_DPAD_DOWN: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
-        case SC_GAMEPAD_DPAD_LEFT: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
-        case SC_GAMEPAD_DPAD_RIGHT: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
-        case SC_GAMEPAD_LEFT_STICK_UP:
+        case SIMCITY_GAMEPAD_DPAD_UP: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP);
+        case SIMCITY_GAMEPAD_DPAD_DOWN: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+        case SIMCITY_GAMEPAD_DPAD_LEFT: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+        case SIMCITY_GAMEPAD_DPAD_RIGHT: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+        case SIMCITY_GAMEPAD_LEFT_STICK_UP:
             axis = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY);
             return axis < -GAMEPAD_STICK_PRESS;
-        case SC_GAMEPAD_LEFT_STICK_DOWN:
+        case SIMCITY_GAMEPAD_LEFT_STICK_DOWN:
             axis = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY);
             return axis > GAMEPAD_STICK_PRESS;
-        case SC_GAMEPAD_LEFT_STICK_LEFT:
+        case SIMCITY_GAMEPAD_LEFT_STICK_LEFT:
             axis = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX);
             return axis < -GAMEPAD_STICK_PRESS;
-        case SC_GAMEPAD_LEFT_STICK_RIGHT:
+        case SIMCITY_GAMEPAD_LEFT_STICK_RIGHT:
             axis = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX);
             return axis > GAMEPAD_STICK_PRESS;
-        case SC_GAMEPAD_FACE_SOUTH: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_SOUTH);
-        case SC_GAMEPAD_FACE_EAST: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_EAST);
-        case SC_GAMEPAD_FACE_WEST: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_WEST);
-        case SC_GAMEPAD_FACE_NORTH: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_NORTH);
-        case SC_GAMEPAD_LEFT_SHOULDER: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
-        case SC_GAMEPAD_RIGHT_SHOULDER: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
-        case SC_GAMEPAD_LEFT_TRIGGER:
+        case SIMCITY_GAMEPAD_FACE_SOUTH: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_SOUTH);
+        case SIMCITY_GAMEPAD_FACE_EAST: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_EAST);
+        case SIMCITY_GAMEPAD_FACE_WEST: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_WEST);
+        case SIMCITY_GAMEPAD_FACE_NORTH: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_NORTH);
+        case SIMCITY_GAMEPAD_LEFT_SHOULDER: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+        case SIMCITY_GAMEPAD_RIGHT_SHOULDER: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+        case SIMCITY_GAMEPAD_LEFT_TRIGGER:
             return SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > GAMEPAD_TRIGGER_PRESS;
-        case SC_GAMEPAD_RIGHT_TRIGGER:
+        case SIMCITY_GAMEPAD_RIGHT_TRIGGER:
             return SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > GAMEPAD_TRIGGER_PRESS;
-        case SC_GAMEPAD_START: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_START);
-        case SC_GAMEPAD_BACK: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_BACK);
-        case SC_GAMEPAD_LEFT_STICK_BUTTON: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_STICK);
-        case SC_GAMEPAD_RIGHT_STICK_BUTTON: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
+        case SIMCITY_GAMEPAD_START: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_START);
+        case SIMCITY_GAMEPAD_BACK: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_BACK);
+        case SIMCITY_GAMEPAD_LEFT_STICK_BUTTON: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_STICK);
+        case SIMCITY_GAMEPAD_RIGHT_STICK_BUTTON: return SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
         default: return 0;
     }
 }
@@ -156,18 +156,18 @@ const wchar_t *simcity_gamepad_win32_name(const SimCityGamepadInputWin32 *input)
 void simcity_gamepad_win32_default_bindings(
     int bindings[SIMCITY_GAMEPAD_BINDING_COUNT]) {
     if (!bindings) return;
-    bindings[0] = SC_GAMEPAD_DPAD_UP;
-    bindings[1] = SC_GAMEPAD_DPAD_DOWN;
-    bindings[2] = SC_GAMEPAD_DPAD_LEFT;
-    bindings[3] = SC_GAMEPAD_DPAD_RIGHT;
-    bindings[4] = SC_GAMEPAD_FACE_SOUTH;
-    bindings[5] = SC_GAMEPAD_FACE_EAST;
-    bindings[6] = SC_GAMEPAD_FACE_WEST;
-    bindings[7] = SC_GAMEPAD_FACE_NORTH;
-    bindings[8] = SC_GAMEPAD_LEFT_SHOULDER;
-    bindings[9] = SC_GAMEPAD_RIGHT_SHOULDER;
-    bindings[10] = SC_GAMEPAD_START;
-    bindings[11] = SC_GAMEPAD_BACK;
+    bindings[0] = SIMCITY_GAMEPAD_DPAD_UP;
+    bindings[1] = SIMCITY_GAMEPAD_DPAD_DOWN;
+    bindings[2] = SIMCITY_GAMEPAD_DPAD_LEFT;
+    bindings[3] = SIMCITY_GAMEPAD_DPAD_RIGHT;
+    bindings[4] = SIMCITY_GAMEPAD_FACE_SOUTH;
+    bindings[5] = SIMCITY_GAMEPAD_FACE_EAST;
+    bindings[6] = SIMCITY_GAMEPAD_FACE_WEST;
+    bindings[7] = SIMCITY_GAMEPAD_FACE_NORTH;
+    bindings[8] = SIMCITY_GAMEPAD_LEFT_SHOULDER;
+    bindings[9] = SIMCITY_GAMEPAD_RIGHT_SHOULDER;
+    bindings[10] = SIMCITY_GAMEPAD_START;
+    bindings[11] = SIMCITY_GAMEPAD_BACK;
 }
 
 const wchar_t *simcity_gamepad_win32_control_name(int control) {
@@ -180,7 +180,7 @@ const wchar_t *simcity_gamepad_win32_control_name(int control) {
         L"Left trigger", L"Right trigger", L"Start / Menu", L"Back / View",
         L"Left stick button", L"Right stick button"
     };
-    if (control < SC_GAMEPAD_DPAD_UP || control > SC_GAMEPAD_CONTROL_LAST)
+    if (control < SIMCITY_GAMEPAD_DPAD_UP || control > SIMCITY_GAMEPAD_CONTROL_LAST)
         return L"Unknown gamepad control";
     return names[control];
 }
@@ -192,8 +192,8 @@ int simcity_gamepad_win32_capture_control(SimCityGamepadInputWin32 *input) {
     if (input->handle && !SDL_GamepadConnected(input->handle)) close_gamepad(input);
     if (!input->handle) (void)open_first_gamepad(input);
     if (!input->handle) return 0;
-    for (control = SC_GAMEPAD_DPAD_UP;
-         control <= SC_GAMEPAD_CONTROL_LAST; ++control)
+    for (control = SIMCITY_GAMEPAD_DPAD_UP;
+         control <= SIMCITY_GAMEPAD_CONTROL_LAST; ++control)
         if (control_pressed(input->handle, control)) return control;
     return 0;
 }
@@ -222,10 +222,10 @@ void simcity_gamepad_win32_control_display_name(
     base = simcity_gamepad_win32_control_name(control);
     if (input && simcity_gamepad_win32_connected(input)) {
         switch (control) {
-            case SC_GAMEPAD_FACE_SOUTH: button = SDL_GAMEPAD_BUTTON_SOUTH; break;
-            case SC_GAMEPAD_FACE_EAST: button = SDL_GAMEPAD_BUTTON_EAST; break;
-            case SC_GAMEPAD_FACE_WEST: button = SDL_GAMEPAD_BUTTON_WEST; break;
-            case SC_GAMEPAD_FACE_NORTH: button = SDL_GAMEPAD_BUTTON_NORTH; break;
+            case SIMCITY_GAMEPAD_FACE_SOUTH: button = SDL_GAMEPAD_BUTTON_SOUTH; break;
+            case SIMCITY_GAMEPAD_FACE_EAST: button = SDL_GAMEPAD_BUTTON_EAST; break;
+            case SIMCITY_GAMEPAD_FACE_WEST: button = SDL_GAMEPAD_BUTTON_WEST; break;
+            case SIMCITY_GAMEPAD_FACE_NORTH: button = SDL_GAMEPAD_BUTTON_NORTH; break;
             default: break;
         }
         if (button != SDL_GAMEPAD_BUTTON_INVALID)

@@ -1,53 +1,35 @@
 SimCity SNES Static Recomp
-Version: 1.3.0
+Version: 1.4.0
 Platform: native 64-bit Windows
 Executable: Launcher.exe
-Frontend: native Win32/GDI launcher and video; SDL3 gamepad input
-Audio: Full Static, 32,040 Hz stereo PCM through a statically linked SDL3 audio stream
+Frontend: native Win32/GDI; SDL3 gamepad input
+Audio: Full Static 32,040 Hz core PCM; DirectSound speaker output
 ROM: required externally and not included
 
-Changes in 1.3.0:
-- Added a real 398x239 widescreen city view with 71 additional rendered pixels on both sides of the original 256x239 frame.
-- Limited widescreen expansion to the live city PPU layout so title, setup, scenario, tutorial, information, and modal screens retain their authentic presentation.
-- Extended BG1 and BG2 from the actual city tilemap instead of stretching or repeating the original framebuffer.
-- Clamped the widened camera against all four map boundaries so no black side gaps appear at the top-left, top-right, bottom-left, or bottom-right corners.
-- Extended the map cursor and building placement connector into both added side areas while preserving the selected world cell.
-- Added safe A+Left/Right camera rebasing so native panning can continue after the cursor enters a widened margin.
-- Preserved native Select and X toolbar commands from widened cursor positions by temporarily rebasing input into the core's safe coordinate range.
-- Kept the native HUD anchored at the physical left edge and separated map-cursor OAM entries from toolbar sprites.
-- Fixed hidden HUD sprites being misread as widened cursor objects, eliminating duplicate toolbar, RCI meter, and transition fragments.
-- Preserved toolbar hand ownership of shared WRAM coordinates and retained vertical scrolling while the connector consumes widened horizontal movement.
-- Completed missing exact static contexts reached by scenario and full-map widescreen traversal.
-- Added deterministic widescreen probes covering HUD show/hide, toolbar focus, side-area construction, return visits, camera traversal, Freeland, scenarios, and all four map corners.
-- Replaced the fixed WinMM playback buffers with a statically linked SDL3 audio stream while retaining the Full Static S-SMP/S-DSP core and native 32,040 Hz PCM source.
-- Added controlled stream priming, queue-depth monitoring, selected-device support, device-rate conversion, a short resume fade, and bounded drift correction.
-- Preserved queued audio across ordinary pause/resume transitions and flushed only when a reset or discontinuity requires it.
-- Kept the native-rate audio producer and Windows high-resolution frame deadline synchronized through screenshots, Escape navigation, idle gameplay, and focus changes.
-- Changed the toolbar order to Full screen, Wide Screen, Auto-Run and matched keyboard Tab order to the visible layout.
-- Added Wide Screen - 1.3.0.txt and Audio - 1.3.0.txt with reproducible implementation and verification details.
-- Confirmed widescreen and audio manually in windowed and full-screen gameplay, including screenshots, HUD transitions, Escape navigation, and extended idle testing.
+Changes in 1.4.0:
+- Ported the current Jungle Strike native frontend structure, including its accessible dialogs, exact rational NTSC pacing, controller latch, quick snapshots, DirectSound output, audio diagnostics and settings persistence.
+- Retained and adapted SimCity's real 398x239 Wide Screen feature, its default-on toolbar control, runtime switching and Display/Widescreen setting.
+- Corrected windowed presentation to preserve the active 256- or 398-pixel framebuffer aspect instead of forcing 4:3 onto Wide Screen output.
+- Preserved SimCity's fullscreen Wide Screen overscan crop while keeping native presentation letterboxed or pillarboxed as required.
+- Made F8 save the active 256- or 398-pixel core framebuffer in windowed mode and the exact borderless client presentation in fullscreen mode.
+- Replaced the old SDL3 speaker stream with the Mesen-derived DirectSound ring-buffer design used by the newer SNES recompilations.
+- Added cubic-Hermite, linear and nearest speaker resamplers with selectable 32,040, 44,100, 48,000 and 96,000 Hz output rates.
+- Added cursor-measured queue depth, pre-roll, bounded drift correction, integral correction, recovery, underrun realignment and detailed diagnostics.
+- Kept optional added latency disabled by default; its enabled range is 0-40 ms.
+- Replaced the former emulator S-DSP runtime with the project-owned fixed 32-phase S-DSP used by the newer static recompilations.
+- Added explicit ARAM/register/PCM knownness, semantic unknown-read failure, DSP overflow accounting and deterministic PCM hashing.
+- Kept SimCity's own ROM-derived exact-PC S-SMP authority, dispatcher, code bitmap, uploader and fail-closed diagnostics.
+- Corrected SPC700 discarded reads before stores while preserving MMIO timing and side effects.
+- Upgraded direct snapshots to preserve S-SMP ARAM-knownness and complete project-owned S-DSP state for deterministic PCM continuation.
+- Added project-DSP microtiming, linked-purity and real-ROM snapshot-continuation release gates.
+- Confirmed 10,000 neutral frames and all meaningful tutorial, widescreen, construction, scenario and Freeland routes with zero PCM overflow.
+- Ordered the Welcome shortcuts as Escape, quick-slot keys 1/2, then the uninterrupted F1-F8 function-key group.
+- Reserved Escape, quick-slot keys 1/2 and the complete F1-F8 launcher range in Controls so an intercepted shortcut cannot be saved as an unusable gameplay binding.
+- Restored the main window's foreground, active-window and keyboard focus after Welcome, About, snapshot and audio dialogs close, matching the completed Top Gear frontend behavior.
+- Verified that Welcome appears once for a clean configuration, persists General/WelcomeShown in settings.ini when closed, and remains available later through F1.
+- Confirmed the final native fullscreen, 398x239 widescreen fullscreen and 256x239 windowed screenshots against SNES reference captures.
+- Completed interactive audio validation with no crackling, stutter, delay or other reported sound issue.
+- Updated executable metadata, About text, diagnostic logs and documentation to 1.4.0.
 
-Changes in 1.2.0:
-- Compacted repeated generated-core bookkeeping into compile-time macros.
-- Removed 2,503 unreachable exact contexts shadowed by earlier dispatch authority.
-- Preserved exact PBR:PC:E:M:X dispatch and fail-closed static execution.
-- Added reproducible compaction and context-pruning receipts and verification tools.
-- Reduced the static-core source and native release binary sizes.
-- Replaced the host frontend and core connector with the proven native Win32 structure.
-- Replaced adaptive SDL audio streaming with four fixed WinMM PCM buffers, full pre-roll, and resume fade.
-- Replaced SDL GPU presentation with direct Win32 GDI framebuffer presentation.
-- Adopted the matching input latch, settings dialogs, and gamepad host adapter.
-- Matched Bubble Bobble's complete launcher toolbar layout, including the Settings button.
-- Unified first-run Welcome, F1 help, and About information windows with reliable Tab and Shift+Tab navigation.
-- Standardized F1 through F8: Welcome, save/load snapshot, Settings, controller bindings, Audio, Run, and capture.
-- Replaced free-form audio widgets with fixed 0-100 volume and supported-latency drop-downs; accepted settings now flush immediately.
-- Moved snapshots into Saves and added release-safe Saves and Screenshots folders with Readme files.
-- Removed the redundant Getting Started, shortcut-only, and first-run ROM notice windows.
-- Removed the remaining Help menu, Ctrl+O/F9 extras, and WAV recorder so Bubble Bobble's File/Settings menu structure is retained; SimCity's slot-based snapshots are the deliberate frontend difference.
-- Renamed the toolbar Keys button to Controls and removed the redundant Audio and Controls launchers from the Settings window.
-- Changed Pause on Focus Loss to disabled by default for new installations.
-- Reworked Settings into focused General and Display groups and added the meaningful quick-snapshot slot selector.
-- Consolidated frontend, controls, audio, snapshot slot, remembered ROM path, and the explicit WelcomeShown first-run flag into one settings.ini with automatic legacy-INI migration; deleting the file restores defaults and shows Welcome again.
-- Corrected Welcome so F2/F3 describe the snapshot windows while 1/2 describe quick save/load of the current slot.
-- Made Escape reliably close Welcome, About, Settings, Controller Bindings, Audio Settings, and snapshot windows.
-- Removed the unused ShowStatusText setting and restored the remembered external ROM path at startup.
+Previous release:
+- 1.3.0 introduced SimCity's real Wide Screen renderer and the earlier SDL3 host-audio transport.

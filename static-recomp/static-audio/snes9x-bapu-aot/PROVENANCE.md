@@ -1,9 +1,16 @@
-# Static S-SMP AOT provenance
+# SimCity static S-SMP/S-DSP provenance
 
-This directory is a separately namespaced copy of the Snes9x BAPU S-SMP and
-Shay Green snes_spc S-DSP sources retained under the original licenses. It is
-compiled with `SC_SMP_AOT`, which removes the generic SPC700 opcode switch and
-uses only the generated SimCity initial-epoch PC/opcode authority and the
-used-opcode dispatcher. It is the Full Static development lane; the sibling
-Hybrid directory retains the generic interpreter solely as a development
-reference. There is no automatic fallback between them.
+The S-SMP execution semantics retain their Snes9x provenance and original
+license, but production is compiled only through SimCity's fail-closed exact-PC
+AOT lookup, dispatcher and protected-code bitmap. The generic SPC700 runtime
+switch is not present in the production path. Unknown PCs, opcode mismatches,
+unemitted forms, unknown semantic ARAM reads, and writes to protected driver
+code stop with diagnostics; there is no automatic fallback.
+
+S-DSP authority is the project-owned fixed hardware model in
+`../simcity-project-dsp`. It implements all 32 hardware phases, register
+visibility, BRR decoding, Gaussian interpolation, envelopes, noise, pitch
+modulation, echo/FIR, native PCM, explicit knownness, overflow accounting and
+deterministic state. The former emulator DSP runtime and its helper sources are
+not present or linked. Snapshots serialize the S-SMP, ARAM-knownness and S-DSP
+state required for deterministic PCM continuation.

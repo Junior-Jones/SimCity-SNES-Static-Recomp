@@ -4,6 +4,8 @@ if(POLICY CMP0091)
 endif()
 project(SimCitySNESStaticRecomp LANGUAGES C CXX)
 
+include(CTest)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
@@ -55,7 +57,7 @@ install(TARGETS simcity-static-recomp ARCHIVE DESTINATION lib
 install(FILES static-recomp/include/simcity_static_recomp.h DESTINATION include
     COMPONENT Development)
 install(FILES README-FIRST.txt VERSION.txt ROM-REQUIREMENTS.txt
-    "Wide Screen - 1.3.0.txt" "Audio - 1.3.0.txt" DESTINATION .
+    "Wide Screen - 1.4.0.txt" "Audio - 1.4.0.txt" DESTINATION .
     COMPONENT Runtime)
 install(FILES Rom/readme.txt DESTINATION Rom
     COMPONENT Runtime)

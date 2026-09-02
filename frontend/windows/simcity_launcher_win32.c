@@ -6,7 +6,7 @@
 #include <commdlg.h>
 #include <commctrl.h>
 
-#include "simcity_audio_output_sdl3.h"
+#include "simcity_audio_output_dsound_win32.h"
 #include "simcity_frontend_settings_win32.h"
 #include "simcity_app_core.h"
 #include "simcity_input_latch.h"
@@ -21,16 +21,20 @@
 #define AUDIO_CLASS_NAME L"SimCityStaticRecompAudioSettings"
 #define SNAPSHOT_CLASS_NAME L"SimCityStaticRecompSnapshotWindow"
 #define INFO_CLASS_NAME L"SimCityStaticRecompInformationWindow"
+#define GETTING_STARTED_CLASS_NAME L"SimCityGettingStartedWindow"
 #define APP_TITLE L"SimCity (SNES)"
 #define LAUNCHER_TITLE L"Launcher"
 #define WM_APP_LOAD_COMPLETE (WM_APP + 1u)
+#define WM_APP_STARTUP_CONTINUE (WM_APP + 2u)
 #define HOST_TIMER_100NS_PER_SECOND 10000000u
 #define HOST_TIMER_HIGH_RESOLUTION 0x00000002u
 #define HOST_TIMER_ACCESS 0x001F0003u
 #define HEADED_STATUS_INTERVAL_FRAMES 60u
 #define SRAM_IMAGE_BYTES 32768u
 #define SRAM_FLUSH_INTERVAL_FRAMES 120u
-#define MAX_HOST_CATCHUP_FRAMES 8u
+/* Do not let a flood of keyboard/window messages starve the frame timer. */
+#define MAX_HOST_MESSAGES_PER_PASS 32u
+#define HOST_LATE_REBASE_DIVISOR 8u
 
 #define ID_BROWSE 1001
 #define ID_RUN 1002
@@ -58,6 +62,7 @@
 #define ID_SNAPSHOT_CLOSE 5201
 #define ID_INFO_TEXT 5300
 #define ID_INFO_CLOSE 5301
+#define ID_GETTING_STARTED_CLOSE 5400
 
 #define ID_AUDIO_ENABLED 2001
 #define ID_AUDIO_ENGINE 2002
@@ -66,17 +71,23 @@
 #define ID_AUDIO_LATENCY 2005
 #define ID_AUDIO_APPLY 2006
 #define ID_AUDIO_CANCEL 2007
+#define ID_AUDIO_LATENCY_ENABLED 2008
+#define ID_AUDIO_OUTPUT_RATE 2009
+#define ID_AUDIO_RESAMPLER 2010
+#define ID_AUDIO_SAFETY_BUFFER 2011
+#define ID_AUDIO_DRIFT_ENABLED 2013
+#define ID_AUDIO_DRIFT_TOLERANCE 2014
+#define ID_AUDIO_MAX_RATE 2015
+#define ID_AUDIO_AVERAGING 2016
+#define ID_AUDIO_INTEGRAL 2017
+#define ID_AUDIO_RECOVERY_ENABLED 2018
+#define ID_AUDIO_RECOVERY_THRESHOLD 2019
+#define ID_AUDIO_REALIGN 2020
+#define ID_AUDIO_FADE 2022
+#define ID_AUDIO_DEFAULTS 2023
+#define ID_AUDIO_DIAGNOSTICS 2024
 
 #define PATH_CAPACITY 4096u
-#define DEFAULT_KEY_B 'F'
-#define DEFAULT_KEY_A 'D'
-#define DEFAULT_KEY_Y 'Z'
-#define DEFAULT_KEY_X 'X'
-#define DEFAULT_KEY_L 'Q'
-#define DEFAULT_KEY_R 'W'
-#define DEFAULT_KEY_START 'G'
-#define DEFAULT_KEY_SELECT 'T'
-
 #define AUDIO_DEFAULT_DEVICE_LABEL L"Default Windows audio device"
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -94,8 +105,24 @@ typedef struct LoaderResult {
 typedef struct AudioDialogState {
     SimCityAudioSettings settings;
     HWND enabled;
+    HWND device;
     HWND volume;
+    HWND latency_enabled;
     HWND latency;
+    HWND output_rate;
+    HWND resampler;
+    HWND safety_buffer;
+    HWND drift_enabled;
+    HWND drift_tolerance;
+    HWND max_rate_adjustment;
+    HWND averaging_frames;
+    HWND integral_enabled;
+    HWND recovery_enabled;
+    HWND recovery_threshold;
+    HWND realign_on_underrun;
+    HWND resume_fade;
+    SimCityAudioDiagnostics diagnostics;
+    wchar_t opened_device_name[SIMCITY_AUDIO_DEVICE_NAME_CAPACITY];
     int applied;
 } AudioDialogState;
 
@@ -116,6 +143,17 @@ typedef struct InfoDialogState {
     HWND close_button;
 } InfoDialogState;
 
+typedef struct GettingStartedDialogState {
+    HWND heading;
+    HWND text;
+    HWND close_button;
+    HFONT heading_font;
+    HFONT body_font;
+    int resume_after;
+    int parent_was_enabled;
+    HWND previous_focus;
+} GettingStartedDialogState;
+
 static HINSTANCE g_instance;
 static HWND g_window;
 static HWND g_browse_button;
@@ -125,11 +163,12 @@ static HWND g_keys_button;
 static HWND g_audio_button;
 static HWND g_settings_button;
 static HWND g_fullscreen_checkbox;
-static HWND g_auto_run_checkbox;
 static HWND g_widescreen_checkbox;
+static HWND g_auto_run_checkbox;
 static HWND g_rom_path;
 static HWND g_status;
 static HWND g_info_window;
+static HWND g_getting_started_window;
 static HMENU g_menu;
 static SimCityRecomp *g_game;
 static HANDLE g_loader_thread;
@@ -169,8 +208,25 @@ static uint64_t g_pacing_timer_ticks;
 static uint64_t g_pacing_skipped_deadlines;
 static uint32_t g_pacing_max_batch;
 static uint64_t g_pacing_resyncs;
+static uint64_t g_audio_last_fifo_dropped;
+static uint64_t g_audio_last_underruns;
+static uint64_t g_audio_last_queue_failures;
+static uint64_t g_audio_fps_window_qpc;
+static uint32_t g_audio_fps_window_frame;
+static double g_audio_host_fps;
+static uint64_t g_presented_frame_count;
+static uint64_t g_presented_fps_window_count;
+static uint32_t g_presented_last_emu_frame = UINT32_MAX;
+static double g_presented_host_fps;
+static uint64_t g_pacing_render_resync_frames;
 static InfoDialogState g_info_state;
 static int g_info_resume_after;
+static HWND g_info_previous_focus;
+static GettingStartedDialogState g_getting_started_state;
+static int g_getting_started_mark_seen;
+static int g_getting_started_save_failed;
+static int g_startup_pending;
+static wchar_t g_failure_dialog_text[12288];
 
 /* Multiline read-only edits claim Tab themselves. Route it explicitly so the
    Welcome/About pair and every modal settings window support Tab and
@@ -213,13 +269,14 @@ static void play_game(void);
 static void close_audio(void);
 static int open_audio(int show_error);
 static void update_controls(void);
-static void capture_window_screenshot(void);
-static int capture_window_screenshot_to(const wchar_t *base_directory,
-                                        wchar_t *saved_path,
-                                        size_t saved_capacity);
-static int write_screenshot_static_log(const wchar_t *screenshot_path,
-                                       wchar_t *saved_path,
-                                       size_t saved_capacity);
+static void capture_core_screenshot(void);
+static int capture_core_screenshot_to(const wchar_t *base_directory,
+                                      wchar_t *saved_path,
+                                      size_t saved_capacity);
+static int capture_fullscreen_screenshot_to(wchar_t *saved_path,
+                                            size_t saved_capacity);
+static int write_static_core_failure_log(wchar_t *saved_path,
+                                         size_t saved_capacity);
 static void reset_pacing_clock(void);
 static int arm_frame_timer(void);
 static void service_host_timer(void);
@@ -232,6 +289,7 @@ static void show_snapshot_window(int save_mode);
 static void show_information_window(const wchar_t *title,
                                     const wchar_t *body,
                                     int width, int height);
+static void show_getting_started_window(int mark_seen);
 static void continue_startup_after_welcome(void);
 
 static void copy_wide(wchar_t *destination, size_t capacity,
@@ -477,6 +535,78 @@ static void set_status_utf8(const char *text) {
     set_status(converted);
 }
 
+static void restore_main_window_focus(HWND preferred) {
+    if (g_shutting_down || !IsWindow(g_window)) return;
+    SetForegroundWindow(g_window);
+    SetActiveWindow(g_window);
+    if (!IsWindow(preferred) ||
+        (preferred != g_window && !IsChild(g_window, preferred)) ||
+        !IsWindowEnabled(preferred) || !IsWindowVisible(preferred))
+        preferred = g_window;
+    SetFocus(preferred);
+    NotifyWinEvent(EVENT_OBJECT_FOCUS, preferred,
+                   OBJID_CLIENT, CHILDID_SELF);
+}
+
+static void update_running_window_title(void) {
+    wchar_t title[128];
+    if (!IsWindow(g_window) || !g_game || g_paused) return;
+    if (!g_frontend_settings.show_fps_counter) {
+        SetWindowTextW(g_window, APP_TITLE);
+        return;
+    }
+    (void)_snwprintf_s(title, ARRAY_COUNT(title), _TRUNCATE,
+                       L"%s - %.1f FPS", APP_TITLE, g_presented_host_fps);
+    SetWindowTextW(g_window, title);
+}
+
+static void report_audio_diagnostic_events(void) {
+    SimCityAudioDiagnostics diagnostics;
+    uint64_t fifo_dropped;
+    uint64_t fps_frame_delta = 0u;
+    LARGE_INTEGER fps_now;
+    if (!g_game) return;
+    memset(&diagnostics, 0, sizeof(diagnostics));
+    simcity_audio_output_get_diagnostics(&g_audio_output, &diagnostics);
+    fifo_dropped = simcity_recomp_audio_dropped_frames(g_game);
+    if (g_qpc_frequency.QuadPart > 0 && QueryPerformanceCounter(&fps_now)) {
+        uint32_t current_frame = simcity_recomp_current_frame(g_game);
+        if (!g_audio_fps_window_qpc ||
+            current_frame < g_audio_fps_window_frame) {
+            g_audio_fps_window_qpc = (uint64_t)fps_now.QuadPart;
+            g_audio_fps_window_frame = current_frame;
+            g_presented_fps_window_count = g_presented_frame_count;
+        } else if ((uint64_t)fps_now.QuadPart - g_audio_fps_window_qpc >=
+                   (uint64_t)g_qpc_frequency.QuadPart) {
+            uint64_t elapsed = (uint64_t)fps_now.QuadPart -
+                               g_audio_fps_window_qpc;
+            fps_frame_delta = (uint64_t)current_frame -
+                              g_audio_fps_window_frame;
+            g_audio_host_fps = (double)fps_frame_delta *
+                (double)g_qpc_frequency.QuadPart / (double)elapsed;
+            g_presented_host_fps =
+                (double)(g_presented_frame_count -
+                         g_presented_fps_window_count) *
+                (double)g_qpc_frequency.QuadPart / (double)elapsed;
+            g_audio_fps_window_qpc = (uint64_t)fps_now.QuadPart;
+            g_audio_fps_window_frame = current_frame;
+            g_presented_fps_window_count = g_presented_frame_count;
+            update_running_window_title();
+        }
+    }
+
+    if (fifo_dropped < g_audio_last_fifo_dropped)
+        g_audio_last_fifo_dropped = fifo_dropped;
+    if (diagnostics.underruns < g_audio_last_underruns)
+        g_audio_last_underruns = diagnostics.underruns;
+    if (diagnostics.queue_failures < g_audio_last_queue_failures)
+        g_audio_last_queue_failures = diagnostics.queue_failures;
+
+    g_audio_last_fifo_dropped = fifo_dropped;
+    g_audio_last_underruns = diagnostics.underruns;
+    g_audio_last_queue_failures = diagnostics.queue_failures;
+}
+
 static uint16_t virtual_key_to_input(WPARAM key) {
     return simcity_frontend_settings_win32_input(&g_frontend_settings, (UINT)key);
 }
@@ -528,7 +658,7 @@ static int read_rom_file(const wchar_t *path, uint8_t **rom,
         read_count != SIMCITY_RECOMP_ROM_SIZE || trailing != EOF) {
         free(buffer);
         copy_wide(error, error_capacity,
-                  L"The exact 524,288-byte SimCity (USA) ROM is required.");
+                  L"The exact 2,097,152-byte SimCity USA/Canada NTSC ROM is required.");
         return 0;
     }
     *rom = buffer;
@@ -569,14 +699,6 @@ static DWORD WINAPI loader_thread_proc(LPVOID parameter) {
             &result->game, rom, rom_size, core_error, sizeof(core_error))) {
         utf8_to_wide(core_error, result->error,
                      sizeof(result->error) / sizeof(result->error[0]));
-    } else if (!load_battery_sram_file_win32(
-                   result->game, request->sram_path, result->error,
-                   sizeof(result->error) / sizeof(result->error[0]))) {
-        simcity_recomp_destroy(result->game);
-        result->game = NULL;
-    } else if (GetFileAttributesW(request->sram_path) !=
-               INVALID_FILE_ATTRIBUTES) {
-        result->sram_loaded = 1;
     }
     free(rom);
     free(path);
@@ -598,8 +720,8 @@ static void set_toolbar_visible(int visible) {
     ShowWindow(g_audio_button, command);
     ShowWindow(g_settings_button, command);
     ShowWindow(g_fullscreen_checkbox, command);
-    ShowWindow(g_auto_run_checkbox, command);
     ShowWindow(g_widescreen_checkbox, command);
+    ShowWindow(g_auto_run_checkbox, command);
     ShowWindow(g_status, command);
 }
 
@@ -670,6 +792,17 @@ static void reset_game(void) {
     }
     (void)open_audio(1);
     g_loaded_snapshot_slot = -1;
+    g_audio_last_fifo_dropped = 0u;
+    g_audio_last_underruns = 0u;
+    g_audio_last_queue_failures = 0u;
+    g_audio_fps_window_qpc = 0u;
+    g_audio_fps_window_frame = 0u;
+    g_audio_host_fps = 0.0;
+    g_presented_frame_count = 0u;
+    g_presented_fps_window_count = 0u;
+    g_presented_last_emu_frame = UINT32_MAX;
+    g_presented_host_fps = 0.0;
+    g_pacing_render_resync_frames = 0u;
     set_status(L"ROM returned to the real cold-reset frame.");
     InvalidateRect(g_window, NULL, TRUE);
     play_game();
@@ -685,8 +818,8 @@ static void update_controls(void) {
     EnableWindow(g_audio_button, !loading);
     EnableWindow(g_settings_button, !loading);
     EnableWindow(g_fullscreen_checkbox, !loading);
-    EnableWindow(g_auto_run_checkbox, !loading);
     EnableWindow(g_widescreen_checkbox, !loading);
+    EnableWindow(g_auto_run_checkbox, !loading);
     set_accessible_control_text(g_browse_button,
                                 rom_path_known() ? L"&Run" : L"&Browse", 1);
     set_accessible_control_text(g_pause_play_button, L"&Play", 1);
@@ -704,16 +837,11 @@ static void update_controls(void) {
                    (!loading && g_game ? MF_ENABLED : MF_GRAYED));
     EnableMenuItem(g_menu, ID_AUDIO_SETTINGS,
                    MF_BYCOMMAND | (!loading ? MF_ENABLED : MF_GRAYED));
-    EnableMenuItem(g_menu, ID_SNAPSHOT_SAVE_CURRENT,
-                   MF_BYCOMMAND | (!loading && g_game ? MF_ENABLED : MF_GRAYED));
-    EnableMenuItem(g_menu, ID_SNAPSHOT_LOAD_CURRENT,
-                   MF_BYCOMMAND | (!loading && g_game ? MF_ENABLED : MF_GRAYED));
-    EnableMenuItem(g_menu, ID_SNAPSHOT_SAVE,
-                   MF_BYCOMMAND | (!loading && g_game ? MF_ENABLED : MF_GRAYED));
-    EnableMenuItem(g_menu, ID_SNAPSHOT_LOAD,
-                   MF_BYCOMMAND | (!loading && g_game ? MF_ENABLED : MF_GRAYED));
     CheckMenuItem(g_menu, ID_FULLSCREEN, MF_BYCOMMAND |
                   (SendMessageW(g_fullscreen_checkbox, BM_GETCHECK, 0, 0) ==
+                   BST_CHECKED ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(g_menu, ID_WIDESCREEN, MF_BYCOMMAND |
+                  (SendMessageW(g_widescreen_checkbox, BM_GETCHECK, 0, 0) ==
                    BST_CHECKED ? MF_CHECKED : MF_UNCHECKED));
     CheckMenuItem(g_menu, ID_AUTO_RUN, MF_BYCOMMAND |
                   (SendMessageW(g_auto_run_checkbox, BM_GETCHECK, 0, 0) ==
@@ -732,7 +860,7 @@ static int open_audio(int show_error) {
     close_audio();
     if (!g_game || !g_audio_settings.enabled) return 1;
     if (!simcity_audio_output_open(&g_audio_output, &g_audio_settings,
-                                   error,
+                                   g_window, error,
                                    sizeof(error) / sizeof(error[0]))) {
         set_status(error[0] ? error : L"Unable to start audio output.");
         if (show_error) {
@@ -761,35 +889,85 @@ static void pause_game(const wchar_t *message) {
 
 
 static void stop_game_on_core_failure(void) {
-    /* The static machine must stop when it has no translated authority, but
-       preserve the final game frame instead of restoring launcher controls,
-       stealing focus, or displaying an unnecessary modal warning. */
+    wchar_t log_path[PATH_CAPACITY];
+    wchar_t status[PATH_CAPACITY + 256u];
+    wchar_t detail[8192];
+    int log_written;
+    /* A missing static authority is a production error. Stop immediately,
+       preserve the final frame, save the complete machine diagnostics and
+       present the exact repair evidence without enabling a fallback path. */
     simcity_audio_output_pause(&g_audio_output);
     g_paused = 1;
     simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
-    set_status_utf8(simcity_recomp_last_error(g_game));
+    detail[0] = L'\0';
+    utf8_to_wide(simcity_recomp_last_error(g_game), detail,
+                 sizeof(detail) / sizeof(detail[0]));
+    log_written = write_static_core_failure_log(
+        log_path, sizeof(log_path) / sizeof(log_path[0]));
+    if (log_written) {
+        (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
+                         L"Static core stopped fail-closed. Diagnostic log: %s",
+                         log_path);
+        status[(sizeof(status) / sizeof(status[0])) - 1u] = L'\0';
+        set_status(status);
+        (void)_snwprintf(
+            g_failure_dialog_text,
+            sizeof(g_failure_dialog_text) / sizeof(g_failure_dialog_text[0]),
+            L"SimCity stopped because the static-recompiled core reached "
+            L"an execution or hardware state that is not in its compiled "
+            L"production authority. No interpreter or emulator fallback was used.\r\n\r\n"
+            L"Error details\r\n"
+            L"-------------\r\n%s\r\n\r\n"
+            L"Diagnostic log\r\n"
+            L"--------------\r\n%s\r\n\r\n"
+            L"Keep this text file when reporting the problem. It contains the "
+            L"processor state, exact source and target contexts, expected "
+            L"successors, recent execution history, timing, audio, PPU and "
+            L"machine-state hashes needed to reproduce and repair the gap.",
+            detail[0] ? detail : L"The static core stopped without a text description.",
+            log_path);
+    } else {
+        set_status(L"Static core stopped fail-closed, but its diagnostic log could not be written.");
+        (void)_snwprintf(
+            g_failure_dialog_text,
+            sizeof(g_failure_dialog_text) / sizeof(g_failure_dialog_text[0]),
+            L"SimCity stopped because the static-recompiled core reached "
+            L"an execution or hardware state that is not in its compiled "
+            L"production authority. No interpreter or emulator fallback was used.\r\n\r\n"
+            L"Error details\r\n"
+            L"-------------\r\n%s\r\n\r\n"
+            L"The Logs folder or diagnostic text file could not be created. "
+            L"Check that this folder is writable, then reproduce the error.",
+            detail[0] ? detail : L"The static core stopped without a text description.");
+    }
+    g_failure_dialog_text[
+        (sizeof(g_failure_dialog_text) / sizeof(g_failure_dialog_text[0])) - 1u] =
+        L'\0';
     InvalidateRect(g_window, NULL, FALSE);
     UpdateWindow(g_window);
-    SetFocus(g_window);
+    g_info_resume_after = 0;
+    if (IsWindow(g_info_window)) DestroyWindow(g_info_window);
+    show_information_window(L"Static Recompilation Error",
+                            g_failure_dialog_text, 860, 640);
 }
 
 static void play_game(void) {
     if (!g_game) return;
     g_paused = 0;
-    SetWindowTextW(g_window, APP_TITLE);
+    update_running_window_title();
     simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
     simcity_audio_output_resume(&g_audio_output);
     reset_pacing_clock();
     if (simcity_audio_output_is_open(&g_audio_output)) {
-        set_status(L"Running generated static S-CPU code with fail-closed Full Static audio at native NTSC timing.");
+        set_status(L"SimCity is running.");
     } else {
         set_status(L"Running generated static code. Audio output is disabled in Audio Settings.");
     }
     update_controls();
     apply_play_presentation();
-    SetFocus(g_window);
+    restore_main_window_focus(g_window);
 }
 
 static void toggle_pause_play(void) {
@@ -966,149 +1144,194 @@ static int save_bgra_bmp(const wchar_t *path, const uint8_t *pixels,
     return 1;
 }
 
-static int capture_window_screenshot_to(const wchar_t *base_directory,
-                                        wchar_t *saved_path,
-                                        size_t saved_capacity) {
-    HWND target_window = GetForegroundWindow();
-    RECT rectangle;
-    int width, height;
-    HDC window_dc = NULL;
-    HDC memory_dc = NULL;
-    HBITMAP bitmap = NULL;
-    HGDIOBJ old_bitmap = NULL;
-    BITMAPINFO info;
-    uint8_t *pixels = NULL;
+static int capture_core_screenshot_to(const wchar_t *base_directory,
+                                      wchar_t *saved_path,
+                                      size_t saved_capacity) {
+    const uint32_t *source;
+    uint32_t *pixels = NULL;
     wchar_t directory[PATH_CAPACITY];
     wchar_t path[PATH_CAPACITY];
     SYSTEMTIME now;
     uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
-    int success = 0;
+    uint32_t frame_width;
     if (saved_path && saved_capacity) saved_path[0] = L'\0';
-    if (!target_window ||
-        (target_window != g_window && GetWindow(target_window, GW_OWNER) != g_window))
-        target_window = g_window;
-    if (!GetWindowRect(target_window, &rectangle)) return 0;
-    width = rectangle.right - rectangle.left;
-    height = rectangle.bottom - rectangle.top;
-    if (width <= 0 || height <= 0) return 0;
-    window_dc = GetWindowDC(target_window);
-    if (!window_dc) goto cleanup;
-    memory_dc = CreateCompatibleDC(window_dc);
-    bitmap = CreateCompatibleBitmap(window_dc, width, height);
-    if (!memory_dc || !bitmap) goto cleanup;
-    old_bitmap = SelectObject(memory_dc, bitmap);
-    if (!PrintWindow(target_window, memory_dc, 2u) &&
-        !BitBlt(memory_dc, 0, 0, width, height, window_dc, 0, 0, SRCCOPY))
-        goto cleanup;
-    ZeroMemory(&info, sizeof(info));
-    info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    info.bmiHeader.biWidth = width;
-    info.bmiHeader.biHeight = -height;
-    info.bmiHeader.biPlanes = 1;
-    info.bmiHeader.biBitCount = 32;
-    info.bmiHeader.biCompression = BI_RGB;
-    pixels = (uint8_t *)malloc((size_t)width * (size_t)height * 4u);
-    if (!pixels || !GetDIBits(memory_dc, bitmap, 0u, (UINT)height, pixels,
-                              &info, DIB_RGB_COLORS)) goto cleanup;
+    source = g_game ? simcity_recomp_frame_bgra(g_game) : NULL;
+    if (!source) return 0;
+    frame_width = simcity_recomp_frame_width(g_game);
+    if (frame_width != SIMCITY_RECOMP_FRAME_WIDTH &&
+        frame_width != SIMCITY_RECOMP_WIDESCREEN_WIDTH) return 0;
+    /* Match Mesen's screenshot ownership: copy the last completed emulator
+       output buffer first, then encode the private copy.  Never sample the
+       Windows desktop/window surface or a scanline still being composed. */
+    pixels = (uint32_t *)malloc((size_t)frame_width *
+                                SIMCITY_RECOMP_FRAME_HEIGHT * sizeof(*pixels));
+    if (!pixels) return 0;
+    memcpy(pixels, source, (size_t)frame_width *
+                           SIMCITY_RECOMP_FRAME_HEIGHT * sizeof(*pixels));
     if (base_directory && base_directory[0])
         join_wide_path(directory, PATH_CAPACITY, base_directory, L"Screenshots");
     else
         join_wide_path(directory, PATH_CAPACITY, g_executable_directory,
                        L"Screenshots");
-    if (!ensure_directory_tree(directory)) goto cleanup;
+    if (!ensure_directory_tree(directory)) {
+        free(pixels);
+        return 0;
+    }
     GetLocalTime(&now);
     (void)_snwprintf(path, PATH_CAPACITY,
-               L"%s\\simcity-window-frame-%08u-%04u%02u%02u-%02u%02u%02u-%03u.bmp",
+               L"%s\\simcity-frame-%08u-%04u%02u%02u-%02u%02u%02u-%03u.bmp",
                directory, frame, (unsigned)now.wYear, (unsigned)now.wMonth,
                (unsigned)now.wDay, (unsigned)now.wHour, (unsigned)now.wMinute,
                (unsigned)now.wSecond, (unsigned)now.wMilliseconds);
     path[PATH_CAPACITY - 1u] = L'\0';
-    if (!save_bgra_bmp(path, pixels, width, height, width * 4)) goto cleanup;
+    if (!save_bgra_bmp(path, (const uint8_t *)pixels,
+                       (int)frame_width,
+                       (int)SIMCITY_RECOMP_FRAME_HEIGHT,
+                       (int)frame_width * 4)) {
+        free(pixels);
+        return 0;
+    }
+    free(pixels);
     if (saved_path && saved_capacity)
         copy_wide(saved_path, saved_capacity, path);
-    success = 1;
-cleanup:
-    free(pixels);
-    if (old_bitmap) SelectObject(memory_dc, old_bitmap);
-    if (bitmap) DeleteObject(bitmap);
-    if (memory_dc) DeleteDC(memory_dc);
-    if (window_dc) ReleaseDC(target_window, window_dc);
-    return success;
+    return 1;
 }
 
-static int write_screenshot_static_log(const wchar_t *screenshot_path,
-                                       wchar_t *saved_path,
-                                       size_t saved_capacity) {
-    wchar_t screenshot_directory[PATH_CAPACITY];
+static int capture_fullscreen_screenshot_to(wchar_t *saved_path,
+                                            size_t saved_capacity) {
+    RECT client;
+    BITMAPINFO bitmap;
+    HDC window_dc = NULL;
+    HDC memory_dc = NULL;
+    HBITMAP dib = NULL;
+    HGDIOBJ previous = NULL;
+    void *pixels = NULL;
+    wchar_t directory[PATH_CAPACITY];
+    wchar_t path[PATH_CAPACITY];
+    SYSTEMTIME now;
+    uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
+    int width;
+    int height;
+    int saved = 0;
+    if (saved_path && saved_capacity) saved_path[0] = L'\0';
+    if (!g_window || !g_fullscreen_active || !GetClientRect(g_window, &client))
+        return 0;
+    width = client.right - client.left;
+    height = client.bottom - client.top;
+    if (width <= 0 || height <= 0) return 0;
+
+    /* Capture the borderless fullscreen client exactly as presented,
+       including native or SimCity-wide scaling and any black bars. */
+    (void)UpdateWindow(g_window);
+    GdiFlush();
+    window_dc = GetDC(g_window);
+    if (!window_dc) goto cleanup;
+    memory_dc = CreateCompatibleDC(window_dc);
+    if (!memory_dc) goto cleanup;
+    ZeroMemory(&bitmap, sizeof(bitmap));
+    bitmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bitmap.bmiHeader.biWidth = width;
+    bitmap.bmiHeader.biHeight = -height;
+    bitmap.bmiHeader.biPlanes = 1u;
+    bitmap.bmiHeader.biBitCount = 32u;
+    bitmap.bmiHeader.biCompression = BI_RGB;
+    dib = CreateDIBSection(window_dc, &bitmap, DIB_RGB_COLORS, &pixels,
+                           NULL, 0u);
+    if (!dib || !pixels) goto cleanup;
+    previous = SelectObject(memory_dc, dib);
+    if (!previous || previous == HGDI_ERROR) goto cleanup;
+    if (!BitBlt(memory_dc, 0, 0, width, height, window_dc, 0, 0, SRCCOPY))
+        goto cleanup;
+    GdiFlush();
+
+    join_wide_path(directory, PATH_CAPACITY, g_executable_directory,
+                   L"Screenshots");
+    if (!ensure_directory_tree(directory)) goto cleanup;
+    GetLocalTime(&now);
+    (void)_snwprintf(
+        path, PATH_CAPACITY,
+        L"%s\\simcity-fullscreen-%dx%d-frame-%08u-%04u%02u%02u-%02u%02u%02u-%03u.bmp",
+        directory, width, height, frame, (unsigned)now.wYear,
+        (unsigned)now.wMonth, (unsigned)now.wDay, (unsigned)now.wHour,
+        (unsigned)now.wMinute, (unsigned)now.wSecond,
+        (unsigned)now.wMilliseconds);
+    path[PATH_CAPACITY - 1u] = L'\0';
+    if (!save_bgra_bmp(path, (const uint8_t *)pixels, width, height,
+                       width * 4))
+        goto cleanup;
+    if (saved_path && saved_capacity)
+        copy_wide(saved_path, saved_capacity, path);
+    saved = 1;
+
+cleanup:
+    if (previous && previous != HGDI_ERROR)
+        (void)SelectObject(memory_dc, previous);
+    if (dib) (void)DeleteObject(dib);
+    if (memory_dc) (void)DeleteDC(memory_dc);
+    if (window_dc) (void)ReleaseDC(g_window, window_dc);
+    return saved;
+}
+
+static int write_static_core_failure_log(wchar_t *saved_path,
+                                         size_t saved_capacity) {
     wchar_t logs_directory[PATH_CAPACITY];
     wchar_t log_path[PATH_CAPACITY];
-    wchar_t *separator;
-    wchar_t *extension;
-    const wchar_t *filename;
     char narrow_log_path[PATH_CAPACITY * 3u];
-    char narrow_screenshot_path[PATH_CAPACITY * 3u];
     char error[192];
+    SYSTEMTIME now;
     if (saved_path && saved_capacity) saved_path[0] = L'\0';
-    if (!g_game || !screenshot_path || !screenshot_path[0]) return 0;
-    copy_wide(screenshot_directory, PATH_CAPACITY, screenshot_path);
-    separator = wcsrchr(screenshot_directory, L'\\');
-    if (!separator) return 0;
-    filename = separator + 1;
-    *separator = L'\0';
+    if (!g_game || !g_executable_directory[0]) return 0;
     join_wide_path(logs_directory, PATH_CAPACITY,
-                   screenshot_directory, L"Logs");
-    if (!logs_directory[0] || !ensure_directory_tree(logs_directory))
-        return 0;
-    join_wide_path(log_path, PATH_CAPACITY, logs_directory, filename);
-    if (!log_path[0]) return 0;
-    extension = wcsrchr(log_path, L'.');
-    if (!extension) return 0;
-    copy_wide(extension, PATH_CAPACITY - (size_t)(extension - log_path),
-              L".txt");
+                   g_executable_directory, L"Logs");
+    if (!ensure_directory_tree(logs_directory)) return 0;
+    GetLocalTime(&now);
+    (void)_snwprintf(
+        log_path, PATH_CAPACITY,
+        L"%s\\Static-Core-Failure-%04u%02u%02u-%02u%02u%02u-%03u.txt",
+        logs_directory, (unsigned)now.wYear, (unsigned)now.wMonth,
+        (unsigned)now.wDay, (unsigned)now.wHour, (unsigned)now.wMinute,
+        (unsigned)now.wSecond, (unsigned)now.wMilliseconds);
+    log_path[PATH_CAPACITY - 1u] = L'\0';
     if (!wide_to_utf8(log_path, narrow_log_path,
                       sizeof(narrow_log_path)) ||
-        !wide_to_utf8(screenshot_path, narrow_screenshot_path,
-                      sizeof(narrow_screenshot_path)) ||
         !simcity_recomp_write_diagnostic_log(
-            g_game, narrow_log_path, narrow_screenshot_path,
-            error, sizeof(error)))
+            g_game, narrow_log_path, NULL, error, sizeof(error)))
         return 0;
     if (saved_path && saved_capacity)
         copy_wide(saved_path, saved_capacity, log_path);
     return 1;
 }
 
-static void capture_window_screenshot(void) {
+static void capture_core_screenshot(void) {
     wchar_t path[PATH_CAPACITY];
-    wchar_t log_path[PATH_CAPACITY];
-    wchar_t status[PATH_CAPACITY * 2u + 160u];
+    wchar_t status[PATH_CAPACITY + 96u];
     uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
     int resume_audio = g_game && !g_paused &&
                        simcity_audio_output_is_open(&g_audio_output);
     if (resume_audio) simcity_audio_output_pause(&g_audio_output);
-    if (!capture_window_screenshot_to(NULL, path,
-                                      sizeof(path) / sizeof(path[0]))) {
+    if (!(g_fullscreen_active ?
+          capture_fullscreen_screenshot_to(
+              path, sizeof(path) / sizeof(path[0])) :
+          capture_core_screenshot_to(
+              NULL, path, sizeof(path) / sizeof(path[0])))) {
         if (resume_audio) {
             simcity_audio_output_resume(&g_audio_output);
             reset_pacing_clock();
         }
-        set_status(L"Unable to save the whole-window screenshot.");
+        set_status(g_fullscreen_active ?
+            L"Unable to save the fullscreen screenshot." :
+            L"Unable to save the current game-frame screenshot.");
         return;
-    }
-    if (!write_screenshot_static_log(path, log_path,
-                                     sizeof(log_path) / sizeof(log_path[0]))) {
-        (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
-                         L"Screenshot saved at frame %u, but its static-core log could not be written: %s",
-                         frame, path);
-    } else {
-        (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
-                         L"Screenshot and static-core log saved at frame %u: %s | %s",
-                         frame, path, log_path);
     }
     if (resume_audio) {
         simcity_audio_output_resume(&g_audio_output);
         reset_pacing_clock();
     }
+    (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
+                     g_fullscreen_active ?
+                         L"Fullscreen screenshot saved at frame %u: %s" :
+                         L"Screenshot saved at frame %u: %s",
+                     frame, path);
     status[(sizeof(status) / sizeof(status[0])) - 1u] = L'\0';
     set_status(status);
 }
@@ -1130,31 +1353,20 @@ static const wchar_t g_welcome_text[] =
     L"Welcome to SimCity (SNES) Static Recompilation\r\n\r\n"
     L"Frontend shortcuts\r\n"
     L"Escape - Switch between the game and Launcher\r\n"
+    L"1 - Save the current snapshot slot\r\n"
+    L"2 - Load the current snapshot slot\r\n"
     L"F1 - Welcome and shortcut guide\r\n"
     L"F2 - Open the Save Snapshot window\r\n"
     L"F3 - Open the Load Snapshot window\r\n"
-    L"1 - Save the current snapshot slot\r\n"
-    L"2 - Load the current snapshot slot\r\n"
     L"F4 - Settings\r\n"
-    L"F5 - Controller bindings\r\n"
+    L"F5 - Controls\r\n"
     L"F6 - Audio settings\r\n"
     L"F7 - Run the selected ROM\r\n"
-    L"F8 - Capture the complete game window\r\n\r\n"
+    L"F8 - Capture the current game frame\r\n\r\n"
     L"ROM title: SimCity\r\n"
-    L"Region: USA\r\n"
+    L"Region: USA/Canada NTSC\r\n"
     L"File type: .sfc\r\n"
     L"Place the ROM in the Rom folder or select Browse ROM.";
-
-static void show_welcome(void) {
-    if (IsWindow(g_info_window)) DestroyWindow(g_info_window);
-    if (!IsWindow(g_info_window)) {
-        g_info_resume_after = g_game && !g_paused;
-        if (g_info_resume_after)
-            pause_game(L"Paused while Welcome is open.");
-    }
-    show_information_window(L"Welcome to SimCity (SNES)",
-                            g_welcome_text, 620, 560);
-}
 
 static void show_frontend_settings(void) {
     int resume_after = g_game && !g_paused;
@@ -1309,17 +1521,29 @@ static int load_snapshot_slot(int slot) {
         set_status(L"The snapshot path could not be converted to UTF-8.");
         return 0;
     }
-    close_audio();
+    /* A snapshot changes emulated machine time, not the host audio device.
+       Keep the existing DirectSound objects alive while the snapshot modal
+       owns the UI thread. Recreating the device here can block in the driver
+       or place an audio warning behind the disabled launcher, which makes a
+       successful snapshot load look like a frozen application. */
+    simcity_audio_output_pause(&g_audio_output);
+    simcity_audio_output_flush(&g_audio_output);
+    (void)simcity_recomp_audio_discard(g_game);
     if (!simcity_recomp_snapshot_load(g_game, narrow_path, error,
                                       sizeof(error))) {
         set_status_utf8(error[0] ? error : "Snapshot load failed.");
-        (void)open_audio(1);
-        simcity_audio_output_pause(&g_audio_output);
         return 0;
     }
     (void)simcity_recomp_audio_discard(g_game);
-    (void)open_audio(1);
+    simcity_audio_output_flush(&g_audio_output);
     simcity_audio_output_pause(&g_audio_output);
+    g_audio_last_fifo_dropped = 0u;
+    g_audio_last_underruns = 0u;
+    g_audio_last_queue_failures = 0u;
+    g_audio_fps_window_qpc = 0u;
+    g_audio_fps_window_frame = simcity_recomp_current_frame(g_game);
+    g_presented_fps_window_count = g_presented_frame_count;
+    g_pacing_render_resync_frames = 0u;
     g_loaded_snapshot_slot = slot;
     _snwprintf(status, sizeof(status) / sizeof(status[0]),
                L"Snapshot slot %d loaded at frame %u.", slot,
@@ -1513,6 +1737,7 @@ static void show_snapshot_window(int save_mode) {
     MSG message;
     int message_result = 1;
     wchar_t directory[PATH_CAPACITY];
+    HWND previous_focus = GetFocus();
     ZeroMemory(&message, sizeof(message));
     if (!g_game) {
         set_status(L"Load and run the ROM before using snapshots.");
@@ -1564,11 +1789,11 @@ static void show_snapshot_window(int save_mode) {
         }
     }
     EnableWindow(g_window, TRUE);
-    SetForegroundWindow(g_window);
     if ((state.resume_after || state.run_after_action) && g_game) play_game();
     else {
         set_status(L"Snapshot window closed. The game remains paused.");
         update_controls();
+        restore_main_window_focus(previous_focus);
     }
     if (message_result == 0) PostQuitMessage((int)message.wParam);
 }
@@ -1644,7 +1869,9 @@ static LRESULT CALLBACK info_dialog_proc(HWND window, UINT message,
                 if (g_info_resume_after && !g_shutting_down && g_game &&
                     IsWindow(g_window))
                     play_game();
+                restore_main_window_focus(g_info_previous_focus);
                 g_info_resume_after = 0;
+                g_info_previous_focus = NULL;
             }
             return 0;
         default:
@@ -1665,11 +1892,12 @@ static void show_information_window(const wchar_t *title,
         return;
     }
     ZeroMemory(&g_info_state, sizeof(g_info_state));
+    g_info_previous_focus = GetFocus();
     g_info_state.body = body;
     dialog = CreateWindowExW(
         WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
         INFO_CLASS_NAME, title,
-        WS_CAPTION | WS_SYSMENU | WS_POPUP | WS_VISIBLE | WS_THICKFRAME,
+        WS_CAPTION | WS_SYSMENU | WS_POPUP | WS_THICKFRAME,
         CW_USEDEFAULT, CW_USEDEFAULT, width, height,
         g_window, NULL, g_instance, &g_info_state);
     if (!dialog) {
@@ -1681,9 +1909,262 @@ static void show_information_window(const wchar_t *title,
     SetWindowTextW(dialog, title);
     center_window_on_parent(dialog, g_window);
     ShowWindow(dialog, SW_SHOWNORMAL);
-    BringWindowToTop(dialog);
+    SetWindowPos(dialog, HWND_TOP, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    SetActiveWindow(dialog);
     SetForegroundWindow(dialog);
     if (IsWindow(g_info_state.text)) SetFocus(g_info_state.text);
+}
+
+static HWND create_getting_started_text(HWND parent, const wchar_t *text,
+                                        int x, int y, int width, int height,
+                                        HFONT font) {
+    HWND control = CreateWindowExW(
+        WS_EX_CLIENTEDGE, L"EDIT", text,
+        WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MULTILINE |
+        ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL,
+        x, y, width, height, parent, NULL, g_instance, NULL);
+    if (control && font)
+        SendMessageW(control, WM_SETFONT, (WPARAM)font, TRUE);
+    if (control) notify_accessible_value(control);
+    return control;
+}
+
+static HWND create_getting_started_heading(HWND parent, const wchar_t *text,
+                                           int x, int y, int width, int height,
+                                           HFONT font) {
+    HWND control = CreateWindowExW(
+        0, L"STATIC", text,
+        WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
+        x, y, width, height, parent, NULL, g_instance, NULL);
+    if (control && font)
+        SendMessageW(control, WM_SETFONT, (WPARAM)font, TRUE);
+    return control;
+}
+
+static void getting_started_dialog_layout(
+    HWND window, GettingStartedDialogState *state) {
+    RECT client;
+    int width;
+    int height;
+    int text_width;
+    int text_height;
+    int button_x;
+    if (!window || !state || !GetClientRect(window, &client)) return;
+    width = client.right - client.left;
+    height = client.bottom - client.top;
+    text_width = width - 40;
+    text_height = height - 126;
+    if (text_width < 120) text_width = 120;
+    if (text_height < 100) text_height = 100;
+    button_x = (width - 120) / 2;
+    if (button_x < 0) button_x = 0;
+    if (state->heading)
+        MoveWindow(state->heading, 24, 16,
+                   width > 48 ? width - 48 : width, 34, TRUE);
+    if (state->text)
+        MoveWindow(state->text, 20, 56, text_width, text_height, TRUE);
+    if (state->close_button)
+        MoveWindow(state->close_button, button_x,
+                   height > 48 ? height - 48 : 0, 120, 34, TRUE);
+}
+
+static LRESULT CALLBACK getting_started_dialog_proc(
+    HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    GettingStartedDialogState *state =
+        (GettingStartedDialogState *)GetWindowLongPtrW(window, GWLP_USERDATA);
+    switch (message) {
+        case WM_NCCREATE:
+            SetWindowLongPtrW(window, GWLP_USERDATA,
+                (LONG_PTR)((CREATESTRUCTW *)lparam)->lpCreateParams);
+            return TRUE;
+        case WM_CREATE: {
+            HDC dc;
+            int dpi = 96;
+            RECT client;
+            state = (GettingStartedDialogState *)GetWindowLongPtrW(
+                window, GWLP_USERDATA);
+            dc = GetDC(window);
+            if (dc) {
+                dpi = GetDeviceCaps(dc, LOGPIXELSY);
+                ReleaseDC(window, dc);
+            }
+            state->heading_font = CreateFontW(
+                -MulDiv(19, dpi, 72), 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE,
+                FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+            state->body_font = CreateFontW(
+                -MulDiv(10, dpi, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE,
+                FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+            GetClientRect(window, &client);
+
+            state->heading = create_getting_started_heading(
+                window, L"Welcome", 24, 16, 760, 34,
+                state->heading_font);
+            state->text = create_getting_started_text(
+                window, g_welcome_text,
+                20, 56, 780, 554, state->body_font);
+            if (state->text) SendMessageW(state->text, EM_SETSEL, 0, 0);
+            state->close_button = CreateWindowExW(
+                0, L"BUTTON", L"&Close",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
+                ((client.right - client.left) - 120) / 2,
+                (client.bottom - client.top) - 48, 120, 34, window,
+                (HMENU)(INT_PTR)ID_GETTING_STARTED_CLOSE,
+                g_instance, NULL);
+            if (state->close_button)
+                SendMessageW(state->close_button, WM_SETFONT,
+                             (WPARAM)state->body_font, TRUE);
+            getting_started_dialog_layout(window, state);
+            if (!state->text || !state->close_button) return -1;
+            if (state->text) {
+                SetFocus(state->text);
+                NotifyWinEvent(EVENT_OBJECT_FOCUS, state->text,
+                               OBJID_CLIENT, CHILDID_SELF);
+            } else if (state->close_button) {
+                SetFocus(state->close_button);
+            }
+            return 0;
+        }
+        case WM_SIZE:
+            getting_started_dialog_layout(window, state);
+            return 0;
+        case WM_GETMINMAXINFO: {
+            MINMAXINFO *info = (MINMAXINFO *)lparam;
+            info->ptMinTrackSize.x = 480;
+            info->ptMinTrackSize.y = 360;
+            return 0;
+        }
+        case WM_COMMAND:
+            if (LOWORD(wparam) == ID_GETTING_STARTED_CLOSE) {
+                DestroyWindow(window);
+                return 0;
+            }
+            break;
+        case WM_KEYDOWN:
+            if (wparam == VK_ESCAPE) {
+                DestroyWindow(window);
+                return 0;
+            }
+            break;
+        case WM_CLOSE:
+            DestroyWindow(window);
+            return 0;
+        case WM_DESTROY:
+            if (state) {
+                if (state->heading_font) DeleteObject(state->heading_font);
+                if (state->body_font) DeleteObject(state->body_font);
+                state->heading = NULL;
+                state->text = NULL;
+                state->close_button = NULL;
+                state->heading_font = NULL;
+                state->body_font = NULL;
+            }
+            if (window == g_getting_started_window) {
+                g_getting_started_window = NULL;
+                if (g_getting_started_mark_seen) {
+                    g_frontend_settings.welcome_shown = 1;
+                    if (!simcity_frontend_settings_win32_save(
+                            &g_frontend_settings, g_settings_ini_path)) {
+                        g_frontend_settings.welcome_shown = 0;
+                        g_getting_started_save_failed = 1;
+                    }
+                }
+                g_getting_started_mark_seen = 0;
+                if (state && state->parent_was_enabled &&
+                    !g_shutting_down && IsWindow(g_window))
+                    EnableWindow(g_window, TRUE);
+                if (state && state->resume_after && !g_shutting_down &&
+                    g_game && IsWindow(g_window))
+                    play_game();
+                if (state)
+                    restore_main_window_focus(state->previous_focus);
+                if (state) {
+                    state->parent_was_enabled = 0;
+                    state->resume_after = 0;
+                    state->previous_focus = NULL;
+                }
+                if (g_startup_pending && !g_shutting_down &&
+                    IsWindow(g_window) &&
+                    !PostMessageW(g_window, WM_APP_STARTUP_CONTINUE, 0, 0))
+                    continue_startup_after_welcome();
+            }
+            return 0;
+        default:
+            break;
+    }
+    return DefWindowProcW(window, message, wparam, lparam);
+}
+
+static void show_getting_started_window(int mark_seen) {
+    HWND dialog;
+    HMONITOR monitor;
+    MONITORINFO monitor_info;
+    int width = 820;
+    int height = 720;
+    if (IsWindow(g_getting_started_window)) {
+        ShowWindow(g_getting_started_window, SW_RESTORE);
+        SetWindowPos(g_getting_started_window, HWND_TOP, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        SetForegroundWindow(g_getting_started_window);
+        if (g_getting_started_state.text)
+            SetFocus(g_getting_started_state.text);
+        return;
+    }
+    if (IsWindow(g_info_window)) DestroyWindow(g_info_window);
+    ZeroMemory(&g_getting_started_state, sizeof(g_getting_started_state));
+    g_getting_started_mark_seen = mark_seen != 0;
+    g_getting_started_state.resume_after = g_game && !g_paused;
+    g_getting_started_state.parent_was_enabled = IsWindowEnabled(g_window);
+    g_getting_started_state.previous_focus = GetFocus();
+    if (g_getting_started_state.resume_after)
+        pause_game(L"Paused while Welcome is open.");
+    monitor = MonitorFromWindow(g_window, MONITOR_DEFAULTTONEAREST);
+    ZeroMemory(&monitor_info, sizeof(monitor_info));
+    monitor_info.cbSize = sizeof(monitor_info);
+    if (GetMonitorInfoW(monitor, &monitor_info)) {
+        int available_width = monitor_info.rcWork.right -
+                              monitor_info.rcWork.left;
+        int available_height = monitor_info.rcWork.bottom -
+                               monitor_info.rcWork.top;
+        if (available_width > 352 && width > available_width - 32)
+            width = available_width - 32;
+        if (available_height > 392 && height > available_height - 32)
+            height = available_height - 32;
+    }
+    dialog = CreateWindowExW(
+        WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
+        GETTING_STARTED_CLASS_NAME, L"Welcome",
+        WS_CAPTION | WS_SYSMENU | WS_POPUP | WS_THICKFRAME,
+        CW_USEDEFAULT, CW_USEDEFAULT, width, height,
+        g_window, NULL, g_instance, &g_getting_started_state);
+    if (!dialog) {
+        g_getting_started_mark_seen = 0;
+        if (g_getting_started_state.resume_after && g_game)
+            play_game();
+        g_getting_started_state.resume_after = 0;
+        if (g_startup_pending &&
+            !PostMessageW(g_window, WM_APP_STARTUP_CONTINUE, 0, 0))
+            continue_startup_after_welcome();
+        return;
+    }
+    g_getting_started_window = dialog;
+    if (g_getting_started_state.parent_was_enabled)
+        EnableWindow(g_window, FALSE);
+    center_window_on_parent(dialog, g_window);
+    ShowWindow(dialog, SW_SHOWNORMAL);
+    SetWindowPos(dialog, HWND_TOP, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    SetActiveWindow(dialog);
+    SetForegroundWindow(dialog);
+    SendMessageW(g_getting_started_state.close_button, BM_SETSTYLE,
+                 BS_DEFPUSHBUTTON, TRUE);
+    SetFocus(g_getting_started_state.text);
+    NotifyWinEvent(EVENT_OBJECT_FOCUS, g_getting_started_state.text,
+                   OBJID_CLIENT, CHILDID_SELF);
 }
 
 static void save_current_snapshot(void) {
@@ -1719,14 +2200,15 @@ static void load_current_snapshot(void) {
 }
 
 static void advance_frame_deadline(void) {
-    g_next_frame_deadline += g_qpc_ticks_per_frame_base;
+    uint64_t frame_ticks = g_qpc_ticks_per_frame_base;
     g_qpc_remainder_accumulator += g_qpc_ticks_per_frame_remainder;
     if (g_qpc_remainder_accumulator >=
         SIMCITY_RECOMP_PRESENTATION_FPS_NUMERATOR) {
-        g_next_frame_deadline += 1u;
+        frame_ticks += 1u;
         g_qpc_remainder_accumulator -=
             SIMCITY_RECOMP_PRESENTATION_FPS_NUMERATOR;
     }
+    g_next_frame_deadline += frame_ticks;
 }
 
 static uint64_t qpc_ticks_to_100ns_ceil(uint64_t ticks) {
@@ -1760,6 +2242,13 @@ static int arm_frame_timer(void) {
     return SetWaitableTimer(g_frame_timer, &due, 0, NULL, NULL, FALSE) != 0;
 }
 
+static void schedule_unlocked_poll(uint64_t now_qpc) {
+    uint64_t poll_ticks = (uint64_t)g_qpc_frequency.QuadPart / 1000u;
+    if (!poll_ticks) poll_ticks = 1u;
+    g_qpc_remainder_accumulator = 0u;
+    g_next_frame_deadline = now_qpc + poll_ticks;
+}
+
 static void reset_pacing_clock(void) {
     LARGE_INTEGER now;
     if (g_qpc_frequency.QuadPart <= 0 ||
@@ -1769,37 +2258,37 @@ static void reset_pacing_clock(void) {
     }
     g_qpc_remainder_accumulator = 0u;
     g_next_frame_deadline = (uint64_t)now.QuadPart;
-    advance_frame_deadline();
+    if (!g_frontend_settings.ntsc_frame_lock)
+        schedule_unlocked_poll((uint64_t)now.QuadPart);
     (void)arm_frame_timer();
 }
 
-static int advance_frame_batch(uint32_t frame_count) {
+static void pump_audio_during_render(SimCityRecomp *game,
+                                     void *opaque) {
+    SimCityAudioOutput *output = (SimCityAudioOutput *)opaque;
+    simcity_audio_output_pump_progress(output, game);
+}
+
+static int advance_one_frame(void) {
     SimCityRecompFrameResult result;
     wchar_t message[512];
-    uint32_t headless_count;
     uint16_t input_mask;
-    if (!g_game || frame_count == 0u) return 1;
+    if (!g_game) return 1;
     memset(&result, 0, sizeof(result));
     input_mask = current_gameplay_input();
-    headless_count = frame_count > 1u ? frame_count - 1u : 0u;
-    if (headless_count &&
-        !simcity_recomp_advance_headless(g_game, input_mask,
-                                         headless_count, &result)) {
-        stop_game_on_core_failure();
-        return 0;
-    }
-    memset(&result, 0, sizeof(result));
-    if (!simcity_recomp_advance(g_game, input_mask, 1u, &result)) {
+    if (!simcity_recomp_advance_streamed(
+            g_game, input_mask, 1u, pump_audio_during_render,
+            &g_audio_output, &result)) {
         stop_game_on_core_failure();
         return 0;
     }
     if (keyboard_gameplay_active())
         simcity_input_latch_consume(&g_keyboard_input, input_mask);
     simcity_audio_output_pump(&g_audio_output, g_game);
+    report_audio_diagnostic_events();
     maybe_flush_battery_sram_win32();
     if (simcity_recomp_audio_overflowed(g_game)) {
         simcity_recomp_audio_clear_overflow(g_game);
-        set_status(L"The host audio queue overflowed; PCM was dropped. Static execution continues.");
     }
     if (!result.frame_rendered) {
         utf8_to_wide(result.renderer_error, message,
@@ -1814,8 +2303,8 @@ static int advance_frame_batch(uint32_t frame_count) {
 
 static void service_host_timer(void) {
     LARGE_INTEGER before;
-    uint64_t skipped = 0u;
-    uint32_t due_frames = 0u;
+    LARGE_INTEGER after;
+    uint64_t late_tolerance;
     if (!QueryPerformanceCounter(&before)) {
         (void)arm_frame_timer();
         return;
@@ -1825,26 +2314,62 @@ static void service_host_timer(void) {
         return;
     }
 
-    ++g_pacing_timer_ticks;
-    do {
-        ++due_frames;
-        advance_frame_deadline();
-    } while (due_frames < MAX_HOST_CATCHUP_FRAMES &&
-             g_next_frame_deadline <= (uint64_t)before.QuadPart);
-    while (g_next_frame_deadline <= (uint64_t)before.QuadPart) {
-        advance_frame_deadline();
-        ++skipped;
+    if (!g_frontend_settings.ntsc_frame_lock) {
+        int audio_ready = 1;
+        ++g_pacing_timer_ticks;
+        g_gamepad_input = simcity_gamepad_win32_poll(
+            &g_gamepad, g_frontend_settings.gamepad_bindings);
+        if (g_game && !g_paused &&
+            simcity_audio_output_is_open(&g_audio_output)) {
+            SimCityAudioDiagnostics diagnostics;
+            memset(&diagnostics, 0, sizeof(diagnostics));
+            simcity_audio_output_get_diagnostics(&g_audio_output,
+                                                &diagnostics);
+            /* With the video limiter disabled, retain audio as the safety
+               throttle so an unlocked benchmark cannot overwrite queued PCM. */
+            if (diagnostics.queue_depth_frames >
+                diagnostics.target_latency_frames +
+                    (uint32_t)(diagnostics.device_sample_rate / 30))
+                audio_ready = 0;
+        }
+        if (g_game && !g_paused && audio_ready)
+            (void)advance_one_frame();
+        if (QueryPerformanceCounter(&before))
+            schedule_unlocked_poll((uint64_t)before.QuadPart);
+        (void)arm_frame_timer();
+        return;
     }
+
+    ++g_pacing_timer_ticks;
     g_gamepad_input = simcity_gamepad_win32_poll(
         &g_gamepad, g_frontend_settings.gamepad_bindings);
     if (g_game && !g_paused) {
-        if (g_pacing_max_batch < due_frames)
-            g_pacing_max_batch = due_frames;
-        (void)advance_frame_batch(due_frames);
+        g_pacing_max_batch = 1u;
+        (void)advance_one_frame();
     }
-    if (skipped) {
-        g_pacing_skipped_deadlines += skipped;
-        ++g_pacing_resyncs;
+
+    /* Mesen and Snes9x both advance one absolute deadline per completed
+       emulated frame.  They never run a host-computed batch of overdue normal
+       frames.  If this frame is materially late, rebase the clock so missed
+       wall-clock time cannot become extra emulation and extra queued PCM. */
+    advance_frame_deadline();
+    if (QueryPerformanceCounter(&after)) {
+        late_tolerance = g_qpc_ticks_per_frame_base /
+                         HOST_LATE_REBASE_DIVISOR;
+        if (!late_tolerance) late_tolerance = 1u;
+        if ((uint64_t)after.QuadPart > g_next_frame_deadline +
+            late_tolerance) {
+            g_pacing_skipped_deadlines +=
+                ((uint64_t)after.QuadPart - g_next_frame_deadline) /
+                    (g_qpc_ticks_per_frame_base ?
+                         g_qpc_ticks_per_frame_base : 1u) + 1u;
+            g_qpc_remainder_accumulator = 0u;
+            g_next_frame_deadline = (uint64_t)after.QuadPart;
+            ++g_pacing_resyncs;
+        }
+    } else {
+        reset_pacing_clock();
+        return;
     }
     (void)arm_frame_timer();
 }
@@ -1897,11 +2422,10 @@ static void paint_window(HWND window) {
         int y;
         if (g_fullscreen_active &&
             simcity_recomp_widescreen_enabled(g_game)) {
-            /* The stored SNES frame contains seven non-visible rows before
-             * the 224-line picture and eight after it.  In fullscreen
-             * widescreen mode, crop those overscan rows and cover the entire
-             * monitor.  The map itself is still rendered by the expanded
-             * core; only final presentation scaling changes here. */
+            /* The static core stores seven non-visible rows before the
+               224-line picture and eight after it.  Crop only those rows for
+               borderless widescreen presentation; the 71-pixel side areas
+               themselves are rendered by the SimCity core. */
             source_height = 224;
             bitmap_pixels += (size_t)7u * (size_t)frame_width;
             draw_width = available_width;
@@ -1944,15 +2468,23 @@ static void paint_window(HWND window) {
         bitmap.bmiHeader.biBitCount = 32u;
         bitmap.bmiHeader.biCompression = BI_RGB;
         SetStretchBltMode(dc, COLORONCOLOR);
-        (void)StretchDIBits(dc, x, y, draw_width, draw_height,
-                            0, 0,
-                            frame_width,
-                            source_height,
-                            bitmap_pixels, &bitmap, DIB_RGB_COLORS, SRCCOPY);
+        if (StretchDIBits(dc, x, y, draw_width, draw_height,
+                          0, 0,
+                          frame_width,
+                          source_height,
+                          bitmap_pixels, &bitmap, DIB_RGB_COLORS, SRCCOPY) !=
+            GDI_ERROR) {
+            uint32_t emu_frame = simcity_recomp_current_frame(g_game);
+            /* Repaints caused by expose/resize messages do not represent a
+               newly presented emulated frame. */
+            if (emu_frame != g_presented_last_emu_frame) {
+                g_presented_last_emu_frame = emu_frame;
+                ++g_presented_frame_count;
+            }
+        }
     } else {
         const wchar_t *message =
-            L"Browse for the exact SimCity (USA) ROM and choose Run.\r\n"
-            L"The application uses only the fail-closed Full Static S-SMP/S-DSP audio path; no reference engine or automatic fallback is included.";
+            L"Browse for the exact SimCity USA/Canada NTSC ROM and choose Run.";
         SetBkMode(dc, TRANSPARENT);
         SetTextColor(dc, RGB(255, 255, 255));
         render_area.left += 24;
@@ -1973,22 +2505,208 @@ static AudioDialogState *audio_dialog_state(HWND window) {
     return (AudioDialogState *)GetWindowLongPtrW(window, GWLP_USERDATA);
 }
 
+static HWND create_audio_label(HWND parent, const wchar_t *text,
+                               int x, int y, int width) {
+    HWND control = CreateWindowExW(
+        0, L"STATIC", text, WS_CHILD | WS_VISIBLE | SS_LEFT,
+        x, y, width, 22, parent, NULL, g_instance, NULL);
+    set_control_font(control);
+    return control;
+}
+
+static HWND create_audio_numeric_edit(HWND parent, int id, int x, int y,
+                                      int value) {
+    wchar_t number[32];
+    HWND control;
+    _snwprintf_s(number, ARRAY_COUNT(number), _TRUNCATE, L"%d", value);
+    control = CreateWindowExW(
+        WS_EX_CLIENTEDGE, L"EDIT", number,
+        WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL | ES_NUMBER,
+        x, y, 92, 24, parent, (HMENU)(INT_PTR)id, g_instance, NULL);
+    set_control_font(control);
+    return control;
+}
+
+static HWND create_audio_checkbox(HWND parent, int id, const wchar_t *text,
+                                  int x, int y, int width, int checked) {
+    HWND control = CreateWindowExW(
+        0, L"BUTTON", text,
+        WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+        x, y, width, 24, parent, (HMENU)(INT_PTR)id, g_instance, NULL);
+    set_control_font(control);
+    SendMessageW(control, BM_SETCHECK,
+                 checked ? BST_CHECKED : BST_UNCHECKED, 0);
+    return control;
+}
+
+static void set_audio_edit_int(HWND control, int value) {
+    wchar_t number[32];
+    _snwprintf_s(number, ARRAY_COUNT(number), _TRUNCATE, L"%d", value);
+    SetWindowTextW(control, number);
+}
+
+static int read_audio_edit_int(HWND window, HWND control,
+                               const wchar_t *name, int minimum, int maximum,
+                               int *value) {
+    wchar_t text[64];
+    wchar_t *end = NULL;
+    long parsed;
+    wchar_t message[256];
+    if (!control || !value) return 0;
+    GetWindowTextW(control, text, (int)ARRAY_COUNT(text));
+    parsed = wcstol(text, &end, 10);
+    if (!text[0] || !end || *end || parsed < minimum || parsed > maximum) {
+        _snwprintf_s(message, ARRAY_COUNT(message), _TRUNCATE,
+            L"%s must be between %d and %d.", name, minimum, maximum);
+        MessageBoxW(window, message, L"Audio Settings",
+                    MB_OK | MB_ICONWARNING);
+        SetFocus(control);
+        SendMessageW(control, EM_SETSEL, 0, -1);
+        return 0;
+    }
+    *value = (int)parsed;
+    return 1;
+}
+
+static void update_audio_control_enabled_state(AudioDialogState *state) {
+    int latency;
+    int drift;
+    int recovery;
+    if (!state) return;
+    latency = SendMessageW(state->latency_enabled, BM_GETCHECK, 0, 0) ==
+              BST_CHECKED;
+    drift = SendMessageW(state->drift_enabled, BM_GETCHECK, 0, 0) ==
+            BST_CHECKED;
+    recovery = SendMessageW(state->recovery_enabled, BM_GETCHECK, 0, 0) ==
+               BST_CHECKED;
+    EnableWindow(state->latency, latency);
+    EnableWindow(state->drift_tolerance, drift);
+    EnableWindow(state->max_rate_adjustment, drift);
+    EnableWindow(state->averaging_frames, drift);
+    EnableWindow(state->integral_enabled, drift);
+    EnableWindow(state->recovery_threshold, recovery);
+}
+
+static void apply_audio_settings_to_controls(AudioDialogState *state) {
+    int index;
+    int count;
+    if (!state) return;
+    SendMessageW(state->enabled, BM_SETCHECK,
+        state->settings.enabled ? BST_CHECKED : BST_UNCHECKED, 0);
+    SendMessageW(state->volume, CB_SETCURSEL,
+                 state->settings.volume_percent, 0);
+    SendMessageW(state->latency_enabled, BM_SETCHECK,
+        state->settings.latency_enabled ? BST_CHECKED : BST_UNCHECKED, 0);
+    SendMessageW(state->latency, CB_SETCURSEL,
+                 state->settings.latency_ms, 0);
+    count = (int)SendMessageW(state->output_rate, CB_GETCOUNT, 0, 0);
+    for (index = 0; index < count; ++index) {
+        if ((int)SendMessageW(state->output_rate, CB_GETITEMDATA,
+                              index, 0) == state->settings.output_sample_rate) {
+            SendMessageW(state->output_rate, CB_SETCURSEL, index, 0);
+            break;
+        }
+    }
+    SendMessageW(state->resampler, CB_SETCURSEL,
+                 state->settings.resampler_mode, 0);
+    set_audio_edit_int(state->safety_buffer,
+                       state->settings.safety_buffer_ms);
+    SendMessageW(state->drift_enabled, BM_SETCHECK,
+        state->settings.drift_correction_enabled ? BST_CHECKED : BST_UNCHECKED,
+        0);
+    set_audio_edit_int(state->drift_tolerance,
+                       state->settings.drift_tolerance_ms);
+    set_audio_edit_int(state->max_rate_adjustment,
+                       state->settings.max_rate_adjustment_ppm);
+    set_audio_edit_int(state->averaging_frames,
+                       state->settings.averaging_frames);
+    SendMessageW(state->integral_enabled, BM_SETCHECK,
+        state->settings.integral_correction_enabled ?
+            BST_CHECKED : BST_UNCHECKED, 0);
+    SendMessageW(state->recovery_enabled, BM_SETCHECK,
+        state->settings.recovery_enabled ? BST_CHECKED : BST_UNCHECKED, 0);
+    set_audio_edit_int(state->recovery_threshold,
+                       state->settings.recovery_threshold_ms);
+    SendMessageW(state->realign_on_underrun, BM_SETCHECK,
+        state->settings.realign_on_underrun ? BST_CHECKED : BST_UNCHECKED, 0);
+    set_audio_edit_int(state->resume_fade, state->settings.resume_fade_ms);
+    SendMessageW(state->device, CB_SETCURSEL, 0, 0);
+    if (state->settings.device_name[0]) {
+        LRESULT found = SendMessageW(state->device, CB_FINDSTRINGEXACT,
+                                     (WPARAM)-1,
+                                     (LPARAM)state->settings.device_name);
+        if (found != CB_ERR) SendMessageW(state->device, CB_SETCURSEL,
+                                          (WPARAM)found, 0);
+    }
+    update_audio_control_enabled_state(state);
+}
+
 static int read_audio_dialog(AudioDialogState *state, HWND window) {
-    static const int latency_values[] = {40, 60, 80, 120, 250};
     LRESULT volume;
     LRESULT latency;
+    LRESULT selection;
     if (!state) return 0;
-
-    (void)window;
     volume = SendMessageW(state->volume, CB_GETCURSEL, 0, 0);
     latency = SendMessageW(state->latency, CB_GETCURSEL, 0, 0);
-    if (volume < 0 || volume > 100 || latency < 0 ||
-        latency >= (LRESULT)ARRAY_COUNT(latency_values)) return 0;
-
+    if (volume < 0 || volume > 100 || latency < 0 || latency > 40) return 0;
     state->settings.enabled =
         SendMessageW(state->enabled, BM_GETCHECK, 0, 0) == BST_CHECKED;
     state->settings.volume_percent = (int)volume;
-    state->settings.latency_ms = latency_values[latency];
+    state->settings.latency_enabled =
+        SendMessageW(state->latency_enabled, BM_GETCHECK, 0, 0) == BST_CHECKED;
+    state->settings.latency_ms = (int)latency;
+    selection = SendMessageW(state->device, CB_GETCURSEL, 0, 0);
+    state->settings.device_name[0] = L'\0';
+    if (selection > 0) {
+        (void)SendMessageW(state->device, CB_GETLBTEXT, selection,
+                           (LPARAM)state->settings.device_name);
+        state->settings.device_name[SIMCITY_AUDIO_DEVICE_NAME_CAPACITY - 1u] =
+            L'\0';
+    }
+    selection = SendMessageW(state->output_rate, CB_GETCURSEL, 0, 0);
+    if (selection == CB_ERR) return 0;
+    state->settings.output_sample_rate = (int)SendMessageW(
+        state->output_rate, CB_GETITEMDATA, selection, 0);
+    selection = SendMessageW(state->resampler, CB_GETCURSEL, 0, 0);
+    if (selection < SIMCITY_AUDIO_RESAMPLER_HERMITE ||
+        selection > SIMCITY_AUDIO_RESAMPLER_NEAREST) return 0;
+    state->settings.resampler_mode = (int)selection;
+    if (!read_audio_edit_int(window, state->safety_buffer,
+            L"Safety prebuffer", SIMCITY_AUDIO_MIN_SAFETY_BUFFER_MS,
+            SIMCITY_AUDIO_MAX_SAFETY_BUFFER_MS,
+            &state->settings.safety_buffer_ms) ||
+        !read_audio_edit_int(window, state->drift_tolerance,
+            L"Drift tolerance", SIMCITY_AUDIO_MIN_DRIFT_TOLERANCE_MS,
+            SIMCITY_AUDIO_MAX_DRIFT_TOLERANCE_MS,
+            &state->settings.drift_tolerance_ms) ||
+        !read_audio_edit_int(window, state->max_rate_adjustment,
+            L"Maximum rate correction",
+            SIMCITY_AUDIO_MIN_RATE_ADJUSTMENT_PPM,
+            SIMCITY_AUDIO_MAX_RATE_ADJUSTMENT_PPM,
+            &state->settings.max_rate_adjustment_ppm) ||
+        !read_audio_edit_int(window, state->averaging_frames,
+            L"Averaging window", SIMCITY_AUDIO_MIN_AVERAGING_FRAMES,
+            SIMCITY_AUDIO_MAX_AVERAGING_FRAMES,
+            &state->settings.averaging_frames) ||
+        !read_audio_edit_int(window, state->recovery_threshold,
+            L"Recovery threshold", SIMCITY_AUDIO_MIN_RECOVERY_MS,
+            SIMCITY_AUDIO_MAX_RECOVERY_MS,
+            &state->settings.recovery_threshold_ms) ||
+        !read_audio_edit_int(window, state->resume_fade,
+            L"Resume fade", SIMCITY_AUDIO_MIN_FADE_MS,
+            SIMCITY_AUDIO_MAX_FADE_MS,
+            &state->settings.resume_fade_ms)) return 0;
+    state->settings.drift_correction_enabled =
+        SendMessageW(state->drift_enabled, BM_GETCHECK, 0, 0) == BST_CHECKED;
+    state->settings.integral_correction_enabled =
+        SendMessageW(state->integral_enabled, BM_GETCHECK, 0, 0) ==
+            BST_CHECKED;
+    state->settings.recovery_enabled =
+        SendMessageW(state->recovery_enabled, BM_GETCHECK, 0, 0) ==
+            BST_CHECKED;
+    state->settings.realign_on_underrun =
+        SendMessageW(state->realign_on_underrun, BM_GETCHECK, 0, 0) ==
+            BST_CHECKED;
     return 1;
 }
 
@@ -2004,34 +2722,47 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
         }
 
         case WM_CREATE: {
-            static const int latency_values[] = {40, 60, 80, 120, 250};
             wchar_t number[32];
+            wchar_t device_name[SIMCITY_AUDIO_DEVICE_NAME_CAPACITY];
+            wchar_t diagnostics[1024];
             UINT index;
-            LRESULT selection = 0;
+            HWND group;
             state = audio_dialog_state(window);
             if (!state) return -1;
-            SetWindowTextW(window, L"SimCity 1.2.0 Audio Settings");
+            SetWindowTextW(window, L"SimCity Audio Settings");
 
-            state->enabled = CreateWindowExW(
-                0, L"BUTTON", L"Enable &audio output",
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
-                18, 20, 260, 28, window,
-                (HMENU)(INT_PTR)ID_AUDIO_ENABLED, g_instance, NULL);
-            set_control_font(state->enabled);
-            SendMessageW(state->enabled, BM_SETCHECK,
-                         state->settings.enabled ? BST_CHECKED : BST_UNCHECKED,
-                         0);
+            state->enabled = create_audio_checkbox(window, ID_AUDIO_ENABLED,
+                L"Enable &audio output", 18, 12, 210,
+                state->settings.enabled);
+            create_audio_label(window,
+                L"DirectSound 8, signed 16-bit stereo; static DSP source: 32,040 Hz",
+                250, 16, 510);
 
-            set_control_font(CreateWindowExW(
-                0, L"STATIC", L"&Volume (0-100):",
-                WS_CHILD | WS_VISIBLE | SS_LEFT,
-                18, 66, 125, 22, window, (HMENU)(INT_PTR)2103,
-                g_instance, NULL));
+            group = CreateWindowExW(0, L"BUTTON", L"Output and resampling",
+                WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 10, 45, 370, 300,
+                window, NULL, g_instance, NULL);
+            set_control_font(group);
+            create_audio_label(window, L"Output &device:", 25, 72, 110);
+            state->device = CreateWindowExW(WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
+                WS_VSCROLL, 140, 68, 220, 260, window,
+                (HMENU)(INT_PTR)ID_AUDIO_DEVICE, g_instance, NULL);
+            set_control_font(state->device);
+            SendMessageW(state->device, CB_ADDSTRING, 0,
+                         (LPARAM)AUDIO_DEFAULT_DEVICE_LABEL);
+            for (index = 0u; index < simcity_audio_device_count(); ++index) {
+                if (simcity_audio_device_name(index, device_name,
+                        ARRAY_COUNT(device_name)))
+                    SendMessageW(state->device, CB_ADDSTRING, 0,
+                                 (LPARAM)device_name);
+            }
+
+            create_audio_label(window, L"&Volume (0-100):", 25, 110, 110);
             state->volume = CreateWindowExW(
                 WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
                 WS_VSCROLL,
-                148, 62, 94, 280, window,
+                140, 106, 92, 280, window,
                 (HMENU)(INT_PTR)ID_AUDIO_VOLUME, g_instance, NULL);
             set_control_font(state->volume);
             for (index = 0u; index <= 100u; ++index) {
@@ -2040,58 +2771,179 @@ static LRESULT CALLBACK audio_dialog_proc(HWND window, UINT message,
                 (void)SendMessageW(state->volume, CB_ADDSTRING, 0,
                                    (LPARAM)number);
             }
-            (void)SendMessageW(state->volume, CB_SETCURSEL,
-                               state->settings.volume_percent, 0);
+            create_audio_label(window, L"Output &rate:", 25, 148, 110);
+            state->output_rate = CreateWindowExW(WS_EX_CLIENTEDGE,
+                L"COMBOBOX", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP |
+                CBS_DROPDOWNLIST, 140, 144, 130, 180, window,
+                (HMENU)(INT_PTR)ID_AUDIO_OUTPUT_RATE, g_instance, NULL);
+            set_control_font(state->output_rate);
+            {
+                static const int rates[] = {32040, 44100, 48000, 96000};
+                for (index = 0u; index < ARRAY_COUNT(rates); ++index) {
+                    LRESULT item;
+                    _snwprintf_s(number, ARRAY_COUNT(number), _TRUNCATE,
+                                 L"%d Hz", rates[index]);
+                    item = SendMessageW(state->output_rate, CB_ADDSTRING, 0,
+                                        (LPARAM)number);
+                    SendMessageW(state->output_rate, CB_SETITEMDATA, item,
+                                 rates[index]);
+                }
+            }
 
-            set_control_font(CreateWindowExW(
-                0, L"STATIC", L"&Latency:",
-                WS_CHILD | WS_VISIBLE | SS_LEFT,
-                18, 108, 90, 22, window, (HMENU)(INT_PTR)2105,
-                g_instance, NULL));
+            create_audio_label(window, L"&Resampler:", 25, 186, 110);
+            state->resampler = CreateWindowExW(WS_EX_CLIENTEDGE, L"COMBOBOX",
+                L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
+                140, 182, 170, 150, window,
+                (HMENU)(INT_PTR)ID_AUDIO_RESAMPLER, g_instance, NULL);
+            set_control_font(state->resampler);
+            SendMessageW(state->resampler, CB_ADDSTRING, 0,
+                         (LPARAM)L"Cubic Hermite (Mesen)");
+            SendMessageW(state->resampler, CB_ADDSTRING, 0,
+                         (LPARAM)L"Linear");
+            SendMessageW(state->resampler, CB_ADDSTRING, 0,
+                         (LPARAM)L"Nearest-neighbour");
+
+            state->latency_enabled = create_audio_checkbox(window,
+                ID_AUDIO_LATENCY_ENABLED, L"Enable e&xtra latency (0-40 ms)",
+                25, 221, 230, state->settings.latency_enabled);
             state->latency = CreateWindowExW(
                 WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST,
-                112, 104, 130, 190, window,
+                262, 218, 92, 280, window,
                 (HMENU)(INT_PTR)ID_AUDIO_LATENCY, g_instance, NULL);
             set_control_font(state->latency);
-            selection = 0;
-            for (index = 0u; index < ARRAY_COUNT(latency_values); ++index) {
+            for (index = 0u; index <= 40u; ++index) {
                 _snwprintf_s(number, ARRAY_COUNT(number), _TRUNCATE,
-                             L"%d ms", latency_values[index]);
+                              L"%u ms", index);
                 (void)SendMessageW(state->latency, CB_ADDSTRING, 0,
                                    (LPARAM)number);
-                if (latency_values[index] == state->settings.latency_ms)
-                    selection = index;
             }
-            (void)SendMessageW(state->latency, CB_SETCURSEL,
-                               (WPARAM)selection, 0);
-            set_control_font(CreateWindowExW(
-                0, L"STATIC", L"Audio changes apply immediately.",
-                WS_CHILD | WS_VISIBLE | SS_LEFT,
-                18, 150, 410, 24, window, (HMENU)(INT_PTR)2106,
-                g_instance, NULL));
+            create_audio_label(window, L"Resume &fade (0-100 ms):",
+                               25, 263, 190);
+            state->resume_fade = create_audio_numeric_edit(window,
+                ID_AUDIO_FADE, 220, 259, state->settings.resume_fade_ms);
 
-            set_control_font(CreateWindowExW(
-                0, L"BUTTON", L"OK",
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                218, 190, 105, 32, window,
-                (HMENU)(INT_PTR)ID_AUDIO_APPLY, g_instance, NULL));
-            set_control_font(CreateWindowExW(
-                0, L"BUTTON", L"Cancel",
+            group = CreateWindowExW(0, L"BUTTON", L"Buffering and recovery",
+                WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 390, 45, 380, 300,
+                window, NULL, g_instance, NULL);
+            set_control_font(group);
+            create_audio_label(window, L"Safety &prebuffer (0-100 ms):",
+                               405, 75, 220);
+            state->safety_buffer = create_audio_numeric_edit(window,
+                ID_AUDIO_SAFETY_BUFFER, 650, 70,
+                state->settings.safety_buffer_ms);
+            state->recovery_enabled = create_audio_checkbox(window,
+                ID_AUDIO_RECOVERY_ENABLED,
+                L"Recover automatically from stale audio", 405, 113, 335,
+                state->settings.recovery_enabled);
+            create_audio_label(window, L"Recovery limit (10-500 ms):",
+                               405, 154, 220);
+            state->recovery_threshold = create_audio_numeric_edit(window,
+                ID_AUDIO_RECOVERY_THRESHOLD, 650, 149,
+                state->settings.recovery_threshold_ms);
+            state->realign_on_underrun = create_audio_checkbox(window,
+                ID_AUDIO_REALIGN, L"Realign writer after an underrun",
+                405, 188, 335, state->settings.realign_on_underrun);
+            create_audio_label(window,
+                L"Safety prebuffer is the first control to raise for crunchy audio.",
+                405, 228, 350);
+
+            group = CreateWindowExW(0, L"BUTTON", L"Clock synchronization",
+                WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 10, 355, 370, 230,
+                window, NULL, g_instance, NULL);
+            set_control_font(group);
+            state->drift_enabled = create_audio_checkbox(window,
+                ID_AUDIO_DRIFT_ENABLED, L"Enable device-latency drift correction",
+                25, 382, 330, state->settings.drift_correction_enabled);
+            create_audio_label(window, L"Tolerance (0-20 ms):", 25, 421, 190);
+            state->drift_tolerance = create_audio_numeric_edit(window,
+                ID_AUDIO_DRIFT_TOLERANCE, 245, 416,
+                state->settings.drift_tolerance_ms);
+            create_audio_label(window, L"Maximum correction (0-10000 ppm):",
+                               25, 459, 220);
+            state->max_rate_adjustment = create_audio_numeric_edit(window,
+                ID_AUDIO_MAX_RATE, 245, 454,
+                state->settings.max_rate_adjustment_ppm);
+            create_audio_label(window, L"Averaging window (1-60 frames):",
+                               25, 497, 220);
+            state->averaging_frames = create_audio_numeric_edit(window,
+                ID_AUDIO_AVERAGING, 245, 492,
+                state->settings.averaging_frames);
+            state->integral_enabled = create_audio_checkbox(window,
+                ID_AUDIO_INTEGRAL, L"Enable slow integral correction",
+                25, 532, 320, state->settings.integral_correction_enabled);
+
+            group = CreateWindowExW(0, L"BUTTON",
+                L"Last live diagnostics (captured before this window paused audio)",
+                WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 390, 355, 380, 230,
+                window, NULL, g_instance, NULL);
+            set_control_font(group);
+            _snwprintf_s(diagnostics, ARRAY_COUNT(diagnostics), _TRUNCATE,
+                L"Device: %s\r\nRate: %d Hz | Queue: %u frames | Safe: %u | Target: %u\r\n"
+                L"Average safe latency: %.2f ms | Ratio: %.6f\r\n"
+                L"Underruns: %llu | Recoveries: %llu | Dropped: %llu\r\n"
+                L"Write failures: %llu | Device reopens: %llu",
+                state->opened_device_name[0] ? state->opened_device_name :
+                    L"Audio device not open",
+                state->diagnostics.device_sample_rate,
+                state->diagnostics.queue_depth_frames,
+                state->diagnostics.safe_queue_depth_frames,
+                state->diagnostics.target_latency_frames,
+                state->diagnostics.average_latency_ms,
+                state->diagnostics.playback_ratio,
+                (unsigned long long)state->diagnostics.underruns,
+                (unsigned long long)state->diagnostics.queue_recoveries,
+                (unsigned long long)state->diagnostics.stale_frames_dropped,
+                (unsigned long long)state->diagnostics.queue_failures,
+                (unsigned long long)state->diagnostics.device_reopens);
+            {
+                HWND diagnostics_control = CreateWindowExW(
+                    WS_EX_CLIENTEDGE, L"EDIT", diagnostics,
+                    WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_MULTILINE |
+                    ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL,
+                    405, 382, 350, 185, window,
+                    (HMENU)(INT_PTR)ID_AUDIO_DIAGNOSTICS, g_instance, NULL);
+                set_control_font(diagnostics_control);
+            }
+
+            set_control_font(CreateWindowExW(0, L"BUTTON", L"Restore defaults",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                341, 190, 105, 32, window,
+                18, 602, 140, 32, window,
+                (HMENU)(INT_PTR)ID_AUDIO_DEFAULTS, g_instance, NULL));
+            set_control_font(CreateWindowExW(0, L"BUTTON", L"OK",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
+                535, 602, 105, 32, window,
+                (HMENU)(INT_PTR)ID_AUDIO_APPLY, g_instance, NULL));
+            set_control_font(CreateWindowExW(0, L"BUTTON", L"Cancel",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                650, 602, 105, 32, window,
                 (HMENU)(INT_PTR)ID_AUDIO_CANCEL, g_instance, NULL));
+            apply_audio_settings_to_controls(state);
             return 0;
         }
 
         case WM_GETMINMAXINFO: {
             MINMAXINFO *info = (MINMAXINFO *)lparam;
-            info->ptMinTrackSize.x = 490;
-            info->ptMinTrackSize.y = 285;
+            info->ptMinTrackSize.x = 800;
+            info->ptMinTrackSize.y = 680;
             return 0;
         }
 
         case WM_COMMAND:
+            if (LOWORD(wparam) == ID_AUDIO_LATENCY_ENABLED) {
+                update_audio_control_enabled_state(state);
+                return 0;
+            }
+            if (LOWORD(wparam) == ID_AUDIO_DRIFT_ENABLED ||
+                LOWORD(wparam) == ID_AUDIO_RECOVERY_ENABLED) {
+                update_audio_control_enabled_state(state);
+                return 0;
+            }
+            if (LOWORD(wparam) == ID_AUDIO_DEFAULTS) {
+                simcity_audio_settings_defaults(&state->settings);
+                apply_audio_settings_to_controls(state);
+                return 0;
+            }
             if (LOWORD(wparam) == ID_AUDIO_APPLY) {
                 if (read_audio_dialog(state, window)) {
                     state->applied = 1;
@@ -2122,18 +2974,26 @@ static void show_audio_settings(void) {
     int resume_after;
     BOOL parent_was_enabled;
     int message_result = 1;
+    HWND previous_focus = GetFocus();
 
     ZeroMemory(&message, sizeof(message));
     memset(&state, 0, sizeof(state));
     state.settings = g_audio_settings;
+    simcity_audio_output_get_diagnostics(&g_audio_output, &state.diagnostics);
+    if (g_audio_output.opened_device_name[0]) {
+        wcsncpy(state.opened_device_name, g_audio_output.opened_device_name,
+                ARRAY_COUNT(state.opened_device_name) - 1u);
+        state.opened_device_name[ARRAY_COUNT(state.opened_device_name) - 1u] =
+            L'\0';
+    }
     resume_after = g_game && !g_paused;
     if (resume_after) pause_game(L"Paused while Audio Settings is open.");
 
     dialog = CreateWindowExW(
         WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
-        AUDIO_CLASS_NAME, L"SimCity 1.2.0 Audio Settings",
+        AUDIO_CLASS_NAME, L"SimCity Audio Settings",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, 490, 285,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 680,
         g_window, NULL, g_instance, &state);
     if (!dialog) {
         MessageBoxW(g_window, L"Unable to open Audio Settings.",
@@ -2161,21 +3021,21 @@ static void show_audio_settings(void) {
         }
     }
     if (parent_was_enabled) EnableWindow(g_window, TRUE);
-    SetForegroundWindow(g_window);
 
     if (state.applied) {
         g_audio_settings = state.settings;
         simcity_audio_settings_save(&g_audio_settings, g_settings_ini_path);
         if (g_game) {
             if (open_audio(1) && simcity_audio_output_is_open(&g_audio_output))
-                set_status(L"Audio settings applied. Full Static host playback is active.");
+                set_status(L"Audio settings applied.");
             else if (!g_audio_settings.enabled)
                 set_status(L"Audio settings applied. Audio output is disabled.");
         } else {
-            set_status(L"Audio settings saved. Full Static playback will use them when the game starts.");
+            set_status(L"Audio settings saved. They will be used when the game starts.");
         }
     }
     if (resume_after && g_game) play_game();
+    else restore_main_window_focus(previous_focus);
     if (message_result == 0) PostQuitMessage((int)message.wParam);
 }
 
@@ -2197,7 +3057,7 @@ static HMENU create_menu_bar(void) {
     AppendMenuW(file, MF_STRING, ID_SNAPSHOT_LOAD,
                 L"Load Snapshot...\tF3");
     AppendMenuW(file, MF_STRING, ID_SCREENSHOT,
-                L"Capture Game Window\tF8");
+                L"Capture Game Frame\tF8");
     AppendMenuW(file, MF_SEPARATOR, 0, NULL);
     AppendMenuW(file, MF_STRING, ID_EXIT, L"E&xit\tAlt+F4");
     AppendMenuW(settings, MF_STRING, ID_FRONTEND_SETTINGS,
@@ -2208,7 +3068,9 @@ static HMENU create_menu_bar(void) {
                 L"&Audio Settings...\tF6");
     AppendMenuW(settings, MF_SEPARATOR, 0, NULL);
     AppendMenuW(settings, MF_STRING, ID_FULLSCREEN,
-                L"Use &Full Screen When Playing");
+                 L"Use &Full Screen When Playing");
+    AppendMenuW(settings, MF_STRING, ID_WIDESCREEN,
+                 L"Use SimCity &Wide Screen");
     AppendMenuW(settings, MF_STRING, ID_AUTO_RUN,
                 L"&Auto-Run at Startup");
     AppendMenuW(settings, MF_SEPARATOR, 0, NULL);
@@ -2221,7 +3083,6 @@ static HMENU create_menu_bar(void) {
 static void initialize_paths_and_settings(void) {
     wchar_t module_path[PATH_CAPACITY];
     wchar_t default_rom[PATH_CAPACITY];
-    wchar_t gamepad_database[PATH_CAPACITY];
     wchar_t legacy_audio_ini[PATH_CAPACITY];
     wchar_t legacy_frontend_ini[PATH_CAPACITY];
     wchar_t migrated_rom_path[PATH_CAPACITY];
@@ -2247,11 +3108,10 @@ static void initialize_paths_and_settings(void) {
                    sizeof(g_rom_directory) / sizeof(g_rom_directory[0]),
                    g_executable_directory, L"Rom");
     join_wide_path(g_saves_directory,
-                   sizeof(g_saves_directory) / sizeof(g_saves_directory[0]),
+                   sizeof(g_saves_directory) /
+                       sizeof(g_saves_directory[0]),
                    g_executable_directory, L"Saves");
-    join_wide_path(g_sram_path,
-                   sizeof(g_sram_path) / sizeof(g_sram_path[0]),
-                   g_saves_directory, L"SimCity-USA.srm");
+    g_sram_path[0] = L'\0';
 
     (void)_snwprintf(g_settings_ini_path,
                      sizeof(g_settings_ini_path) /
@@ -2304,18 +3164,14 @@ static void initialize_paths_and_settings(void) {
             (void)DeleteFileW(legacy_audio_ini);
         }
     }
-    join_wide_path(gamepad_database,
-                   sizeof(gamepad_database) / sizeof(gamepad_database[0]),
-                   g_executable_directory, L"gamecontrollerdb.txt");
-    (void)simcity_gamepad_win32_initialize(&g_gamepad, gamepad_database);
-    if (!g_frontend_settings.input_source_saved)
-        g_frontend_settings.input_source = g_gamepad.startup_gamepad_found ?
-            SIMCITY_INPUT_SOURCE_GAMEPAD : SIMCITY_INPUT_SOURCE_KEYBOARD;
+    (void)simcity_gamepad_win32_initialize(&g_gamepad, NULL);
+    /* Keep the configured default input source on first launch.  A connected
+       physical or virtual controller must not silently disable the keyboard;
+       the user can explicitly select Gamepad in Controls.  This follows the
+       Mesen input contract: device discovery does not itself choose which
+       configured mapping supplies Player 1 input. */
     SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
                  g_frontend_settings.auto_run_on_load ? BST_CHECKED : BST_UNCHECKED,
-                 0);
-    SendMessageW(g_widescreen_checkbox, BM_SETCHECK,
-                 g_frontend_settings.widescreen ? BST_CHECKED : BST_UNCHECKED,
                  0);
 
     default_rom[0] = L'\0';
@@ -2335,10 +3191,15 @@ static void initialize_paths_and_settings(void) {
     SendMessageW(g_fullscreen_checkbox, BM_SETCHECK,
                  g_frontend_settings.fullscreen_on_play ?
                  BST_CHECKED : BST_UNCHECKED, 0);
+    SendMessageW(g_widescreen_checkbox, BM_SETCHECK,
+                 g_frontend_settings.widescreen ?
+                 BST_CHECKED : BST_UNCHECKED, 0);
     update_controls();
 }
 
 static void continue_startup_after_welcome(void) {
+    if (!g_startup_pending) return;
+    g_startup_pending = 0;
     reset_pacing_clock();
     if (g_adjacent_rom_found) {
         if (g_frontend_settings.auto_run_on_load) {
@@ -2357,6 +3218,10 @@ static void continue_startup_after_welcome(void) {
         SetFocus(g_browse_button);
         NotifyWinEvent(EVENT_OBJECT_FOCUS, g_browse_button,
                        OBJID_CLIENT, CHILDID_SELF);
+    }
+    if (g_getting_started_save_failed) {
+        set_status(L"Welcome closed, but its one-time setting could not be saved; it will appear again next launch.");
+        g_getting_started_save_failed = 0;
     }
 }
 
@@ -2383,6 +3248,13 @@ static void save_current_settings_on_exit(void) {
 static LRESULT CALLBACK window_proc(HWND window, UINT message,
                                     WPARAM wparam, LPARAM lparam) {
     switch (message) {
+        case WM_GETOBJECT:
+            /* The launcher remains a normal accessible Win32 UI.  While the
+               emulated game view is active it has no useful control tree, so
+               do not expose DefWindowProc's synthetic client object to NVDA. */
+            if (g_game && !g_paused) return 0;
+            break;
+
         case WM_CREATE:
             g_browse_button = CreateWindowExW(
                 0, L"BUTTON", L"&Browse",
@@ -2448,13 +3320,13 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             set_control_font(g_audio_button);
             set_control_font(g_settings_button);
             set_control_font(g_fullscreen_checkbox);
-            set_control_font(g_auto_run_checkbox);
             set_control_font(g_widescreen_checkbox);
+            set_control_font(g_auto_run_checkbox);
             set_control_font(g_rom_path);
             set_control_font(g_status);
             SendMessageW(g_fullscreen_checkbox, BM_SETCHECK, BST_UNCHECKED, 0);
-            SendMessageW(g_auto_run_checkbox, BM_SETCHECK, BST_UNCHECKED, 0);
             SendMessageW(g_widescreen_checkbox, BM_SETCHECK, BST_CHECKED, 0);
+            SendMessageW(g_auto_run_checkbox, BM_SETCHECK, BST_UNCHECKED, 0);
             update_controls();
             return 0;
 
@@ -2472,6 +3344,12 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
         case WM_PAINT:
             paint_window(window);
             return 0;
+
+        case WM_ERASEBKGND:
+            /* paint_window always covers the entire client area.  Suppressing
+               the separate erase pass avoids a visible black flash and keeps
+               presentation work out of the emulation/audio schedule. */
+            return 1;
 
         case WM_COMMAND:
             switch (LOWORD(wparam)) {
@@ -2501,23 +3379,6 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                     (void)simcity_frontend_settings_win32_save(
                         &g_frontend_settings, g_settings_ini_path);
                     update_controls();
-                    return 0;
-                case ID_AUTO_RUN:
-                    if (lparam == 0) {
-                        LRESULT checked = SendMessageW(g_auto_run_checkbox,
-                                                       BM_GETCHECK, 0, 0);
-                        SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
-                                     checked == BST_CHECKED ? BST_UNCHECKED :
-                                     BST_CHECKED, 0);
-                    }
-                    g_frontend_settings.auto_run_on_load =
-                        SendMessageW(g_auto_run_checkbox, BM_GETCHECK, 0, 0) ==
-                        BST_CHECKED;
-                    (void)simcity_frontend_settings_win32_save(
-                        &g_frontend_settings, g_settings_ini_path);
-                    set_status(g_frontend_settings.auto_run_on_load ?
-                        L"Auto-Run enabled for the next launch." :
-                        L"Auto-Run disabled. Adjacent ROMs will load and wait for Play.");
                     return 0;
                 case ID_WIDESCREEN: {
                     char error[256];
@@ -2550,20 +3411,39 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                             L"Widescreen disabled: authentic 256-pixel presentation restored.");
                         InvalidateRect(g_window, NULL, TRUE);
                     }
+                    update_controls();
                     return 0;
                 }
+                case ID_AUTO_RUN:
+                    if (lparam == 0) {
+                        LRESULT checked = SendMessageW(g_auto_run_checkbox,
+                                                       BM_GETCHECK, 0, 0);
+                        SendMessageW(g_auto_run_checkbox, BM_SETCHECK,
+                                     checked == BST_CHECKED ? BST_UNCHECKED :
+                                     BST_CHECKED, 0);
+                    }
+                    g_frontend_settings.auto_run_on_load =
+                        SendMessageW(g_auto_run_checkbox, BM_GETCHECK, 0, 0) ==
+                        BST_CHECKED;
+                    (void)simcity_frontend_settings_win32_save(
+                        &g_frontend_settings, g_settings_ini_path);
+                    set_status(g_frontend_settings.auto_run_on_load ?
+                        L"Auto-Run enabled for the next launch." :
+                        L"Auto-Run disabled. Adjacent ROMs will load and wait for Play.");
+                    return 0;
                 case ID_SNAPSHOT_SAVE: show_snapshot_window(1); return 0;
                 case ID_SNAPSHOT_LOAD: show_snapshot_window(0); return 0;
                 case ID_SNAPSHOT_SAVE_CURRENT: save_current_snapshot(); return 0;
                 case ID_SNAPSHOT_LOAD_CURRENT: load_current_snapshot(); return 0;
-                case ID_SCREENSHOT: capture_window_screenshot(); return 0;
+                case ID_SCREENSHOT: capture_core_screenshot(); return 0;
                 case ID_ABOUT:
                     {
                         static const wchar_t about[] =
-                            L"F1 - Welcome and shortcut guide\r\n\r\n"
-                            L"SimCity SNES Static Recompilation\r\n\r\n"
+                            L"F1 - Open the Welcome window\r\n\r\n"
+                            L"SimCity (SNES) Static Recompilation\r\n"
+                            L"Version 1.4.0\r\n\r\n"
                             L"Title: SimCity\r\n"
-                            L"Region: USA\r\n"
+                            L"Region: USA/Canada NTSC\r\n"
                             L"File type: .sfc";
                         if (IsWindow(g_info_window))
                             DestroyWindow(g_info_window);
@@ -2582,7 +3462,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 return 0;
             }
             if (wparam == VK_F1) {
-                show_welcome();
+                show_getting_started_window(0);
                 return 0;
             }
             if (wparam == VK_F2) {
@@ -2600,7 +3480,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 if (!g_game) start_rom_load(1);
                 return 0;
             }
-            if (wparam == VK_F8) { capture_window_screenshot(); return 0; }
+            if (wparam == VK_F8) { capture_core_screenshot(); return 0; }
             if (wparam == '1') { save_current_snapshot(); return 0; }
             if (wparam == '2') { load_current_snapshot(); return 0; }
             if (g_game && !g_paused && GetFocus() == g_window &&
@@ -2681,16 +3561,28 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                     simcity_recomp_destroy(g_game);
                     g_game = NULL;
                     utf8_to_wide(geometry_error, result->error,
-                        sizeof(result->error) / sizeof(result->error[0]));
-                    MessageBoxW(window, result->error,
-                                APP_TITLE, MB_OK | MB_ICONERROR);
+                                 ARRAY_COUNT(result->error));
+                    MessageBoxW(window, result->error, APP_TITLE,
+                                MB_OK | MB_ICONERROR);
                     free(result);
+                    (void)open_audio(1);
                     update_controls();
                     return 0;
                 }
             }
             g_loaded_snapshot_slot = -1;
             g_sram_last_flush_frame = 0u;
+            g_audio_last_fifo_dropped = 0u;
+            g_audio_last_underruns = 0u;
+            g_audio_last_queue_failures = 0u;
+            g_audio_fps_window_qpc = 0u;
+            g_audio_fps_window_frame = 0u;
+            g_audio_host_fps = 0.0;
+            g_presented_frame_count = 0u;
+            g_presented_fps_window_count = 0u;
+            g_presented_last_emu_frame = UINT32_MAX;
+            g_presented_host_fps = 0.0;
+            g_pacing_render_resync_frames = 0u;
             result->game = NULL;
             free(result);
             g_paused = 1;
@@ -2702,11 +3594,15 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 play_game();
             } else {
                 SetWindowTextW(window, LAUNCHER_TITLE);
-                set_status(L"SimCity (USA) is loaded and ready. Choose Play to start.");
+                set_status(L"SimCity is loaded and ready. Choose Play to start.");
                 SetFocus(g_pause_play_button);
             }
             return 0;
         }
+
+        case WM_APP_STARTUP_CONTINUE:
+            continue_startup_after_welcome();
+            return 0;
 
         case WM_CLOSE:
             if (InterlockedCompareExchange(&g_loading, 0, 0) != 0) {
@@ -2752,6 +3648,7 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     WNDCLASSEXW audio_class;
     WNDCLASSEXW snapshot_class;
     WNDCLASSEXW info_class;
+    WNDCLASSEXW getting_started_class;
     MSG message;
     (void)previous;
 
@@ -2787,7 +3684,7 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     window_class.hInstance = instance;
     window_class.hCursor = LoadCursorW(NULL, IDC_ARROW);
     window_class.hIcon = LoadIconW(NULL, IDI_APPLICATION);
-    window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    window_class.hbrBackground = NULL;
     window_class.lpszClassName = APP_CLASS_NAME;
     if (!RegisterClassExW(&window_class)) return 1;
 
@@ -2821,6 +3718,16 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     info_class.lpszClassName = INFO_CLASS_NAME;
     if (!RegisterClassExW(&info_class)) return 1;
 
+    ZeroMemory(&getting_started_class, sizeof(getting_started_class));
+    getting_started_class.cbSize = sizeof(getting_started_class);
+    getting_started_class.lpfnWndProc = getting_started_dialog_proc;
+    getting_started_class.hInstance = instance;
+    getting_started_class.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    getting_started_class.hIcon = LoadIconW(NULL, IDI_INFORMATION);
+    getting_started_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    getting_started_class.lpszClassName = GETTING_STARTED_CLASS_NAME;
+    if (!RegisterClassExW(&getting_started_class)) return 1;
+
     g_window = CreateWindowExW(
         WS_EX_CONTROLPARENT, APP_CLASS_NAME, LAUNCHER_TITLE,
         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -2830,13 +3737,12 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     initialize_paths_and_settings();
     ShowWindow(g_window, SW_SHOWNORMAL);
     UpdateWindow(g_window);
+    g_startup_pending = 1;
     if (!g_frontend_settings.welcome_shown) {
-        g_frontend_settings.welcome_shown = 1;
-        (void)simcity_frontend_settings_win32_save(
-            &g_frontend_settings, g_settings_ini_path);
-        show_welcome();
+        show_getting_started_window(1);
+    } else {
+        continue_startup_after_welcome();
     }
-    continue_startup_after_welcome();
 
     {
         int running = 1;
@@ -2848,12 +3754,47 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
             if (wait_result == WAIT_OBJECT_0) {
                 service_host_timer();
             } else if (wait_result == WAIT_OBJECT_0 + 1u) {
-                while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
+                uint32_t messages_processed = 0u;
+                while (messages_processed < MAX_HOST_MESSAGES_PER_PASS &&
+                       PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
                     int root_shortcut;
                     int game_key;
+                    ++messages_processed;
                     if (message.message == WM_QUIT) {
                         running = 0;
                         break;
+                    }
+                    if (IsWindow(g_getting_started_window) &&
+                        (message.hwnd == g_getting_started_window ||
+                         IsChild(g_getting_started_window, message.hwnd))) {
+                        if (message.message == WM_KEYDOWN &&
+                            message.wParam == VK_TAB) {
+                            HWND next = GetFocus() ==
+                                g_getting_started_state.close_button ?
+                                g_getting_started_state.text :
+                                g_getting_started_state.close_button;
+                            if (IsWindow(next)) {
+                                SetFocus(next);
+                                NotifyWinEvent(EVENT_OBJECT_FOCUS, next,
+                                               OBJID_CLIENT, CHILDID_SELF);
+                            }
+                            continue;
+                        }
+                        if (message.message == WM_KEYDOWN &&
+                            message.wParam == VK_RETURN) {
+                            SendMessageW(g_getting_started_window, WM_COMMAND,
+                                MAKEWPARAM(ID_GETTING_STARTED_CLOSE, BN_CLICKED),
+                                (LPARAM)g_getting_started_state.close_button);
+                            continue;
+                        }
+                        if (message.message == WM_KEYDOWN &&
+                            message.wParam == VK_ESCAPE) {
+                            DestroyWindow(g_getting_started_window);
+                            continue;
+                        }
+                        if (IsDialogMessageW(g_getting_started_window,
+                                             &message))
+                            continue;
                     }
                     if (IsWindow(g_info_window) &&
                         (message.hwnd == g_info_window ||
@@ -2872,8 +3813,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                          message.wParam == VK_F2 || message.wParam == VK_F3 ||
                          message.wParam == VK_F4 || message.wParam == VK_F5 ||
                          message.wParam == VK_F6 || message.wParam == VK_F7 ||
-                         message.wParam == VK_F8 ||
-                         message.wParam == '1' || message.wParam == '2');
+                         message.wParam == VK_F8 || message.wParam == '1' ||
+                         message.wParam == '2');
                     game_key =
                         (message.message == WM_KEYDOWN ||
                          message.message == WM_KEYUP) &&

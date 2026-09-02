@@ -26,15 +26,4 @@ using int64 = std::int64_t;
 #define alwaysinline inline
 #endif
 #endif
-struct SCStaticDspSettings { int InterpolationMethod = 2; bool SeparateEchoBuffer = false; };
-extern SCStaticDspSettings SCStaticSettings;
-inline bool S9xUWStaticSDSPBRRStep(std::uint16_t, const std::uint8_t*) { return true; }
-namespace BOOST {
-using uint8_t = std::uint8_t;
-using uint16_t = std::uint16_t;
-using uint32_t = std::uint32_t;
-using int8_t = std::int8_t;
-using int16_t = std::int16_t;
-using int32_t = std::int32_t;
-}
 #endif

@@ -1,17 +1,31 @@
 Third-Party Notices
 ===================
 
-SDL_GameControllerDB
---------------------
-Component: third_party/gamecontrollerdb.txt
-Upstream: https://github.com/mdqinc/SDL_GameControllerDB
+SDL3
+----
+Upstream: https://github.com/libsdl-org/SDL
+Version: release-3.4.10, pinned and hash-verified by CMake
 License: zlib
-License text: third_party/SDL_GameControllerDB-LICENSE.txt
+Runtime license file: SDL-LICENSE.txt
 
-The controller mapping database is a vendored upstream snapshot. The exact
-upstream revision was not recorded when it was imported. This project does not
-claim authorship of it. Any differences from the current upstream database must
-be treated as local modifications rather than represented as upstream work.
+SDL3 is statically linked for gamepad access only. SimCity uses Win32/GDI for
+presentation and DirectSound for speaker output. No external controller mapping
+database is bundled or loaded by default.
 
-Runtime packages place the database beside Launcher.exe as gamecontrollerdb.txt
-and include its license as SDL_GameControllerDB-LICENSE.txt.
+Snes9x S-SMP execution semantics
+--------------------------------
+Location: static-recomp/static-audio/snes9x-bapu-aot/smp
+License: static-recomp/static-audio/snes9x-bapu-aot/SNES9X-LICENSE.txt
+
+The retained SPC700 instruction semantics are constrained by SimCity's
+generated exact-PC/opcode authority. The generic runtime opcode switch is not
+compiled into production and no automatic emulator fallback exists.
+
+Project-owned S-DSP
+-------------------
+Location: static-recomp/static-audio/simcity-project-dsp
+
+This SimCity-owned implementation was adapted from the project-owned Jungle
+Strike S-DSP developed with Mesen and Snes9x as behavioural references. It is
+not a copied emulator DSP runtime. The older SPC_DSP source and helper files
+are absent from the production source tree.

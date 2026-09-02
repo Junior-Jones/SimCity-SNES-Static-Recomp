@@ -11,10 +11,10 @@
 #define SIMCITY_INPUT_SOURCE_GAMEPAD 1
 
 typedef enum SimCityWinBindingAction {
-    SC_WIN_BIND_UP = 0, SC_WIN_BIND_DOWN, SC_WIN_BIND_LEFT, SC_WIN_BIND_RIGHT,
-    SC_WIN_BIND_SNES_B, SC_WIN_BIND_SNES_A, SC_WIN_BIND_SNES_Y,
-    SC_WIN_BIND_SNES_X, SC_WIN_BIND_SNES_L, SC_WIN_BIND_SNES_R,
-    SC_WIN_BIND_START, SC_WIN_BIND_SELECT
+    SIMCITY_WIN_BIND_UP = 0, SIMCITY_WIN_BIND_DOWN, SIMCITY_WIN_BIND_LEFT, SIMCITY_WIN_BIND_RIGHT,
+    SIMCITY_WIN_BIND_SNES_B, SIMCITY_WIN_BIND_SNES_A, SIMCITY_WIN_BIND_SNES_Y,
+    SIMCITY_WIN_BIND_SNES_X, SIMCITY_WIN_BIND_SNES_L, SIMCITY_WIN_BIND_SNES_R,
+    SIMCITY_WIN_BIND_START, SIMCITY_WIN_BIND_SELECT
 } SimCityWinBindingAction;
 
 typedef struct SimCityFrontendSettingsWin32 {
@@ -22,6 +22,8 @@ typedef struct SimCityFrontendSettingsWin32 {
     int pause_on_focus_loss;
     int auto_run_on_load;
     int fullscreen_on_play;
+    int show_fps_counter;
+    int ntsc_frame_lock;
     int widescreen;
     int snapshot_slot;
     int input_source;

@@ -7,7 +7,6 @@ SMP smp;
 #include "iplrom.cpp"
 #include "memory.cpp"
 #include "timing.cpp"
-#ifdef SC_SMP_AOT
 bool SMP::sc_aot_fail(uint32 reason,uint16 pc,uint8 expected,uint8 actual){
   if(!sc_aot_failed_value){
     sc_aot_failed_value=1;sc_aot_fail_reason_value=reason;
@@ -22,24 +21,22 @@ void SMP::sc_aot_reset_metrics(){
   sc_aot_actual_opcode=0xff;
 }
 #include "sc_smp_aot_lookup.inc"
-#endif
 void SMP::enter(){
-#ifdef SC_SMP_AOT
   if(sc_aot_failed_value){clock=0;return;}
-#endif
   while(clock<0){
-#ifdef SC_SMP_AOT
     if(sc_aot_failed_value){clock=0;break;}
-#endif
     op_step();
   }
 }
 void SMP::power(){Processor::clock=0;timer0.target=timer1.target=timer2.target=0;reset();}
 void SMP::reset(){
-#ifdef SC_SMP_AOT
   sc_aot_reset_metrics();
-#endif
   for(unsigned n=0;n<=0xffff;n++)apuram[n]=0;
+  /* This runtime deliberately defines its reset ARAM image as all zero, which
+     matches the established SimCity/Mesen test environment.  Those initialized
+     bytes are therefore known.  All later writes and snapshots preserve the
+     mask explicitly, and any deliberately invalidated byte still fails closed. */
+  std::memset(aram_known,0xff,8192u);
   opcode_number=0;opcode_cycle=0;instruction_count=0;regs.pc=0xffc0;regs.sp=0xef;
   regs.B.a=0;regs.x=0;regs.B.y=0;regs.p=0x02;
   status.iplrom_enable=true;status.dsp_addr=0;status.ram00f8=status.ram00f9=0;
@@ -48,6 +45,6 @@ void SMP::reset(){
   timer0.stage2_ticks=timer1.stage2_ticks=timer2.stage2_ticks=0;
   timer0.stage3_ticks=timer1.stage3_ticks=timer2.stage3_ticks=0;
 }
-SMP::SMP(){apuram=new uint8[64*1024];}
-SMP::~SMP(){delete[] apuram;}
+SMP::SMP(){apuram=new uint8[64*1024];aram_known=new uint8[8192];}
+SMP::~SMP(){delete[] aram_known;delete[] apuram;}
 }

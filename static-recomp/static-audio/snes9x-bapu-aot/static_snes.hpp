@@ -1,6 +1,7 @@
 #ifndef SC_STATIC_SNES_HPP
 #define SC_STATIC_SNES_HPP
 #include "static_types.hpp"
+#include "simcity/simcity_dsp.h"
 namespace SC_STATIC_SNES {
 struct Processor { unsigned frequency = 0; int32 clock = 0; };
 #include "smp/smp.hpp"

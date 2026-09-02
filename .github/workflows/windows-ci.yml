@@ -25,8 +25,10 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Configure Visual Studio 2022 x64
-        run: cmake -S . -B "$env:RUNNER_TEMP\\static-recomp-build" -G "Visual Studio 17 2022" -A x64
+        run: cmake -S . -B "$env:RUNNER_TEMP\\static-recomp-build" -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON
 
       - name: Build Release
         run: cmake --build "$env:RUNNER_TEMP\\static-recomp-build" --config Release --parallel
 
+      - name: Run ROM-free release gates
+        run: ctest --test-dir "$env:RUNNER_TEMP\\static-recomp-build" -C Release --output-on-failure
