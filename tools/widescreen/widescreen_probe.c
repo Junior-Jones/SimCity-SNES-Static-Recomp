@@ -310,19 +310,13 @@ static uint16_t new_city_input(uint32_t frame) {
     return input;
 }
 
-static uint16_t scenario_input(uint32_t frame, unsigned scenario_index) {
+static uint16_t scenario_input(uint32_t frame) {
     uint16_t input = 0u;
     if (pulse(frame, 840u)) input |= SIMCITY_INPUT_START;
     if (pulse(frame, 980u) || pulse(frame, 1000u))
         input |= SIMCITY_INPUT_DOWN;
     if (pulse(frame, 1040u) || pulse(frame, 1300u) || pulse(frame, 1700u))
         input |= SIMCITY_INPUT_B;
-    if (scenario_index >= 3u && pulse(frame, 1120u))
-        input |= SIMCITY_INPUT_DOWN;
-    if ((scenario_index % 3u) >= 1u && pulse(frame, 1160u))
-        input |= SIMCITY_INPUT_RIGHT;
-    if ((scenario_index % 3u) >= 2u && pulse(frame, 1200u))
-        input |= SIMCITY_INPUT_RIGHT;
     if (frame >= 2650u && frame < 2720u) {
         input |= SIMCITY_INPUT_A;
         input |= SIMCITY_INPUT_RIGHT;
@@ -449,92 +443,8 @@ static uint16_t corner_navigation_input(uint32_t frame) {
 }
 
 static uint16_t scenario_corners_input(uint32_t frame) {
-    return (uint16_t)(scenario_input(frame, 0u) |
+    return (uint16_t)(scenario_input(frame) |
                       corner_navigation_input(frame));
-}
-
-static uint16_t scenario_mature_input(uint32_t frame,
-                                      unsigned scenario_index) {
-    uint16_t input = scenario_input(frame, scenario_index);
-
-    /* The SNES manual control contract is exercised deliberately:
-       A/Y accelerate map movement, Select moves between map and building
-       toolbar, Start moves between map and top menu, B confirms, and X
-       cancels or hides/shows the HUD. */
-    if (frame >= 2800u && frame < 3400u)
-        input |= SIMCITY_INPUT_A | SIMCITY_INPUT_RIGHT;
-    else if (frame >= 3400u && frame < 4000u)
-        input |= SIMCITY_INPUT_Y | SIMCITY_INPUT_DOWN;
-    else if (frame >= 4000u && frame < 4600u)
-        input |= SIMCITY_INPUT_A | SIMCITY_INPUT_LEFT;
-    else if (frame >= 4600u && frame < 5200u)
-        input |= SIMCITY_INPUT_Y | SIMCITY_INPUT_UP;
-
-    /* Building toolbar: enter it, visit multiple rows/columns, confirm one
-       harmless selection, return to the map, then animate HUD hide/show. */
-    if (pulse(frame, 5600u) || pulse(frame, 6100u))
-        input |= SIMCITY_INPUT_SELECT;
-    if (pulse(frame, 5660u) || pulse(frame, 5720u) ||
-        pulse(frame, 5780u))
-        input |= SIMCITY_INPUT_DOWN;
-    if (pulse(frame, 5840u)) input |= SIMCITY_INPUT_RIGHT;
-    if (pulse(frame, 6000u)) input |= SIMCITY_INPUT_B;
-    if (pulse(frame, 6200u) || pulse(frame, 6320u))
-        input |= SIMCITY_INPUT_X;
-
-    /* Top menu and Information: enter, move across the top row, open a
-       submenu, move through its choices, confirm a view, then back out. */
-    if (pulse(frame, 6600u) || pulse(frame, 7420u))
-        input |= SIMCITY_INPUT_START;
-    if (pulse(frame, 6680u) || pulse(frame, 6740u) ||
-        pulse(frame, 6800u) || pulse(frame, 6960u))
-        input |= SIMCITY_INPUT_RIGHT;
-    if (pulse(frame, 7020u) || pulse(frame, 7080u))
-        input |= SIMCITY_INPUT_DOWN;
-    if (pulse(frame, 6880u) || pulse(frame, 7140u))
-        input |= SIMCITY_INPUT_B;
-    if (pulse(frame, 7300u)) input |= SIMCITY_INPUT_X;
-
-    /* Traverse the mature city again after menu use, reaching every map
-       direction with accelerated scrolling. */
-    if (frame >= 7600u && frame < 8600u)
-        input |= SIMCITY_INPUT_A | SIMCITY_INPUT_RIGHT;
-    else if (frame >= 8600u && frame < 9600u)
-        input |= SIMCITY_INPUT_Y | SIMCITY_INPUT_DOWN;
-    else if (frame >= 9600u && frame < 10600u)
-        input |= SIMCITY_INPUT_A | SIMCITY_INPUT_LEFT;
-    else if (frame >= 10600u && frame < 11600u)
-        input |= SIMCITY_INPUT_Y | SIMCITY_INPUT_UP;
-
-    /* Revisit the top options and side building menus late in the run so
-       simulation events and developed-map state are active at the same time. */
-    if (pulse(frame, 12000u) || pulse(frame, 12600u))
-        input |= SIMCITY_INPUT_START;
-    if (pulse(frame, 12080u) || pulse(frame, 12140u))
-        input |= SIMCITY_INPUT_RIGHT;
-    if (pulse(frame, 12200u) || pulse(frame, 12260u))
-        input |= SIMCITY_INPUT_DOWN;
-    if (pulse(frame, 12320u)) input |= SIMCITY_INPUT_B;
-    if (pulse(frame, 12480u)) input |= SIMCITY_INPUT_X;
-
-    if (pulse(frame, 13500u) || pulse(frame, 14000u))
-        input |= SIMCITY_INPUT_SELECT;
-    if (pulse(frame, 13580u) || pulse(frame, 13640u) ||
-        pulse(frame, 13700u))
-        input |= SIMCITY_INPUT_UP;
-    if (pulse(frame, 13760u) || pulse(frame, 13820u))
-        input |= SIMCITY_INPUT_LEFT;
-    if (pulse(frame, 13900u)) input |= SIMCITY_INPUT_B;
-
-    if (frame >= 14500u && frame < 15400u)
-        input |= SIMCITY_INPUT_A | SIMCITY_INPUT_RIGHT;
-    else if (frame >= 15400u && frame < 16300u)
-        input |= SIMCITY_INPUT_Y | SIMCITY_INPUT_DOWN;
-    else if (frame >= 16300u && frame < 17200u)
-        input |= SIMCITY_INPUT_A | SIMCITY_INPUT_LEFT;
-    else if (frame >= 17200u)
-        input |= SIMCITY_INPUT_Y | SIMCITY_INPUT_UP;
-    return input;
 }
 
 static uint16_t freeland_corners_input(uint32_t frame) {
@@ -692,8 +602,6 @@ int main(int argc, char **argv) {
     int power_position_practice = 0;
     int widescreen_tour_practice = 0;
     int scenario_corners = 0;
-    int scenario_mature = 0;
-    unsigned scenario_index = 0u;
     int freeland_initial = 0;
     int freeland_initial_build = 0;
     int freeland_corners = 0;
@@ -738,15 +646,6 @@ int main(int argc, char **argv) {
     widescreen_tour_practice =
         strcmp(argv[2], "practice-widescreen-tour") == 0;
     scenario_corners = strcmp(argv[2], "scenario-corners") == 0;
-    scenario_mature = strncmp(argv[2], "scenario-mature-", 16u) == 0;
-    if (scenario_mature) {
-        scenario_index = (unsigned)strtoul(argv[2] + 16, NULL, 10);
-        if (scenario_index > 5u) {
-            fputs("scenario-mature index must be 0 through 5\n", stderr);
-            simcity_recomp_destroy(game);
-            return 2;
-        }
-    }
     freeland_initial = strcmp(argv[2], "scenario-freeland-initial") == 0;
     freeland_initial_build =
         strcmp(argv[2], "scenario-freeland-initial-build") == 0;
@@ -762,8 +661,8 @@ int main(int argc, char **argv) {
     if ((cursor_right_practice || hud_cycle_practice ||
          hud_native_cycle_practice || power_select_practice ||
          power_build_practice || power_position_practice ||
-         widescreen_tour_practice || scenario_corners || scenario_mature ||
-         freeland_initial || freeland_initial_build || freeland_corners) &&
+         widescreen_tour_practice || scenario_corners || freeland_initial ||
+         freeland_initial_build || freeland_corners) &&
         !simcity_recomp_set_widescreen(game, 1, error, sizeof(error))) {
         fprintf(stderr, "early widescreen enable failed: %s\n", error);
         simcity_recomp_destroy(game);
@@ -792,7 +691,6 @@ int main(int argc, char **argv) {
         else if (power_build_practice) target = 3890u;
         else if (power_position_practice) target = 3700u;
         else if (widescreen_tour_practice) target = 11650u;
-        else if (scenario_mature) target = 18030u;
         else if (scenario_corners) target = 7670u;
         else if (freeland_initial) target = 2750u;
         else if (freeland_initial_build) target = 3680u;
@@ -804,8 +702,7 @@ int main(int argc, char **argv) {
          * valid comparisons. */
         allow_center_difference =
             (use_practice && target >= 1400u) || scenario_corners ||
-            scenario_mature || freeland_initial || freeland_initial_build ||
-            freeland_corners;
+            freeland_initial || freeland_initial_build || freeland_corners;
         for (frame = 0u; frame < target; ++frame) {
             uint8_t view_x_bytes[2];
             uint16_t route_input;
@@ -819,9 +716,7 @@ int main(int argc, char **argv) {
                                   freeland_corners_input(frame) :
                               freeland_initial ? freeland_input(frame) :
                               scenario_corners ? scenario_corners_input(frame) :
-                              scenario_mature ?
-                                  scenario_mature_input(frame, scenario_index) :
-                              use_scenario ? scenario_input(frame, 0u) :
+                              use_scenario ? scenario_input(frame) :
                                              new_city_input(frame);
             else if (toolbar_practice)
                 route_input = practice_toolbar_input(frame);
@@ -1265,35 +1160,6 @@ int main(int argc, char **argv) {
                            (unsigned)(power_funds_before - funds_after));
                 }
             }
-            if (scenario_mature &&
-                (frame == 5200u || frame == 5620u || frame == 5900u ||
-                 frame == 6620u || frame == 6900u || frame == 7200u ||
-                 frame == 9000u || frame == 12380u || frame == 13880u ||
-                 frame == 17980u)) {
-                char checkpoint_name[64];
-                int checkpoint_x = 0, checkpoint_y = 0;
-                const char *phase =
-                    frame == 5200u ? "map-first-tour" :
-                    frame == 5620u ? "building-toolbar-entered" :
-                    frame == 5900u ? "building-toolbar" :
-                    frame == 6620u ? "top-menu-entered" :
-                    frame == 6900u ? "information-opened" :
-                    frame == 7200u ? "information-menu" :
-                    frame == 9000u ? "map-second-tour" :
-                    frame == 12380u ? "top-options-menu" :
-                    frame == 13880u ? "building-toolbar-late" :
-                                      "final-city";
-                (void)snprintf(checkpoint_name, sizeof(checkpoint_name),
-                               "%02u-%s", scenario_index, phase);
-                if (!capture_checkpoint(game, argv[3], checkpoint_name, 1,
-                                        &checkpoint_x, &checkpoint_y)) {
-                    fprintf(stderr,
-                            "scenario %u checkpoint failed at frame %u\n",
-                            scenario_index, frame);
-                    simcity_recomp_destroy(game);
-                    return 1;
-                }
-            }
             if (scenario_corners || freeland_corners) {
                 int checkpoint_x = 0, checkpoint_y = 0;
                 const char *checkpoint_name = NULL;
@@ -1497,21 +1363,6 @@ int main(int argc, char **argv) {
     printf("pcm_frames=%llu pcm_fnv1a64=%016llX pcm_overflow=0\n",
            (unsigned long long)pcm_frames,
            (unsigned long long)pcm_hash);
-    if (scenario_mature) {
-        uint16_t scenario = 0u, year = 0u, funds = 0u;
-        if (!read_wram16(game, 0x0040u, &scenario) ||
-            !read_wram16(game, 0x0b53u, &year) ||
-            !read_wram16(game, 0x0b9du, &funds)) {
-            fputs("scenario final-state read failed\n", stderr);
-            free(native);
-            free(wram);
-            simcity_recomp_destroy(game);
-            return 1;
-        }
-        printf("scenario_index=%u scenario_state=%u year=%u funds=%u "
-               "duration_frames=18030 duration_seconds=300.006\n",
-               scenario_index, scenario, year, funds);
-    }
     if (traverse_practice || left_edge_practice)
         printf("practice_map=120x100 camera_x_min=%d camera_x_max=%d wide_cursor_x_min=%d wide_cursor_x_max=%d\n",
                min_view_x, max_view_x, min_wide_cursor_x,

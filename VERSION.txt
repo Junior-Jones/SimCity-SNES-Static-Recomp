@@ -9,7 +9,6 @@ ROM: required externally and not included
 Changes in 1.4.1:
 - Recovered the missing exact-ROM S-CPU contexts at 00:B033 through 00:B03C that can occur while developed scenario cities are active.
 - Added a conservative closure guard for the remaining decodable S-CPU contexts and verified that the current authority has no additional missing decodable contexts.
-- Added six deterministic 300-second Wide Screen scenario routes covering developed-city map movement, toolbar and menu navigation, Information screens, HUD toggling and continuous audio.
 
 Previous release changes in 1.4.0:
 - Ported the current Jungle Strike native frontend structure, including its accessible dialogs, exact rational NTSC pacing, controller latch, quick snapshots, DirectSound output, audio diagnostics and settings persistence.
