@@ -52,6 +52,26 @@ else()
 endif()
 add_test(NAME simcity-input-contract COMMAND simcity-input-contract-test)
 
+add_executable(simcity-frontend-core-test
+    simcity_frontend_core_test.c
+    simcity_app_core.c
+)
+target_include_directories(simcity-frontend-core-test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/static-recomp/include"
+)
+target_link_libraries(simcity-frontend-core-test PRIVATE
+    simcity-static-recomp)
+target_compile_definitions(simcity-frontend-core-test PRIVATE
+    _CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+    target_compile_options(simcity-frontend-core-test PRIVATE /W4 /WX)
+else()
+    target_compile_options(simcity-frontend-core-test PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_test(NAME simcity-frontend-core COMMAND simcity-frontend-core-test)
+
 add_executable(simcity-settings-input-contract-test
     simcity_settings_input_contract_test.c
     simcity_frontend_settings_win32.c

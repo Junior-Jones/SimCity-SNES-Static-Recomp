@@ -1,12 +1,17 @@
 SimCity SNES Static Recomp
-Version: 1.4.0
+Version: 1.4.1
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32/GDI; SDL3 gamepad input
 Audio: Full Static 32,040 Hz core PCM; DirectSound speaker output
 ROM: required externally and not included
 
-Changes in 1.4.0:
+Changes in 1.4.1:
+- Recovered the missing exact-ROM S-CPU contexts at 00:B033 through 00:B03C that can occur while developed scenario cities are active.
+- Added a conservative closure guard for the remaining decodable S-CPU contexts and verified that the current authority has no additional missing decodable contexts.
+- Added six deterministic 300-second Wide Screen scenario routes covering developed-city map movement, toolbar and menu navigation, Information screens, HUD toggling and continuous audio.
+
+Previous release changes in 1.4.0:
 - Ported the current Jungle Strike native frontend structure, including its accessible dialogs, exact rational NTSC pacing, controller latch, quick snapshots, DirectSound output, audio diagnostics and settings persistence.
 - Retained and adapted SimCity's real 398x239 Wide Screen feature, its default-on toolbar control, runtime switching and Display/Widescreen setting.
 - Corrected windowed presentation to preserve the active 256- or 398-pixel framebuffer aspect instead of forcing 4:3 onto Wide Screen output.

@@ -1,9 +1,9 @@
 {
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
-  "version": "1.4.0",
-  "file_count": 283,
-  "total_bytes": 18908306,
+  "version": "1.4.1",
+  "file_count": 286,
+  "total_bytes": 19139457,
   "files": [
     {
       "path": ".gitattributes",
@@ -67,8 +67,8 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 3479,
-      "sha256": "9146c9c59c57f2158c5a44ebcdf24681e8a73c933934e1ca321fe84481bcc334"
+      "size": 4004,
+      "sha256": "1f9685e8a9c8b7c143c4af3991fca85b350103ae50ed74907fac118b61bb25cf"
     },
     {
       "path": "Wide Screen - 1.4.0.txt",
@@ -92,8 +92,8 @@
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
-      "size": 6686,
-      "sha256": "dd374d567c1220e2a2979464c13d01a24e2bb45b77fc6223f74a18f31a990c80"
+      "size": 7379,
+      "sha256": "5108bac1cb4094b61fdd372060c3218646e96fa9cdf335197fc9d04836837314"
     },
     {
       "path": "frontend/windows/launcher_version.rc",
@@ -167,8 +167,8 @@
     },
     {
       "path": "static-recomp/CMakeLists.txt",
-      "size": 8619,
-      "sha256": "4ea479a81569cfea4240081334f9901669ac182d796ed0a8f41cc932395ba444"
+      "size": 8865,
+      "sha256": "1f878e09e2631e8308c76c6167d19bb6067ae4bf7c2f6ae808dd84bd5fa42df4"
     },
     {
       "path": "static-recomp/generated/SC-COMPACT-GENERATED-RECEIPT.json",
@@ -179,6 +179,11 @@
       "path": "static-recomp/generated/SC-CONTEXT-PRUNING-RECEIPT.json",
       "size": 634598,
       "sha256": "e0a02ffb23cd89ffd28595aaed92c0b91cc51cf7c7862232fee6905189743b58"
+    },
+    {
+      "path": "static-recomp/generated/SC-V36-CLOSURE-GUARD-MANIFEST.json",
+      "size": 66500,
+      "sha256": "45bd6cc5db199f10ce6ef1276eb601f6fce19b9e4128eb52ad8c55b1b8fe496b"
     },
     {
       "path": "static-recomp/generated/audio/epoch-topology/sc_audio_epoch_registry.c",
@@ -257,8 +262,13 @@
     },
     {
       "path": "static-recomp/generated/sc_v35_town_route_index.c",
-      "size": 13803,
-      "sha256": "0d01c57c1f0fce7441a395f3d56cb350350972ccec08dc1c3f19fa80122c30a9"
+      "size": 13854,
+      "sha256": "634f3d7e66c88d0ffb9ff6074145092834dbac18b16997dc3215cc2a21908037"
+    },
+    {
+      "path": "static-recomp/generated/sc_v36_closure_guard_dispatch.c",
+      "size": 151846,
+      "sha256": "fc1419dbb5b55a2f8d5be0a6e0088901570e57a3528824d11e0590fc7c6cd61f"
     },
     {
       "path": "static-recomp/generated/v11-shards/sc_v11_cpu_group_00020.c",
@@ -717,8 +727,8 @@
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_0002C.c",
-      "size": 161402,
-      "sha256": "c153520bec8a67e483ee30e60bd2896cbfa9e9f6ee9ea635866d4d7f4e0c7eae"
+      "size": 162928,
+      "sha256": "ddd142b9e17026b623e6ae862c2b3c27495a87feec751b992f2a25fa68e883c1"
     },
     {
       "path": "static-recomp/generated/v35-shards/sc_v35_group_0002D.c",
@@ -1401,6 +1411,11 @@
       "sha256": "5ba9d4d2ef1b7045af916f4dace0b5e9a56be47df55c1c101ac1030108c4e5ee"
     },
     {
+      "path": "tools/audit_current_scpu_authority.py",
+      "size": 2753,
+      "sha256": "6cee72095a6f416655e037d88f94ef1e87db80e10d51c6b9b769cfd5c30e26aa"
+    },
+    {
       "path": "tools/compact_generated_core.py",
       "size": 7002,
       "sha256": "d710c8b6b7d48cffd40f13a059b76cf25b153eec19f0f23ab8ac0ba76aad18ee"
@@ -1417,8 +1432,8 @@
     },
     {
       "path": "tools/widescreen/widescreen_probe.c",
-      "size": 66456,
-      "sha256": "c8a435eec66331ba92b5fd44e316b8ef4da115eedde17c3086b23153271b7f77"
+      "size": 73467,
+      "sha256": "3e2d5f1cbe476c8b1ab68c7cb1707582b72e07c4e8c1cbc391514c5b52fb0d92"
     }
   ]
 }

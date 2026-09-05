@@ -50,6 +50,7 @@ set(SIMCITY_STATIC_RECOMP_SOURCES
     ${SIMCITY_V34_SHARD_SOURCES}
     generated/sc_v35_town_route_index.c
     ${SIMCITY_V35_SHARD_SOURCES}
+    generated/sc_v36_closure_guard_dispatch.c
     static-audio/simcity-project-dsp/simcity_dsp.c
     static-audio/snes9x-bapu-aot/smp/smp.cpp
     static-audio/snes9x-bapu-aot/dsp/sdsp.cpp
@@ -92,6 +93,7 @@ if(MSVC)
     ${SIMCITY_V34_SHARD_SOURCES}
         generated/sc_v35_town_route_index.c
     ${SIMCITY_V35_SHARD_SOURCES}
+        generated/sc_v36_closure_guard_dispatch.c
         PROPERTIES COMPILE_OPTIONS "/W0"
     )
 else()
@@ -112,6 +114,7 @@ else()
     ${SIMCITY_V34_SHARD_SOURCES}
         generated/sc_v35_town_route_index.c
     ${SIMCITY_V35_SHARD_SOURCES}
+        generated/sc_v36_closure_guard_dispatch.c
         PROPERTIES COMPILE_OPTIONS "-w"
     )
 endif()
@@ -197,6 +200,7 @@ if(MSVC)
         ${SIMCITY_V34_SHARD_SOURCES}
         generated/sc_v35_town_route_index.c
         ${SIMCITY_V35_SHARD_SOURCES}
+        generated/sc_v36_closure_guard_dispatch.c
         PROPERTIES COMPILE_OPTIONS "/W0;/O1"
     )
 else()
@@ -207,6 +211,7 @@ else()
         ${SIMCITY_V34_SHARD_SOURCES}
         generated/sc_v35_town_route_index.c
         ${SIMCITY_V35_SHARD_SOURCES}
+        generated/sc_v36_closure_guard_dispatch.c
         PROPERTIES COMPILE_OPTIONS "-w;-O1"
     )
 endif()

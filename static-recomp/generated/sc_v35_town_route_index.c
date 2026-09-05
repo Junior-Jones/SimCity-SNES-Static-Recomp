@@ -1,5 +1,6 @@
 /* AUTO-GENERATED bounded town-route dispatch index. */
 #include "sc_v11_runtime.h"
+int sc_v36_closure_guard_cpu_step(SCV11Runtime*,uint32_t,uint8_t,uint8_t,uint8_t);
 int sc_v35_group_00020(SCV11Runtime*,uint32_t,uint8_t,uint8_t,uint8_t);
 int sc_v35_group_00021(SCV11Runtime*,uint32_t,uint8_t,uint8_t,uint8_t);
 int sc_v35_group_00022(SCV11Runtime*,uint32_t,uint8_t,uint8_t,uint8_t);
@@ -203,5 +204,5 @@ int sc_v35_town_route_cpu_step(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_
   default: result=-1; break;
   }
   if(result>=0)return result;
-  return sc_v11_fail(r,address,"unknown PC/E/M/X after generated town-route authority");
+  return sc_v36_closure_guard_cpu_step(r,address,m,x,e);
 }

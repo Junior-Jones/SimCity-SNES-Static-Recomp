@@ -178,6 +178,41 @@ int sc_v35_group_0002C(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint
       SC_STATIC_CONTEXT_END();
     }
     break;
+  case 0x00B033u:
+    if(m==1u&&x==1u&&e==0u){ /* FD 9B 0A ; recovered exact-ROM town route */
+      SC_STATIC_CONTEXT_BEGIN(0x00B033u,3u,0x0Au,0xB036u);
+      sc_v11_op_sbc(r,sc_v11_bus_read8(r,sc_v11_ea_absx(r,0x0A9Bu)),8u);sc_v11_scheduler_internal_cycle(r,1u);if((c->p&SC_FLAG_D)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x00B036u:
+    if(m==1u&&x==1u&&e==0u){ /* 29 07 ; recovered exact-ROM town route */
+      SC_STATIC_CONTEXT_BEGIN(0x00B036u,2u,0x07u,0xB038u);
+      sc_v11_op_and(r,0x0007u,8u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x00B038u:
+    if(m==1u&&x==1u&&e==0u){ /* A8 ; recovered exact-ROM town route */
+      SC_STATIC_CONTEXT_BEGIN(0x00B038u,1u,0xA8u,0xB039u);
+      c->y=(uint16_t)(c->a&0xffu);sc_v11_set_nz8(c,(uint8_t)c->y);sc_v11_scheduler_idle_or_read(r);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x00B039u:
+    if(m==1u&&x==1u&&e==0u){ /* B9 B9 B0 ; recovered exact-ROM town route */
+      SC_STATIC_CONTEXT_BEGIN(0x00B039u,3u,0xB0u,0xB03Cu);
+      sc_v11_op_lda(r,sc_v11_bus_read8(r,sc_v11_ea_absy(r,0xB0B9u)),8u);sc_v11_scheduler_internal_cycle(r,1u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
+  case 0x00B03Cu:
+    if(m==1u&&x==1u&&e==0u){ /* 9D AF 0A ; recovered exact-ROM town route */
+      SC_STATIC_CONTEXT_BEGIN(0x00B03Cu,3u,0x0Au,0xB03Fu);
+      sc_v11_bus_write8(r,sc_v11_ea_absx(r,0x0AAFu),(uint8_t)c->a);sc_v11_scheduler_internal_cycle(r,1u);
+      SC_STATIC_CONTEXT_END();
+    }
+    break;
   case 0x00B03Fu:
     if(m==1u&&x==1u&&e==0u){ /* 60 ; generated town route */
       SC_STATIC_CONTEXT_BEGIN(0x00B03Fu,1u,0x60u,0xB040u);
