@@ -7,7 +7,7 @@
   "original": {
     "region": "USA"
   },
-  "status": "complete",
+  "status": "released",
   "targets": [
     "Windows"
   ],
@@ -29,5 +29,5 @@
       "url": "https://github.com/Junior-Jones/SimCity-SNES-Static-Recomp/blob/main/README.md"
     }
   ],
-  "notes": "Includes working experimental widescreen support. No further work is currently planned."
+  "notes": "Includes experimental widescreen support; visual correctness has not been fully verified."
 }
