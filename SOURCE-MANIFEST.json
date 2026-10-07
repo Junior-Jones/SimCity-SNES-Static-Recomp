@@ -2,8 +2,8 @@
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
   "version": "1.4.1",
-  "file_count": 285,
-  "total_bytes": 19123068,
+  "file_count": 286,
+  "total_bytes": 19123983,
   "files": [
     {
       "path": ".gitattributes",
@@ -19,6 +19,11 @@
       "path": ".gitignore",
       "size": 149,
       "sha256": "1cbd398f1899b8558e46bdf9a7ca80cb0934459e9d037041220ec0237892b64e"
+    },
+    {
+      "path": ".recomp.json",
+      "size": 915,
+      "sha256": "b337f2e72fef12e95d66c229e12112e6fcc694bec1cf8ef662031dbdd9bcdf06"
     },
     {
       "path": "Audio - 1.4.0.txt",
