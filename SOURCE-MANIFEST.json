@@ -3,7 +3,7 @@
   "platform": "Windows",
   "version": "1.4.1",
   "file_count": 286,
-  "total_bytes": 19123983,
+  "total_bytes": 19124020,
   "files": [
     {
       "path": ".gitattributes",
@@ -22,8 +22,8 @@
     },
     {
       "path": ".recomp.json",
-      "size": 915,
-      "sha256": "b337f2e72fef12e95d66c229e12112e6fcc694bec1cf8ef662031dbdd9bcdf06"
+      "size": 952,
+      "sha256": "7453e557e242722b44a429cb85d8e853a0e0467f4df7e9a5ba19ec843e05e521"
     },
     {
       "path": "Audio - 1.4.0.txt",

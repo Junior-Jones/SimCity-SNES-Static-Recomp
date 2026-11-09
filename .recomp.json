@@ -29,5 +29,8 @@
       "url": "https://github.com/Junior-Jones/SimCity-SNES-Static-Recomp/blob/main/README.md"
     }
   ],
-  "notes": "Includes experimental widescreen support; visual correctness has not been fully verified."
+  "notes": "Includes experimental widescreen support; visual correctness has not been fully verified.",
+  "tags": [
+    "City-building"
+  ]
 }
