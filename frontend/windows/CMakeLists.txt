@@ -186,10 +186,15 @@ add_custom_command(TARGET simcity-launcher POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
         "$<TARGET_FILE_DIR:simcity-launcher>/THIRD-PARTY-NOTICES.txt"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/recomplauncher.json"
+        "$<TARGET_FILE_DIR:simcity-launcher>/recomplauncher.json"
     VERBATIM
 )
 if(NOT SIMCITY_BUILD_HEADED_QA)
     install(TARGETS simcity-launcher RUNTIME DESTINATION . COMPONENT Runtime)
+    install(FILES "${CMAKE_SOURCE_DIR}/recomplauncher.json"
+        DESTINATION . COMPONENT Runtime)
 endif()
 install(FILES "${SIMCITY_SDL_SOURCE_DIR}/LICENSE.txt"
     DESTINATION . RENAME SDL-LICENSE.txt COMPONENT Runtime)

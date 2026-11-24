@@ -1,4 +1,4 @@
-SimCity (SNES) Static Recompilation 2.0.0
+SimCity (SNES) Static Recompilation 2.0.1
 Windows x64
 
 Getting started

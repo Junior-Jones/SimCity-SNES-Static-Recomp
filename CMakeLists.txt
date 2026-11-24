@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 if(POLICY CMP0091)
     cmake_policy(SET CMP0091 NEW)
 endif()
-project(SimCitySNESStaticRecomp VERSION 2.0.0 LANGUAGES C CXX)
+project(SimCitySNESStaticRecomp VERSION 2.0.1 LANGUAGES C CXX)
 
 include(CTest)
 

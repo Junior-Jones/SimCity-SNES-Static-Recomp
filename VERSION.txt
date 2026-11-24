@@ -1,8 +1,13 @@
 SimCity SNES Static Recomp
-Version: 2.0.0
+Version: 2.0.1
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32/GDI; SDL3 gamepad input
+
+Changes in 2.0.1:
+- Added RecompLauncher Easy Setup, Full screen and Wide Screen settings,
+  save-folder integration, and playback-log discovery.
+- Launcher.exe accepts --game <path> to start directly with the selected ROM.
 
 Changes in 2.0.0:
 New Features:
