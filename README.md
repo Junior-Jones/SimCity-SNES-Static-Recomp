@@ -1,4 +1,8 @@
-# SimCity SNES Static Recomp 2.0.0
+# SimCity SNES Static Recomp 2.0.1
+
+<a href="https://recomplauncher.com/game/simcity-snes-static-recomp"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
+RecompLauncher can start SimCity with your selected ROM and manage its display settings and saves. To start directly without RecompLauncher, run `Launcher.exe --game "path to your SimCity ROM.sfc"`. Opening `Launcher.exe` without arguments still uses the normal startup flow.
 
 Native Windows static recompilation frontend and core for SimCity on the Super
 Nintendo Entertainment System.

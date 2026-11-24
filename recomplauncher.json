@@ -1,0 +1,59 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "SimCity (SNES)",
+  "repo": "Junior-Jones/SimCity-SNES-Static-Recomp",
+  "inputs": [
+    {
+      "id": "game",
+      "role": "game",
+      "label": "Your own unheadered USA/Canada NTSC SimCity SNES ROM (512 KiB).",
+      "formats": [{ "type": "file", "extensions": ["sfc", "smc"] }],
+      "dumps": [{ "name": "SimCity (USA)", "size": 524288, "crc32": "8aedd3a1" }],
+      "sha256": "e9c0bc05511e05a0d7c3e7cc42e761e1e8e532d46f59b9854b6902e1a2e9dd0a"
+    }
+  ],
+  "start": {
+    "program": ["Launcher.exe"],
+    "args": ["--game={input:game}"]
+  },
+  "config": [
+    {
+      "id": "main",
+      "format": "ini",
+      "file": [{ "path": "{install}/settings.ini" }]
+    }
+  ],
+  "saves": ["{install}/Saves"],
+  "folders": {
+    "saves": [{ "path": "{install}/Saves" }],
+    "logs": [{ "path": "{install}/Logs" }]
+  },
+  "settings": [
+    {
+      "id": "fullscreen",
+      "label": "Full screen on Play",
+      "help": "Starts the game in full screen.",
+      "in": "main",
+      "choices": [
+        { "label": "Off", "set": { "General/FullScreenOnPlay": "0" } },
+        { "label": "On", "set": { "General/FullScreenOnPlay": "1" } }
+      ],
+      "defaults": { "General/FullScreenOnPlay": "0" }
+    },
+    {
+      "id": "widescreen",
+      "label": "Wide Screen",
+      "help": "Shows more of the city without stretching the image.",
+      "in": "main",
+      "choices": [
+        { "label": "Original", "set": { "Display/Widescreen": "0" } },
+        { "label": "Wide Screen", "set": { "Display/Widescreen": "1" } }
+      ],
+      "defaults": { "Display/Widescreen": "1" }
+    }
+  ],
+  "actions": [
+    { "id": "saves", "label": "Saves", "help": "In-game saves and snapshots.", "open": "saves" }
+  ]
+}

@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <commctrl.h>
+#include <shellapi.h>
 
 #include "simcity_audio_output_dsound_win32.h"
 #include "simcity_battery_writer.h"
@@ -1601,7 +1602,7 @@ static int format_screenshot_state(char *report, size_t capacity, uint32_t image
     (void)display_pixels(&source_width);
     GetLocalTime(&now);
     const int size = snprintf(report, capacity,
-        "SimCity 2.0.0 screenshot diagnostics (v2)\r\n"
+        "SimCity 2.0.1 screenshot diagnostics (v2)\r\n"
         "Captured local time: %04u-%02u-%02u %02u:%02u:%02u.%03u\r\n"
         "Capture: %s; source: %ux%u\r\n"
         "Mode: %s; paused: %s; core failed: %s\r\n"
@@ -4157,7 +4158,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                         static const wchar_t about[] =
                             L"F1 - Open the Welcome window\r\n\r\n"
                             L"SimCity (SNES) Static Recompilation\r\n"
-                            L"Version 2.0.0\r\n\r\n"
+                            L"Version 2.0.1\r\n\r\n"
                             L"Title: SimCity\r\n"
                             L"Region: USA/Canada NTSC\r\n"
                             L"File type: .sfc";
@@ -4379,6 +4380,32 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
     return DefWindowProcW(window, message, wparam, lparam);
 }
 
+/* Use Windows argv splitting so paths can contain spaces and Unicode. */
+static int startup_game_path(wchar_t path[PATH_CAPACITY]) {
+    int argc;
+    int result = 0;
+    wchar_t **argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (!argv) return -1;
+    for (int i = 1; i < argc; ++i) {
+        const wchar_t *value = NULL;
+        if (wcscmp(argv[i], L"--game") == 0) {
+            if (++i < argc && wcsncmp(argv[i], L"--", 2) != 0) value = argv[i];
+            else { result = -1; break; }
+        } else if (wcsncmp(argv[i], L"--game=", 7) == 0) {
+            value = argv[i] + 7;
+        }
+        if (value) {
+            DWORD count;
+            if (result || !*value) { result = -1; break; }
+            count = GetFullPathNameW(value, PATH_CAPACITY, path, NULL);
+            if (!count || count >= PATH_CAPACITY) { result = -1; break; }
+            result = 1;
+        }
+    }
+    LocalFree(argv);
+    return result;
+}
+
 int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                     _In_ PWSTR command_line, _In_ int show_command) {
     WNDCLASSEXW window_class;
@@ -4387,6 +4414,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     WNDCLASSEXW info_class;
     WNDCLASSEXW getting_started_class;
     MSG message;
+    wchar_t explicit_rom[PATH_CAPACITY];
+    int explicit_start;
     (void)previous;
 
     g_instance = instance;
@@ -4398,6 +4427,12 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     }
     (void)command_line;
     (void)show_command;
+    explicit_start = startup_game_path(explicit_rom);
+    if (explicit_start < 0) {
+        MessageBoxW(NULL, L"Specify one ROM file with --game <path>.",
+                    APP_TITLE, MB_OK | MB_ICONERROR);
+        return 1;
+    }
     if (!QueryPerformanceFrequency(&g_qpc_frequency) ||
         g_qpc_frequency.QuadPart <= 0) return 1;
     {
@@ -4475,7 +4510,12 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
     ShowWindow(g_window, SW_SHOWNORMAL);
     UpdateWindow(g_window);
     g_startup_pending = 1;
-    if (!g_frontend_settings.welcome_shown) {
+    if (explicit_start) {
+        g_startup_pending = 0;
+        SetWindowTextW(g_rom_path, explicit_rom);
+        reset_pacing_clock();
+        start_rom_load(1);
+    } else if (!g_frontend_settings.welcome_shown) {
         show_getting_started_window(1);
     } else {
         continue_startup_after_welcome();
