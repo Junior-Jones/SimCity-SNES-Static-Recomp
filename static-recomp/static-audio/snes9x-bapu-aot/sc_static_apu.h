@@ -19,6 +19,14 @@ typedef struct SCStaticTraceCallbacks {
     void *context;
 } SCStaticTraceCallbacks;
 
+/* Minimal state mirrored by the CPU bus after each audio rendezvous. */
+typedef struct SCStaticApuExecutionStatus {
+    uint64_t smp_cycles, smp_instructions, aot_validated_instructions;
+    uint32_t code_write_barriers;
+    uint16_t smp_pc;
+    uint8_t current_epoch, aot_failed;
+} SCStaticApuExecutionStatus;
+
 typedef struct SCStaticApuStatus {
     uint64_t synchronized_master_clock;
     uint64_t smp_cycles;
@@ -84,6 +92,11 @@ void sc_static_sdsp_primitive_step(uint8_t phase);
 int sc_static_sdsp_brr_step(uint16_t address,const uint8_t *aram);
 void sc_static_sdsp_report_failure(uint32_t reason,uint8_t phase);
 int sc_static_apu_sync_to_master(uint64_t master_clock,char *error,size_t error_capacity);
+int sc_static_apu_execution_status(SCStaticApuExecutionStatus *status);
+/* Synchronize every bus interval as before. Return 0 on failure, 1 if the
+   execution mirror is still current, or 2 after writing a new mirror. */
+int sc_static_apu_sync_execution(uint64_t master_clock,uint64_t mirrored_cycle,
+    SCStaticApuExecutionStatus *status,char *error,size_t error_capacity);
 int sc_static_apu_cpu_write_port(uint64_t master_clock,unsigned port,uint8_t value,char *error,size_t error_capacity);
 uint8_t sc_static_apu_cpu_read_port(uint64_t master_clock,unsigned port,int *ok,char *error,size_t error_capacity);
 int sc_static_apu_status(SCStaticApuStatus *status);

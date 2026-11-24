@@ -52,6 +52,7 @@ int main(void)
     CHECK(settings.welcome_shown == 0);
     CHECK(settings.show_fps_counter == 0);
     CHECK(settings.ntsc_frame_lock == 1);
+    CHECK(settings.auto_run_on_load == 1);
     CHECK(settings.widescreen == 1);
     for (index = 0; index < SIMCITY_WIN_BINDING_COUNT; ++index) {
         CHECK(settings.bindings[index] == accessible_keys[index]);
@@ -65,6 +66,14 @@ int main(void)
     memset(&loaded, 0xff, sizeof(loaded));
     simcity_frontend_settings_win32_load(&loaded, path);
     CHECK(loaded.welcome_shown == 0);
+    CHECK(loaded.ntsc_frame_lock == 1 && loaded.widescreen == 1);
+    CHECK(loaded.auto_run_on_load == 1);
+
+    CHECK(WritePrivateProfileStringW(L"General", L"SnapshotSlot", L"2", path));
+    simcity_frontend_settings_win32_load(&loaded, path);
+    CHECK(loaded.snapshot_slot == 2);
+    CHECK(loaded.ntsc_frame_lock == 1 && loaded.widescreen == 1);
+    CHECK(loaded.auto_run_on_load == 1);
 
     for (index = 0;
          index < (int)(sizeof(reserved_shortcuts) /
@@ -85,7 +94,7 @@ int main(void)
     settings.input_source = SIMCITY_INPUT_SOURCE_GAMEPAD;
     settings.integer_scale = 3;
     settings.pause_on_focus_loss = 1;
-    settings.auto_run_on_load = 1;
+    settings.auto_run_on_load = 0;
     settings.fullscreen_on_play = 1;
     settings.welcome_shown = 1;
     settings.show_fps_counter = 1;
@@ -98,7 +107,7 @@ int main(void)
     CHECK(loaded.input_source == SIMCITY_INPUT_SOURCE_GAMEPAD);
     CHECK(loaded.integer_scale == 3);
     CHECK(loaded.pause_on_focus_loss == 1);
-    CHECK(loaded.auto_run_on_load == 1);
+    CHECK(loaded.auto_run_on_load == 0);
     CHECK(loaded.fullscreen_on_play == 1);
     CHECK(loaded.input_source_saved == 1);
     CHECK(loaded.welcome_shown == 1);

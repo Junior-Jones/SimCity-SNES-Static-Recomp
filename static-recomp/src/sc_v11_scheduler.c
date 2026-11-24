@@ -1,4 +1,6 @@
+#include "sc_experiment_config.h"
 #include "sc_v11_runtime.h"
+#include "sc_v11_cpu_cycle.h"
 #include <string.h>
 
 #define LINE_LONG 1364u
@@ -114,6 +116,18 @@ static void refresh(SCV11Runtime *runtime) {
 
     scheduler->refresh_done = 1u;
     scheduler->in_refresh = 1u;
+#ifdef SIMCITY_EXPERIMENT_BATCH_REFRESH
+    /* No bus observation or SMP rendezvous occurs within this stall. In
+       the ordinary refresh window the NMI edges have already passed, and
+       neither a scanline boundary nor a joypad expiry can be skipped. */
+    if (!scheduler->auto_joypad_active && scheduler->hclock >= 6u &&
+        (unsigned)scheduler->hclock + REFRESH_CLOCKS < line_length(scheduler)) {
+        scheduler->master_clock += REFRESH_CLOCKS;
+        scheduler->hclock += REFRESH_CLOCKS;
+        scheduler->in_refresh = 0u;
+        return;
+    }
+#endif
     for (index = 0u; index < REFRESH_CLOCKS && !runtime->route_failed;
          ++index) {
         raw_clock(runtime);
@@ -122,12 +136,35 @@ static void refresh(SCV11Runtime *runtime) {
 }
 
 void sc_v11_scheduler_advance(SCV11Runtime *runtime, uint32_t clocks) {
-    uint32_t index;
+    SCV11Scheduler *scheduler;
+    unsigned hclock, end, length;
     if (!runtime || runtime->route_failed) return;
-    for (index = 0u; index < clocks && !runtime->route_failed; ++index) {
+    scheduler = &runtime->scheduler;
+    hclock = scheduler->hclock;
+    length = line_length(scheduler);
+    /* A normal bus segment is shorter than a scanline. When it crosses no
+       event, the individual ticks only increment the two clock counters.
+       Keep the original tick path for all boundaries, including refresh,
+       and keep the audio rendezvous at the same bus-segment end. */
+    if (hclock < length && clocks < length - hclock) {
+        end = hclock + clocks;
+        if ((scheduler->refresh_done || scheduler->refresh_hclock <= hclock ||
+             scheduler->refresh_hclock > end) &&
+            (!scheduler->auto_joypad_active ||
+             scheduler->master_clock + clocks < runtime->auto_joypad_end_master_clock) &&
+            (scheduler->scanline != NMI_LINE ||
+             ((hclock >= 2u || end < 2u) && (hclock >= 6u || end < 6u))) &&
+            (scheduler->scanline != 0u || hclock >= 2u || end < 2u)) {
+            scheduler->master_clock += clocks;
+            scheduler->hclock = (uint16_t)end;
+            goto audio_rendezvous;
+        }
+    }
+    for (uint32_t index = 0u; index < clocks && !runtime->route_failed; ++index) {
         raw_clock(runtime);
         refresh(runtime);
     }
+audio_rendezvous:
     /* Major 5: the audio oscillator is independent, but every modeled S-CPU
        bus segment has an exact end clock.  Rendezvous here rather than only at
        scanline boundaries.  APUIO reads that sample after two clocks naturally
@@ -157,8 +194,7 @@ void sc_v11_scheduler_code_access(SCV11Runtime *runtime,
     for (index = 0u; index < byte_count && !runtime->route_failed; ++index) {
         speed = sc_v11_bus_speed((address + index) & 0x00ffffffu,
                                  runtime->machine.fast_rom_enabled);
-        if (!sc_v11_process_pending_dma(runtime, speed)) return;
-        sc_v11_scheduler_cpu_cycle_sample(runtime);
+        if (!sc_v11_cpu_cycle_begin(runtime, speed)) return;
         sc_v11_scheduler_advance(runtime, speed);
     }
 }
@@ -169,8 +205,7 @@ void sc_v11_scheduler_program_bus_cycle(SCV11Runtime *runtime,
     if (!runtime || runtime->route_failed) return;
     speed = sc_v11_bus_speed(address & 0x00ffffffu,
                              runtime->machine.fast_rom_enabled);
-    if (!sc_v11_process_pending_dma(runtime, speed)) return;
-    sc_v11_scheduler_cpu_cycle_sample(runtime);
+    if (!sc_v11_cpu_cycle_begin(runtime, speed)) return;
     sc_v11_scheduler_advance(runtime, speed);
 }
 
@@ -186,8 +221,7 @@ void sc_v11_scheduler_idle_or_read(SCV11Runtime *runtime) {
                   runtime->machine.cpu.pc;
         (void)sc_v11_bus_read8(runtime, address);
     } else {
-        if (!sc_v11_process_pending_dma(runtime, 6u)) return;
-        sc_v11_scheduler_cpu_cycle_sample(runtime);
+        if (!sc_v11_cpu_cycle_begin(runtime, 6u)) return;
         sc_v11_scheduler_advance(runtime, 6u);
     }
 }
@@ -195,8 +229,7 @@ void sc_v11_scheduler_idle_or_read(SCV11Runtime *runtime) {
 void sc_v11_scheduler_internal_cycle(SCV11Runtime *runtime,
                                      unsigned count) {
     while (count-- && runtime && !runtime->route_failed) {
-        if (!sc_v11_process_pending_dma(runtime, 6u)) return;
-        sc_v11_scheduler_cpu_cycle_sample(runtime);
+        if (!sc_v11_cpu_cycle_begin(runtime, 6u)) return;
         sc_v11_scheduler_advance(runtime, 6u);
     }
 }

@@ -1,12 +1,17 @@
 SimCity SNES Static Recomp
-Version: 1.4.1
+Version: 2.0.0
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32/GDI; SDL3 gamepad input
-Audio: Full Static 32,040 Hz core PCM; DirectSound speaker output
-ROM: required externally and not included
 
-Changes in 1.4.1:
+Changes in 2.0.0:
+New Features:
+* World Maps
+This new addition adds a new mode to the game.  4 normal sized maps are put together to make a massive map, 9 have been created and any who test them and find issues please report them so fixes can be made, details are welcomed.
+* 60 FPS added
+This is a experimental mode that may still have issues.  Any errors or issues found please report them with details so they can be fixed.
+
+Previous release changes in 1.4.1:
 - Recovered the missing exact-ROM S-CPU contexts at 00:B033 through 00:B03C that can occur while developed scenario cities are active.
 - Added a conservative closure guard for the remaining decodable S-CPU contexts and verified that the current authority has no additional missing decodable contexts.
 

@@ -2,6 +2,180 @@
 /* No runtime opcode fetch, decoder, interpreter, or Hybrid fallback. */
 #include "sc_v11_runtime.h"
 
+/* Remaining native 8-bit contexts of the overview icon hit-test. */
+static int overview_icon_continuation(SCV11Runtime *r,uint32_t address){
+  SCCpuState *c=&r->machine.cpu;
+  switch(address){
+  case 0x028788u: /* FD B7 87 */
+    SC_STATIC_CONTEXT_BEGIN(0x028788u,3u,0x87u,0x878Bu);
+    sc_v11_op_sbc(r,sc_v11_bus_read8(r,sc_v11_ea_absx(r,0x87B7u)),8u);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    if(c->p&SC_FLAG_D)sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x02878Bu: /* 90 12 */
+    SC_STATIC_CONTEXT_BEGIN(0x02878Bu,2u,0x12u,0x878Du);
+    if(!(c->p&SC_FLAG_C)){c->pc=0x879Fu;sc_v11_scheduler_internal_cycle(r,1u);}
+    SC_STATIC_CONTEXT_END();
+  case 0x02878Du: /* 38 */
+    SC_STATIC_CONTEXT_BEGIN(0x02878Du,1u,0x38u,0x878Eu);
+    c->p|=SC_FLAG_C;sc_v11_scheduler_idle_or_read(r);
+    SC_STATIC_CONTEXT_END();
+  case 0x02878Eu: /* E9 10 */
+    SC_STATIC_CONTEXT_BEGIN(0x02878Eu,2u,0x10u,0x8790u);
+    sc_v11_op_sbc(r,0x10u,8u);
+    if(c->p&SC_FLAG_D)sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x028790u: /* 90 05 */
+    SC_STATIC_CONTEXT_BEGIN(0x028790u,2u,0x05u,0x8792u);
+    if(!(c->p&SC_FLAG_C)){c->pc=0x8797u;sc_v11_scheduler_internal_cycle(r,1u);}
+    SC_STATIC_CONTEXT_END();
+  case 0x028792u: /* C8 */
+    SC_STATIC_CONTEXT_BEGIN(0x028792u,1u,0xC8u,0x8793u);
+    c->y=(uint8_t)(c->y+1u);sc_v11_set_nz8(c,(uint8_t)c->y);sc_v11_scheduler_idle_or_read(r);
+    SC_STATIC_CONTEXT_END();
+  case 0x028793u: /* C0 08 */
+    SC_STATIC_CONTEXT_BEGIN(0x028793u,2u,0x08u,0x8795u);
+    sc_v11_op_compare(r,c->y,8u,8u);
+    SC_STATIC_CONTEXT_END();
+  case 0x028795u: /* 90 F6 */
+    SC_STATIC_CONTEXT_BEGIN(0x028795u,2u,0xF6u,0x8797u);
+    if(!(c->p&SC_FLAG_C)){c->pc=0x878Du;sc_v11_scheduler_internal_cycle(r,1u);}
+    SC_STATIC_CONTEXT_END();
+  case 0x028797u: /* 98 */
+    SC_STATIC_CONTEXT_BEGIN(0x028797u,1u,0x98u,0x8798u);
+    sc_v11_op_lda(r,c->y,8u);sc_v11_scheduler_idle_or_read(r);
+    SC_STATIC_CONTEXT_END();
+  case 0x028798u: /* AA */
+    SC_STATIC_CONTEXT_BEGIN(0x028798u,1u,0xAAu,0x8799u);
+    sc_v11_op_ldx(r,c->a,8u);sc_v11_scheduler_idle_or_read(r);
+    SC_STATIC_CONTEXT_END();
+  case 0x028799u: /* BD A2 87 */
+    SC_STATIC_CONTEXT_BEGIN(0x028799u,3u,0x87u,0x879Cu);
+    sc_v11_op_lda(r,sc_v11_bus_read8(r,sc_v11_ea_absx(r,0x87A2u)),8u);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x02879Cu: /* 38 */
+    SC_STATIC_CONTEXT_BEGIN(0x02879Cu,1u,0x38u,0x879Du);
+    c->p|=SC_FLAG_C;sc_v11_scheduler_idle_or_read(r);
+    SC_STATIC_CONTEXT_END();
+  case 0x02879Du: /* 80 01 */
+    SC_STATIC_CONTEXT_BEGIN(0x02879Du,2u,0x01u,0x87A0u);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  default: return -1;
+  }
+}
+
+/* Fixed-ROM continuation for the nonzero police/fire budget calculations.
+   The arithmetic subroutines consume their inline arguments before return;
+   those argument bytes are not executable entries. */
+static int municipal_budget_continuation(SCV11Runtime *r,uint32_t address){
+  SCCpuState *c=&r->machine.cpu;
+  switch(address){
+  case 0x038F97u: /* A9 E8 03 */
+    SC_STATIC_CONTEXT_BEGIN(0x038F97u,3u,0x03u,0x8F9Au);
+    sc_v11_op_lda(r,0x03E8u,16u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038F9Au: /* 85 04 */
+    SC_STATIC_CONTEXT_BEGIN(0x038F9Au,2u,0x04u,0x8F9Cu);
+    sc_v11_bus_write16(r,sc_v11_ea_dp(r,0x04u),c->a);
+    if((c->d&0xffu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038F9Cu: /* 20 F5 A2 */
+    SC_STATIC_CONTEXT_BEGIN(0x038F9Cu,3u,0xA2u,0x8F9Fu);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    if(!sc_v11_push16(r,0x8F9Eu))return 0;
+    c->pc=0xA2F5u;
+    SC_STATIC_CONTEXT_END();
+  case 0x038FA2u: /* A5 01 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FA2u,2u,0x01u,0x8FA4u);
+    sc_v11_op_lda(r,sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x01u)),16u);
+    if((c->d&0xffu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FA4u: /* 8D C7 0B */
+    SC_STATIC_CONTEXT_BEGIN(0x038FA4u,3u,0x0Bu,0x8FA7u);
+    sc_v11_bus_write16(r,sc_v11_ea_abs(r,0x0BC7u),c->a);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FA7u: /* 80 06 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FA7u,2u,0x06u,0x8FAFu);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FCEu: /* A9 E8 03 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FCEu,3u,0x03u,0x8FD1u);
+    sc_v11_op_lda(r,0x03E8u,16u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FD1u: /* 85 04 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FD1u,2u,0x04u,0x8FD3u);
+    sc_v11_bus_write16(r,sc_v11_ea_dp(r,0x04u),c->a);
+    if((c->d&0xffu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FD3u: /* 20 F5 A2 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FD3u,3u,0xA2u,0x8FD6u);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    if(!sc_v11_push16(r,0x8FD5u))return 0;
+    c->pc=0xA2F5u;
+    SC_STATIC_CONTEXT_END();
+  case 0x038FD9u: /* A5 01 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FD9u,2u,0x01u,0x8FDBu);
+    sc_v11_op_lda(r,sc_v11_bus_read16(r,sc_v11_ea_dp(r,0x01u)),16u);
+    if((c->d&0xffu)!=0u)sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FDBu: /* 8D C9 0B */
+    SC_STATIC_CONTEXT_BEGIN(0x038FDBu,3u,0x0Bu,0x8FDEu);
+    sc_v11_bus_write16(r,sc_v11_ea_abs(r,0x0BC9u),c->a);
+    SC_STATIC_CONTEXT_END();
+  case 0x038FDEu: /* 80 06 */
+    SC_STATIC_CONTEXT_BEGIN(0x038FDEu,2u,0x06u,0x8FE6u);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  default: return -1;
+  }
+}
+
+/* Stock disaster-menu toggle and its two notification paths. The stock
+   $00:98A0 call consumes the two inline bytes before returning. */
+static int disaster_menu_continuation(SCV11Runtime *r,uint32_t address){
+  SCCpuState *c=&r->machine.cpu;
+  switch(address){
+  case 0x01AA7Bu: /* 4D 97 01 */
+    SC_STATIC_CONTEXT_BEGIN(0x01AA7Bu,3u,0x01u,0xAA7Eu);
+    sc_v11_op_eor(r,sc_v11_bus_read16(r,sc_v11_ea_abs(r,0x0197u)),16u);
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA7Eu: /* 8D 97 01 */
+    SC_STATIC_CONTEXT_BEGIN(0x01AA7Eu,3u,0x01u,0xAA81u);
+    sc_v11_bus_write16(r,sc_v11_ea_abs(r,0x0197u),c->a);
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA81u: /* 3F 5C A9 01 */
+    SC_STATIC_CONTEXT_BEGIN(0x01AA81u,4u,0x01u,0xAA85u);
+    sc_v11_op_and(r,sc_v11_bus_read16(r,sc_v11_ea_longx(r,0x01A95Cu)),16u);
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA85u: /* F0 0A */
+    SC_STATIC_CONTEXT_BEGIN(0x01AA85u,2u,0x0Au,0xAA87u);
+    if(c->p&SC_FLAG_Z){c->pc=0xAA91u;sc_v11_scheduler_internal_cycle(r,1u);}
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA87u: case 0x01AA91u: /* 08 */
+    SC_STATIC_CONTEXT_BEGIN(address,1u,0x08u,(uint16_t)(address+1u));
+    sc_v11_scheduler_internal_cycle(r,1u);if(!sc_v11_push8(r,c->p))return 0;
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA88u: case 0x01AA92u: /* 22 A0 98 00 */
+    SC_STATIC_CONTEXT_BEGIN(address,4u,0x00u,(uint16_t)(address+4u));
+    if(!sc_v11_push8(r,c->pbr))return 0;
+    sc_v11_scheduler_internal_cycle(r,1u);
+    if(!sc_v11_push16(r,(uint16_t)(address+3u)))return 0;
+    c->pbr=0x00u;c->pc=0x98A0u;
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA8Eu: case 0x01AA98u: /* 28 */
+    SC_STATIC_CONTEXT_BEGIN(address,1u,0x28u,(uint16_t)(address+1u));
+    sc_v11_scheduler_internal_cycle(r,2u);sc_v11_unpack_p(c,sc_v11_pop8(r));
+    SC_STATIC_CONTEXT_END();
+  case 0x01AA8Fu: case 0x01AA99u: /* 80 A8 / 80 9E */
+    SC_STATIC_CONTEXT_BEGIN(address,2u,address==0x01AA8Fu?0xA8u:0x9Eu,0xAA39u);
+    sc_v11_scheduler_internal_cycle(r,1u);
+    SC_STATIC_CONTEXT_END();
+  default: return -1;
+  }
+}
+
 int sc_v36_closure_guard_cpu_step(SCV11Runtime *r,uint32_t address,uint8_t m,uint8_t x,uint8_t e){
   SCCpuState *c=&r->machine.cpu;
   switch(address){
@@ -2463,6 +2637,18 @@ int sc_v36_closure_guard_cpu_step(SCV11Runtime *r,uint32_t address,uint8_t m,uin
     }
     break;
   default: break;
+  }
+  if(m==0u&&x==0u&&e==0u){
+    const int handled=municipal_budget_continuation(r,address);
+    if(handled>=0)return handled;
+    const int disaster=disaster_menu_continuation(r,address);
+    if(disaster>=0)return disaster;
+  }
+  if(m==1u&&x==1u&&e==0u){
+    if(address==0x01AA8Eu||address==0x01AA98u)
+      return disaster_menu_continuation(r,address);
+    const int handled=overview_icon_continuation(r,address);
+    if(handled>=0)return handled;
   }
   return sc_v11_fail(r,address,"unknown PC/E/M/X after Version 36 closure guard");
 }

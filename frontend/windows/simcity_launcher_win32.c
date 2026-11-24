@@ -7,9 +7,19 @@
 #include <commctrl.h>
 
 #include "simcity_audio_output_dsound_win32.h"
+#include "simcity_battery_writer.h"
 #include "simcity_frontend_settings_win32.h"
 #include "simcity_app_core.h"
 #include "simcity_input_latch.h"
+#include "simcity_presentation_clock.h"
+#include "simcity_playback_log.h"
+#include "simcity_prepared_video.h"
+#include "simcity_win32_frame_blit.h"
+#include "simcity_win32_host_dispatch.h"
+#include "simcity_screenshot_report.h"
+#ifdef SIMCITY_HEADED_QA
+#include "stock_controller_tape.h"
+#endif
 
 #include <stdint.h>
 #include <stdio.h>
@@ -26,6 +36,7 @@
 #define LAUNCHER_TITLE L"Launcher"
 #define WM_APP_LOAD_COMPLETE (WM_APP + 1u)
 #define WM_APP_STARTUP_CONTINUE (WM_APP + 2u)
+#define WM_APP_WELCOME_CLOSED (WM_APP + 3u)
 #define HOST_TIMER_100NS_PER_SECOND 10000000u
 #define HOST_TIMER_HIGH_RESOLUTION 0x00000002u
 #define HOST_TIMER_ACCESS 0x001F0003u
@@ -52,6 +63,7 @@
 #define ID_BROWSE_MENU 1019
 #define ID_FULLSCREEN 1020
 #define ID_SCREENSHOT 1021
+#define ID_60_FPS 1050
 #define ID_AUTO_RUN 1022
 #define ID_WIDESCREEN 1023
 #define ID_SNAPSHOT_SAVE_CURRENT 1024
@@ -164,6 +176,7 @@ static HWND g_audio_button;
 static HWND g_settings_button;
 static HWND g_fullscreen_checkbox;
 static HWND g_widescreen_checkbox;
+static HWND g_60_fps_checkbox;
 static HWND g_auto_run_checkbox;
 static HWND g_rom_path;
 static HWND g_status;
@@ -176,6 +189,13 @@ static volatile LONG g_loading;
 static int g_close_requested;
 static int g_shutting_down;
 static int g_paused = 1;
+static int g_stock_world_active;
+static int g_exact_60hz_presentation;
+static enum SimCityWorldCatalogScreen g_world_catalog_screen;
+static unsigned g_world_catalog_selected;
+static SimCityPlaybackLog *g_world_map_audio_log;
+static double g_world_frame_ms, g_world_peak_ms, g_world_audio_submit_ms;
+static double g_world_inline_paint_ms, g_world_work_excluding_paint_ms;
 static int g_presentation_hidden;
 static int g_fullscreen_active;
 static DWORD g_saved_style;
@@ -188,6 +208,33 @@ static SimCityInputLatch g_keyboard_input;
 static uint16_t g_gamepad_input;
 static SimCityGamepadInputWin32 g_gamepad;
 static wchar_t g_executable_directory[PATH_CAPACITY];
+#ifdef SIMCITY_HEADED_QA
+static StockControllerTape g_headed_qa_tape;
+static int g_headed_qa_active;
+
+static void open_headed_qa_tape(void) {
+    wchar_t path[PATH_CAPACITY];
+    stock_controller_tape_clear(&g_headed_qa_tape);
+    g_headed_qa_active = 0;
+    if (swprintf(path, ARRAY_COUNT(path), L"%ls\\World-Map-Headed.scinput", g_executable_directory) < 0)
+        return;
+    FILE *file = _wfopen(path, L"rb");
+    if (!file) return;
+    if (fseek(file, 0, SEEK_END) == 0) {
+        const long length = ftell(file);
+        if (length > STOCK_TAPE_HEADER && length <= STOCK_TAPE_HEADER + 2 * STOCK_TAPE_MAX_FRAMES &&
+            fseek(file, 0, SEEK_SET) == 0) {
+            uint8_t *bytes = malloc((size_t)length);
+            if (bytes && fread(bytes, 1u, (size_t)length, file) == (size_t)length &&
+                stock_controller_tape_decode(&g_headed_qa_tape, bytes, (size_t)length) &&
+                g_headed_qa_tape.start_frame == 0u)
+                g_headed_qa_active = 1;
+            free(bytes);
+        }
+    }
+    fclose(file);
+}
+#endif
 static wchar_t g_rom_directory[PATH_CAPACITY];
 static wchar_t g_saves_directory[PATH_CAPACITY];
 static wchar_t g_sram_path[PATH_CAPACITY];
@@ -204,6 +251,76 @@ static uint64_t g_qpc_ticks_per_frame_base;
 static uint32_t g_qpc_ticks_per_frame_remainder;
 static uint32_t g_qpc_remainder_accumulator;
 static uint64_t g_next_frame_deadline;
+static SimCityPresentationClock g_presentation_clock;
+static uint32_t g_presentation_frame = UINT32_MAX;
+static SimCityPreparedVideo *g_prepared_video;
+static uint32_t g_prepared_base_frame;
+static uint32_t g_prepared_target_bias;
+static uint64_t g_prepared_origin, g_prepared_slots, g_prepared_queue_full;
+static uint64_t g_prepared_checkpoint_blits;
+static uint64_t g_prepared_older_targets, g_prepared_blit_failures;
+static uint64_t g_prepared_paint_samples, g_prepared_paint_ticks, g_prepared_paint_peak;
+static uint64_t g_prepared_inline_paint_ticks;
+static uint64_t g_host_headroom_samples, g_host_headroom_over;
+static uint64_t g_host_headroom_over_excluding_paint;
+static int g_prepared_only_paint;
+static uint64_t g_presentation_missed_slots;
+static uint64_t g_presentation_late_exact_paints;
+static double g_presentation_work_ms;
+/* Samples are retained only when the existing diagnostic log is open.
+   Never perform file I/O from a presentation callback. */
+typedef struct HostPresentFault {
+    uint64_t deadline, dispatch, ready, done, merged;
+    uint64_t paint_done, next_deadline;
+    uint64_t timer_due, timer_entry, message_ticks;
+    uint64_t maintenance_start, diagnostics_end, maintenance_end;
+    uint32_t target, selected, previous, message_count;
+    int during_guest, result, paint_failed, late_exact_paint;
+    SimCityRenderStatus worker;
+} HostPresentFault;
+static HostPresentFault g_host_faults[24];
+static unsigned g_host_fault_count, g_host_fault_unlogged;
+static uint64_t g_host_timer_due, g_host_timer_entry, g_host_next_timer_due;
+static uint64_t g_host_message_ticks, g_host_pending_message_ticks;
+static uint32_t g_host_message_count, g_host_pending_message_count;
+static uint64_t g_host_maintenance_start, g_host_diagnostics_end, g_host_maintenance_end;
+
+static long long host_fault_offset_us(uint64_t stamp, uint64_t origin) {
+    if (!stamp || !origin || g_qpc_frequency.QuadPart <= 0) return 0;
+    const double scale = 1000000.0 / (double)g_qpc_frequency.QuadPart;
+    return stamp >= origin ? (long long)((double)(stamp - origin) * scale) :
+        -(long long)((double)(origin - stamp) * scale);
+}
+
+static void flush_host_present_faults(void) {
+    if (!g_world_map_audio_log) return;
+    for (unsigned i = 0u; i < g_host_fault_count; ++i) {
+        const HostPresentFault *f = &g_host_faults[i];
+        simcity_playback_log_printf(g_world_map_audio_log,
+            "host_present_fault target=%u selected=%u previous=%u merged=%llu during_guest=%d result=%d paint_failed=%d dispatch_us=%lld ready_known=%d ready_us=%lld done_known=%d done_us=%lld timer_known=%d timer_entry_vs_due_us=%lld timer_entry_vs_slot_us=%lld prior_message_count=%u prior_message_us=%.0f late_exact_paint=%d paint_known=%d paint_vs_next_us=%lld maintenance_known=%d maintenance_start_us=%lld diagnostics_end_us=%lld maintenance_end_us=%lld worker_stage=%s worker_start_known=%d worker_start_us=%lld worker_finish_known=%d worker_finish_us=%lld\n",
+            f->target, f->selected, f->previous, (unsigned long long)f->merged,
+            f->during_guest, f->result, f->paint_failed,
+            host_fault_offset_us(f->dispatch, f->deadline), f->ready != 0u,
+            host_fault_offset_us(f->ready, f->deadline), f->done != 0u,
+            host_fault_offset_us(f->done, f->deadline), f->timer_entry && f->timer_due,
+            host_fault_offset_us(f->timer_entry, f->timer_due),
+            host_fault_offset_us(f->timer_entry, f->deadline), f->message_count,
+            g_qpc_frequency.QuadPart > 0 ? 1000000.0 * (double)f->message_ticks /
+                (double)g_qpc_frequency.QuadPart : 0.0,
+            f->late_exact_paint, f->paint_done != 0u,
+            host_fault_offset_us(f->paint_done, f->next_deadline),
+            f->maintenance_start != 0u && f->maintenance_end != 0u,
+            host_fault_offset_us(f->maintenance_start, f->deadline),
+            host_fault_offset_us(f->diagnostics_end, f->deadline),
+            host_fault_offset_us(f->maintenance_end, f->deadline),
+            simcity_prepared_video_stage_name(f->worker.stage), f->worker.started != 0u,
+            host_fault_offset_us(f->worker.started, f->deadline), f->worker.finished != 0u,
+            host_fault_offset_us(f->worker.finished, f->deadline));
+    }
+    if (g_host_fault_unlogged)
+        simcity_playback_log_printf(g_world_map_audio_log, "host_present_fault_unlogged=%u\n", g_host_fault_unlogged);
+    g_host_fault_count = g_host_fault_unlogged = 0u;
+}
 static uint64_t g_pacing_timer_ticks;
 static uint64_t g_pacing_skipped_deadlines;
 static uint32_t g_pacing_max_batch;
@@ -223,6 +340,7 @@ static InfoDialogState g_info_state;
 static int g_info_resume_after;
 static HWND g_info_previous_focus;
 static GettingStartedDialogState g_getting_started_state;
+static int g_welcome_close_pending;
 static int g_getting_started_mark_seen;
 static int g_getting_started_save_failed;
 static int g_startup_pending;
@@ -278,6 +396,8 @@ static int capture_fullscreen_screenshot_to(wchar_t *saved_path,
 static int write_static_core_failure_log(wchar_t *saved_path,
                                          size_t saved_capacity);
 static void reset_pacing_clock(void);
+static void close_prepared_video(void);
+static const uint32_t *display_pixels(unsigned *width);
 static int arm_frame_timer(void);
 static void service_host_timer(void);
 static int flush_battery_sram_win32(int force, wchar_t *saved_path,
@@ -352,29 +472,6 @@ static int wide_to_utf8(const wchar_t *input, char *output, size_t capacity) {
 }
 
 
-static int ensure_directory_tree(const wchar_t *path) {
-    wchar_t work[PATH_CAPACITY];
-    size_t index;
-    DWORD attributes;
-    if (!path || !path[0]) return 0;
-    copy_wide(work, sizeof(work) / sizeof(work[0]), path);
-    for (index = 0u; work[index]; ++index) {
-        if ((work[index] == L'\\' || work[index] == L'/') && index > 2u) {
-            wchar_t saved = work[index];
-            work[index] = L'\0';
-            attributes = GetFileAttributesW(work);
-            if (attributes == INVALID_FILE_ATTRIBUTES &&
-                !CreateDirectoryW(work, NULL) &&
-                GetLastError() != ERROR_ALREADY_EXISTS) return 0;
-            work[index] = saved;
-        }
-    }
-    attributes = GetFileAttributesW(work);
-    if (attributes != INVALID_FILE_ATTRIBUTES)
-        return (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0u;
-    return CreateDirectoryW(work, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
-}
-
 static void join_wide_path(wchar_t *output, size_t capacity,
                            const wchar_t *directory, const wchar_t *name) {
     size_t length;
@@ -418,65 +515,121 @@ static int find_sfc_rom(const wchar_t *directory, wchar_t *path,
 
 static int load_battery_sram_file_win32(SimCityRecomp *game,
                                             const wchar_t *path,
+                                            int expanded,
                                             wchar_t *error,
                                             size_t error_capacity) {
     FILE *file;
-    uint8_t image[SRAM_IMAGE_BYTES];
     size_t count;
-    int trailing;
+    int trailing, read_ok;
     char core_error[256];
     if (!game || !path || !path[0]) return 1;
-    if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) return 1;
+    const size_t size = expanded ? simcity_recomp_world_battery_size() : SRAM_IMAGE_BYTES;
+    if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) {
+        const DWORD failure = GetLastError();
+        if (failure == ERROR_FILE_NOT_FOUND || failure == ERROR_PATH_NOT_FOUND) {
+            return 1;
+        }
+        copy_wide(error, error_capacity, L"Unable to access the in-game save file.");
+        return 0;
+    }
+    uint8_t *image = malloc(size);
+    if (!image) {
+        copy_wide(error, error_capacity, L"Not enough memory for the in-game save file.");
+        return 0;
+    }
     file = _wfopen(path, L"rb");
     if (!file) {
+        free(image);
         copy_wide(error, error_capacity,
                   L"Unable to open the battery SRAM file.");
         return 0;
     }
-    count = fread(image, 1u, sizeof(image), file);
+    count = fread(image, 1u, size, file);
     trailing = fgetc(file);
-    if (ferror(file) || fclose(file) != 0 ||
-        count != sizeof(image) || trailing != EOF) {
+    read_ok = !ferror(file) && count == size && trailing == EOF;
+    if (fclose(file) != 0) read_ok = 0;
+    if (!read_ok) {
+        free(image);
         copy_wide(error, error_capacity,
-                  L"The battery SRAM file is not an exact 32 KiB image.");
+                  L"The in-game save file has an invalid size or could not be read.");
         return 0;
     }
     memset(core_error, 0, sizeof(core_error));
-    if (!simcity_recomp_sram_load(game, image, sizeof(image),
-                                  core_error, sizeof(core_error))) {
-        utf8_to_wide(core_error, error, error_capacity);
+    read_ok = expanded ? simcity_recomp_world_battery_import(game, image, size) :
+        simcity_recomp_sram_load(game, image, size, core_error, sizeof(core_error));
+    free(image);
+    if (!read_ok) {
+        if (expanded) copy_wide(error, error_capacity, L"The World Map save file is damaged or unsupported. It was not changed.");
+        else utf8_to_wide(core_error, error, error_capacity);
         return 0;
     }
     return 1;
 }
 
-static int flush_battery_sram_win32(int force, wchar_t *saved_path,
-                                      size_t saved_capacity) {
-    uint8_t image[SRAM_IMAGE_BYTES];
-    wchar_t temporary[PATH_CAPACITY];
-    FILE *file;
-    int written;
-    if (saved_path && saved_capacity) saved_path[0] = L'\0';
-    if (!g_game || !g_sram_path[0]) return 1;
-    if (!force && !simcity_recomp_sram_dirty(g_game)) return 1;
-    if (!ensure_directory_tree(g_saves_directory) ||
-        !simcity_recomp_sram_copy(g_game, image, sizeof(image))) return 0;
-    written = _snwprintf(temporary,
-                         sizeof(temporary) / sizeof(temporary[0]),
-                         L"%s.tmp-%lu", g_sram_path,
-                         (unsigned long)GetCurrentProcessId());
-    if (written < 0 || (size_t)written >=
-        sizeof(temporary) / sizeof(temporary[0])) return 0;
-    file = _wfopen(temporary, L"wb");
-    if (!file) return 0;
-    if (fwrite(image, 1u, sizeof(image), file) != sizeof(image) ||
-        fflush(file) != 0 || fclose(file) != 0 ||
-        !MoveFileExW(temporary, g_sram_path,
-                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-        (void)DeleteFileW(temporary);
+static int load_production_battery_win32(SimCityRecomp *game, const wchar_t *path,
+                                        wchar_t *error, size_t error_capacity) {
+    if (GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES)
+        return load_battery_sram_file_win32(game, path, 1, error, error_capacity);
+    const DWORD failure = GetLastError();
+    if (failure != ERROR_FILE_NOT_FOUND && failure != ERROR_PATH_NOT_FOUND) {
+        copy_wide(error, error_capacity, L"Unable to access the in-game save file.");
         return 0;
     }
-    simcity_recomp_sram_mark_clean(g_game);
+    wchar_t legacy[PATH_CAPACITY];
+    join_wide_path(legacy, ARRAY_COUNT(legacy), g_saves_directory, L"SimCity-USA.srm");
+    if (!load_battery_sram_file_win32(game, legacy, 0, error, error_capacity)) return 0;
+    if (simcity_recomp_world_battery_enable(game)) return 1;
+    copy_wide(error, error_capacity, L"Unable to initialize in-game saves.");
+    return 0;
+}
+
+static struct {
+    SimCityBatteryWrite *job;
+    SimCityRecomp *owner;
+    uint64_t revision;
+} g_pending_battery;
+
+/* File replacement is serialized. Neither an older completion nor a
+   failed write can clear a more recent native save. */
+static int collect_battery_write(int wait) {
+    int written;
+    if (!g_pending_battery.job) return 1;
+    if (!simcity_battery_write_collect(g_pending_battery.job, wait, &written)) return 0;
+    if (written && g_pending_battery.owner == g_game)
+        simcity_recomp_world_battery_acknowledge(g_game, g_pending_battery.revision);
+    g_pending_battery.job = NULL;
+    return 1;
+}
+
+static void schedule_world_battery_write(void) {
+    if (g_pending_battery.job || !g_sram_path[0]) return;
+    const size_t size = simcity_recomp_world_battery_size();
+    uint8_t *image = malloc(size);
+    if (image && simcity_recomp_world_battery_export(g_game, image, size)) {
+        g_pending_battery.job = simcity_battery_write_start(g_saves_directory, g_sram_path, image, size);
+        if (g_pending_battery.job) {
+            g_pending_battery.owner = g_game;
+            g_pending_battery.revision = simcity_recomp_world_battery_revision(g_game);
+            return;
+        }
+    }
+    free(image);
+}
+
+static int flush_battery_sram_win32(int force, wchar_t *saved_path,
+                                      size_t saved_capacity) {
+    if (saved_path && saved_capacity) saved_path[0] = L'\0';
+    if (!collect_battery_write(force)) return 0;
+    if (!g_game || !g_sram_path[0]) return 1;
+    if (!simcity_recomp_world_battery_dirty(g_game)) return 1;
+    const size_t size = simcity_recomp_world_battery_size();
+    uint8_t *image = malloc(size);
+    if (!image) return 0;
+    const int exported = simcity_recomp_world_battery_export(g_game, image, size);
+    const int written = exported && simcity_battery_write_now(g_saves_directory, g_sram_path, image, size);
+    free(image);
+    if (!written) return 0;
+    simcity_recomp_world_battery_mark_clean(g_game);
     g_sram_last_flush_frame = simcity_recomp_current_frame(g_game);
     if (saved_path && saved_capacity)
         copy_wide(saved_path, saved_capacity, g_sram_path);
@@ -485,10 +638,13 @@ static int flush_battery_sram_win32(int force, wchar_t *saved_path,
 
 static void maybe_flush_battery_sram_win32(void) {
     uint32_t frame;
-    if (!g_game || !simcity_recomp_sram_dirty(g_game)) return;
+    if (!collect_battery_write(0)) return;
+    if (!g_game || !simcity_recomp_world_battery_dirty(g_game)) return;
     frame = simcity_recomp_current_frame(g_game);
-    if (frame - g_sram_last_flush_frame >= SRAM_FLUSH_INTERVAL_FRAMES)
-        (void)flush_battery_sram_win32(0, NULL, 0u);
+    if (frame - g_sram_last_flush_frame >= SRAM_FLUSH_INTERVAL_FRAMES) {
+        g_sram_last_flush_frame = frame;
+        schedule_world_battery_write();
+    }
 }
 
 
@@ -560,6 +716,34 @@ static void update_running_window_title(void) {
     SetWindowTextW(g_window, title);
 }
 
+static unsigned world_log_wram(unsigned address, unsigned count) {
+    uint8_t data[3] = {0};
+    if (!simcity_recomp_read_wram(g_game, address, data, count)) return 0u;
+    return data[0] | ((unsigned)data[1] << 8u) | ((unsigned)data[2] << 16u);
+}
+
+static int world_log_status(SimCityWorldMapStatus *world) {
+    if (!simcity_recomp_stock_world_active(g_game))
+        return simcity_recomp_world_map_status(g_game, world);
+    const int x = (int)(int16_t)world_log_wram(0x01bdu, 2u) * 8 +
+                  (int)(world_log_wram(0x0139u, 2u) & 7u) +
+                  (int)(int16_t)world_log_wram(0x025du, 2u);
+    const int y = (int)(int16_t)world_log_wram(0x01bfu, 2u) * 8 +
+                  (int)(world_log_wram(0x0137u, 2u) & 7u) +
+                  (int)(int16_t)world_log_wram(0x025fu, 2u);
+    world->width = 240u;
+    world->height = 200u;
+    world->cursor_x = x >= 0 ? (unsigned)x / 8u : 0u;
+    world->cursor_y = y >= 0 ? (unsigned)y / 8u : 0u;
+    world->tool = world_log_wram(0x01f9u, 2u);
+    world->funds = world_log_wram(0x0b9du, 3u);
+    world->plants = world_log_wram(0x0c85u, 2u);
+    world->zones = world_log_wram(0x0c73u, 2u) + world_log_wram(0x0c75u, 2u) +
+                   world_log_wram(0x0c77u, 2u);
+    world->population = world_log_wram(0x0ba5u, 2u) + (world_log_wram(0x0ba7u, 2u) << 16u);
+    return 1;
+}
+
 static void report_audio_diagnostic_events(void) {
     SimCityAudioDiagnostics diagnostics;
     uint64_t fifo_dropped;
@@ -569,6 +753,58 @@ static void report_audio_diagnostic_events(void) {
     memset(&diagnostics, 0, sizeof(diagnostics));
     simcity_audio_output_get_diagnostics(&g_audio_output, &diagnostics);
     fifo_dropped = simcity_recomp_audio_dropped_frames(g_game);
+    if (g_world_map_audio_log && (simcity_recomp_current_frame(g_game) % 60u == 0u ||
+            diagnostics.underruns != g_audio_last_underruns ||
+            diagnostics.queue_failures != g_audio_last_queue_failures ||
+            fifo_dropped != g_audio_last_fifo_dropped)) {
+        SimCityWorldMapStatus world = {0};
+        SimCityRecompAudioStaticStatus core_audio = {0};
+        (void)world_log_status(&world);
+        (void)simcity_recomp_audio_static_status(g_game, &core_audio);
+        simcity_playback_log_printf(g_world_map_audio_log,
+                "frame=%u stock_world=%d cursor=(%u,%u) tool=%u funds=%u plants=%u roads=%u powered_roads=%u zones=%u served_zones=%u population=%u commuters=%u congested=%u peak_load=%u edits=%u rejected=%u output_open=%d queue=%u underruns=%llu failures=%llu dropped=%llu pcm_overflows=%llu skipped_deadlines=%llu guest_fps=%.2f painted_fps=%.2f frame_work_ms=%.3f peak_work_ms=%.3f audio_submit_ms=%.3f video_missed_slots=%llu video_work_ms=%.3f\n",
+                simcity_recomp_current_frame(g_game), simcity_recomp_stock_world_active(g_game),
+                world.cursor_x, world.cursor_y,
+                world.tool, world.funds, world.plants, world.roads, world.powered_roads,
+                world.zones, world.served_zones,
+                world.population, world.commuters, world.congested_roads, world.peak_road_load,
+                world.edits, world.rejected, simcity_audio_output_is_open(&g_audio_output),
+                diagnostics.queue_depth_frames, (unsigned long long)diagnostics.underruns,
+                (unsigned long long)diagnostics.queue_failures, (unsigned long long)fifo_dropped,
+                (unsigned long long)core_audio.pcm_overflows,
+                (unsigned long long)g_pacing_skipped_deadlines,
+                g_audio_host_fps, g_presented_host_fps, g_world_frame_ms,
+                g_world_peak_ms, g_world_audio_submit_ms,
+                (unsigned long long)g_presentation_missed_slots,
+                g_presentation_work_ms);
+        if (g_prepared_video && g_presentation_frame != UINT32_MAX) {
+            const uint32_t guest_delta = simcity_recomp_current_frame(g_game) -
+                                         g_presentation_frame;
+            simcity_playback_log_printf(g_world_map_audio_log,
+                    "av_timing guest_frame=%u video_frame=%u video_lag_ms=%.2f device_queue_ms=%.2f render_peak_ms=%.2f queue_full=%llu checkpoint_blits=%llu older_targets=%llu blit_failures=%llu recovery_bias=%u core_audio_over_8_33ms=%llu/%llu inline_paint_ms=%.3f work_excluding_inline_paint_ms=%.3f work_excluding_inline_paint_over_8_33ms=%llu/%llu late_exact_paints=%llu\n",
+                    simcity_recomp_current_frame(g_game), g_presentation_frame,
+                    1000.0 * guest_delta / simcity_recomp_nominal_fps(),
+                    diagnostics.device_sample_rate > 0 ?
+                        1000.0 * diagnostics.queue_depth_frames / diagnostics.device_sample_rate : 0.0,
+                    1000.0 * simcity_prepared_video_peak_render_ticks(g_prepared_video) /
+                        (double)g_qpc_frequency.QuadPart,
+                    (unsigned long long)g_prepared_queue_full,
+                    (unsigned long long)g_prepared_checkpoint_blits,
+                    (unsigned long long)g_prepared_older_targets,
+                    (unsigned long long)g_prepared_blit_failures,
+                    g_prepared_target_bias,
+                    (unsigned long long)g_host_headroom_over,
+                    (unsigned long long)g_host_headroom_samples,
+                    g_world_inline_paint_ms, g_world_work_excluding_paint_ms,
+                    (unsigned long long)g_host_headroom_over_excluding_paint,
+                    (unsigned long long)g_host_headroom_samples,
+                    (unsigned long long)g_presentation_late_exact_paints);
+        }
+        flush_host_present_faults();
+        g_world_peak_ms = 0.0;
+        g_host_headroom_samples = g_host_headroom_over = 0u;
+        g_host_headroom_over_excluding_paint = 0u;
+    }
     if (g_qpc_frequency.QuadPart > 0 && QueryPerformanceCounter(&fps_now)) {
         uint32_t current_frame = simcity_recomp_current_frame(g_game);
         if (!g_audio_fps_window_qpc ||
@@ -699,12 +935,19 @@ static DWORD WINAPI loader_thread_proc(LPVOID parameter) {
             &result->game, rom, rom_size, core_error, sizeof(core_error))) {
         utf8_to_wide(core_error, result->error,
                      sizeof(result->error) / sizeof(result->error[0]));
+    } else if (!load_production_battery_win32(result->game, request->sram_path,
+                                            result->error, ARRAY_COUNT(result->error))) {
+        simcity_recomp_destroy(result->game);
+        result->game = NULL;
     }
     free(rom);
     free(path);
     free(request);
-    PostMessageW(g_window, WM_APP_LOAD_COMPLETE, 0, (LPARAM)result);
-    return result->game ? 0u : 1u;
+    {
+        DWORD status = result->game ? 0u : 1u;
+        PostMessageW(g_window, WM_APP_LOAD_COMPLETE, 0, (LPARAM)result);
+        return status;
+    }
 }
 
 static int rom_path_known(void) {
@@ -721,6 +964,7 @@ static void set_toolbar_visible(int visible) {
     ShowWindow(g_settings_button, command);
     ShowWindow(g_fullscreen_checkbox, command);
     ShowWindow(g_widescreen_checkbox, command);
+    ShowWindow(g_60_fps_checkbox, command);
     ShowWindow(g_auto_run_checkbox, command);
     ShowWindow(g_status, command);
 }
@@ -819,6 +1063,7 @@ static void update_controls(void) {
     EnableWindow(g_settings_button, !loading);
     EnableWindow(g_fullscreen_checkbox, !loading);
     EnableWindow(g_widescreen_checkbox, !loading);
+    EnableWindow(g_60_fps_checkbox, !loading);
     EnableWindow(g_auto_run_checkbox, !loading);
     set_accessible_control_text(g_browse_button,
                                 rom_path_known() ? L"&Run" : L"&Browse", 1);
@@ -843,6 +1088,10 @@ static void update_controls(void) {
     CheckMenuItem(g_menu, ID_WIDESCREEN, MF_BYCOMMAND |
                   (SendMessageW(g_widescreen_checkbox, BM_GETCHECK, 0, 0) ==
                    BST_CHECKED ? MF_CHECKED : MF_UNCHECKED));
+    SendMessageW(g_60_fps_checkbox, BM_SETCHECK,
+                 g_exact_60hz_presentation ? BST_CHECKED : BST_UNCHECKED, 0);
+    CheckMenuItem(g_menu, ID_60_FPS, MF_BYCOMMAND |
+                  (g_exact_60hz_presentation ? MF_CHECKED : MF_UNCHECKED));
     CheckMenuItem(g_menu, ID_AUTO_RUN, MF_BYCOMMAND |
                   (SendMessageW(g_auto_run_checkbox, BM_GETCHECK, 0, 0) ==
                    BST_CHECKED ? MF_CHECKED : MF_UNCHECKED));
@@ -876,6 +1125,11 @@ static int open_audio(int show_error) {
 static void pause_game(const wchar_t *message) {
     simcity_audio_output_pause(&g_audio_output);
     g_paused = 1;
+    if (g_prepared_video) {
+        close_prepared_video();
+        if (simcity_recomp_render_presentation_frame(g_game, NULL, 0u))
+            g_presentation_frame = simcity_recomp_current_frame(g_game);
+    }
     simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
     restore_paused_presentation();
@@ -898,6 +1152,7 @@ static void stop_game_on_core_failure(void) {
        present the exact repair evidence without enabling a fallback path. */
     simcity_audio_output_pause(&g_audio_output);
     g_paused = 1;
+    close_prepared_video();
     simcity_input_latch_reset(&g_keyboard_input);
     g_gamepad_input = 0u;
     detail[0] = L'\0';
@@ -960,7 +1215,11 @@ static void play_game(void) {
     g_gamepad_input = 0u;
     simcity_audio_output_resume(&g_audio_output);
     reset_pacing_clock();
-    if (simcity_audio_output_is_open(&g_audio_output)) {
+    if (simcity_recomp_stock_world_active(g_game)) {
+        set_status(L"World Map. Use the original SimCity controls. F2 and F3 open World Map snapshot slots.");
+    } else if (simcity_recomp_stock_world_new_city_pending(g_game)) {
+        set_status(L"World Map selected. Finish the New City setup.");
+    } else if (simcity_audio_output_is_open(&g_audio_output)) {
         set_status(L"SimCity is running.");
     } else {
         set_status(L"Running generated static code. Audio output is disabled in Audio Settings.");
@@ -1041,7 +1300,13 @@ static void start_rom_load(int play_after_load) {
         return;
     }
     GetWindowTextW(g_rom_path, path, length + 1);
-    (void)flush_battery_sram_win32(1, NULL, 0u);
+    if (!flush_battery_sram_win32(1, NULL, 0u)) {
+        free(path);
+        set_status(L"Could not write the in-game saves. The current city is still open.");
+        MessageBoxW(g_window, L"Could not write the in-game saves. Check the save folder and try again.",
+                    APP_TITLE, MB_OK | MB_ICONERROR);
+        return;
+    }
     request = (LoaderRequest *)calloc(1u, sizeof(*request));
     if (!request) {
         free(path);
@@ -1153,11 +1418,12 @@ static int capture_core_screenshot_to(const wchar_t *base_directory,
     wchar_t path[PATH_CAPACITY];
     SYSTEMTIME now;
     uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
-    uint32_t frame_width;
+    unsigned frame_width;
     if (saved_path && saved_capacity) saved_path[0] = L'\0';
-    source = g_game ? simcity_recomp_frame_bgra(g_game) : NULL;
+    source = display_pixels(&frame_width);
     if (!source) return 0;
-    frame_width = simcity_recomp_frame_width(g_game);
+    if (simcity_prepared_video_pixels(g_prepared_video, NULL))
+        frame = g_presentation_frame;
     if (frame_width != SIMCITY_RECOMP_FRAME_WIDTH &&
         frame_width != SIMCITY_RECOMP_WIDESCREEN_WIDTH) return 0;
     /* Match Mesen's screenshot ownership: copy the last completed emulator
@@ -1173,7 +1439,7 @@ static int capture_core_screenshot_to(const wchar_t *base_directory,
     else
         join_wide_path(directory, PATH_CAPACITY, g_executable_directory,
                        L"Screenshots");
-    if (!ensure_directory_tree(directory)) {
+    if (!simcity_win32_ensure_directory_tree(directory)) {
         free(pixels);
         return 0;
     }
@@ -1214,6 +1480,8 @@ static int capture_fullscreen_screenshot_to(wchar_t *saved_path,
     int height;
     int saved = 0;
     if (saved_path && saved_capacity) saved_path[0] = L'\0';
+    if (simcity_prepared_video_pixels(g_prepared_video, NULL))
+        frame = g_presentation_frame;
     if (!g_window || !g_fullscreen_active || !GetClientRect(g_window, &client))
         return 0;
     width = client.right - client.left;
@@ -1246,7 +1514,7 @@ static int capture_fullscreen_screenshot_to(wchar_t *saved_path,
 
     join_wide_path(directory, PATH_CAPACITY, g_executable_directory,
                    L"Screenshots");
-    if (!ensure_directory_tree(directory)) goto cleanup;
+    if (!simcity_win32_ensure_directory_tree(directory)) goto cleanup;
     GetLocalTime(&now);
     (void)_snwprintf(
         path, PATH_CAPACITY,
@@ -1283,7 +1551,7 @@ static int write_static_core_failure_log(wchar_t *saved_path,
     if (!g_game || !g_executable_directory[0]) return 0;
     join_wide_path(logs_directory, PATH_CAPACITY,
                    g_executable_directory, L"Logs");
-    if (!ensure_directory_tree(logs_directory)) return 0;
+    if (!simcity_win32_ensure_directory_tree(logs_directory)) return 0;
     GetLocalTime(&now);
     (void)_snwprintf(
         log_path, PATH_CAPACITY,
@@ -1302,13 +1570,169 @@ static int write_static_core_failure_log(wchar_t *saved_path,
     return 1;
 }
 
+static uint64_t screenshot_wram_hash(void) {
+    uint8_t block[4096];
+    uint64_t hash = UINT64_C(14695981039346656037);
+    for (uint32_t base = 0u; base < 128u * 1024u; base += (uint32_t)sizeof(block)) {
+        if (!simcity_recomp_read_wram(g_game, base, block, sizeof(block))) return 0u;
+        for (size_t i = 0u; i < sizeof(block); ++i)
+            hash = (hash ^ block[i]) * UINT64_C(1099511628211);
+    }
+    return hash;
+}
+
+static int format_screenshot_state(char *report, size_t capacity, uint32_t image_frame,
+    const SimCityWorldMapStatus *world, int world_active, const SimCityAudioDiagnostics *audio) {
+    SimCityRecompAudioStaticStatus core_audio = {0};
+    SimCityRecompStockWorldSample city = {0};
+    SYSTEMTIME now;
+    unsigned source_width = 0u;
+    const uint32_t live_frame = simcity_recomp_current_frame(g_game);
+    const int audio_status = simcity_recomp_audio_static_status(g_game, &core_audio);
+    const int sampled_city = simcity_recomp_stock_world_sample(g_game, world->cursor_x, world->cursor_y, &city);
+    const double render_peak_ms = g_prepared_video && g_qpc_frequency.QuadPart > 0 ?
+        1000.0 * simcity_prepared_video_peak_render_ticks(g_prepared_video) /
+            (double)g_qpc_frequency.QuadPart : 0.0;
+    const double qpc_to_ms = g_qpc_frequency.QuadPart > 0 ?
+        1000.0 / (double)g_qpc_frequency.QuadPart : 0.0;
+    const double paint_peak_ms = (double)g_prepared_paint_peak * qpc_to_ms;
+    const double paint_mean_ms = g_prepared_paint_samples ?
+        (double)g_prepared_paint_ticks * qpc_to_ms / (double)g_prepared_paint_samples : 0.0;
+    (void)display_pixels(&source_width);
+    GetLocalTime(&now);
+    const int size = snprintf(report, capacity,
+        "SimCity 2.0.0 screenshot diagnostics (v2)\r\n"
+        "Captured local time: %04u-%02u-%02u %02u:%02u:%02u.%03u\r\n"
+        "Capture: %s; source: %ux%u\r\n"
+        "Mode: %s; paused: %s; core failed: %s\r\n"
+        "\r\n"
+        "Image frame: %u\r\n"
+        "Live guest frame: %u\r\n"
+        "Image age (guest frames): %u\r\n"
+        "Master clock ticks: %llu\r\n"
+        "CPU instructions: %llu\r\n"
+        "Original guest rate: %.6f FPS\r\n"
+        "Display mode: %s\r\n"
+        "Measured guest FPS: %.2f; presented FPS: %.2f\r\n"
+        "Frame work: %.3f ms; present work: %.3f ms\r\n"
+        "Guest updates including audio and inline paint above 8.33 ms: %llu/%llu measured\r\n"
+        "Latest guest work: %.3f ms inline paint; %.3f ms excluding inline paint\r\n"
+        "Guest and audio updates above 8.33 ms excluding inline paint: %llu/%llu measured\r\n"
+        "Skipped guest deadlines: %llu; missed display slots: %llu; late exact paints: %llu\r\n"
+        "Render worker: %s; render peak: %.3f ms; render queue full: %llu\r\n"
+        "Prepared window paints: %llu; mean: %.3f ms; peak: %.3f ms; guest overlap: %s\r\n"
+        "Old prepared targets: %llu; failed paints: %llu; guest-checkpoint paints: %llu\r\n"
+        "\r\n"
+        "Audio output: %s; device sample rate: %d Hz\r\n"
+        "Audio queue: %u frames; target: %u; average latency: %.2f ms\r\n"
+        "Device underruns: %llu; queue failures: %llu; recoveries: %llu\r\n"
+        "Core audio status available: %s; PCM generated: %llu; core overflows: %llu; dropped: %llu\r\n"
+        "\r\n"
+        "Guest RAM at capture\r\n"
+        "Scenario ID: %u; year: %u; month index: %u\r\n"
+        "Treasury: %u; population: %u; tool ID: %u; map focus: %04X\r\n"
+        "Last placement anchor: (%u,%u); current controller mask: %04X\r\n"
+        "Expanded map state available: %s; size: %ux%u\r\n"
+        "Expanded map cursor: (%u,%u); funds: %u; plants: %u; zones: %u\r\n"
+        "WRAM: 131072 bytes; FNV-1a-64: %016llX\r\n"
+        "Native screen $0014=%04X; camera tiles $01BD/$01BF=(%d,%d); speed $012B=%04X\r\n"
+        "Expanded simulation sample: %s; census visits: %u; census/power order errors: %u/%u\r\n"
+        "Passes: power=%u density=%u environment=%u crime=%u fire=%u\r\n"
+        "Traffic writes: %u (west=%u east=%u); cursor cell: traffic=%u land=%u pollution=%u density=%u crime=%u police=%u fire=%u\r\n"
+        "\r\n"
+        "Audio detail: volume=%d%%; playback ratio=%.6f; peak queue=%u; stale frames=%llu; device reopens=%llu\r\n"
+        "SMP: PC=%04X epoch=%u failed=%u opcode mismatches=%u; PCM known=%llu unknown=%llu hash=%016llX\r\n",
+        (unsigned)now.wYear, (unsigned)now.wMonth, (unsigned)now.wDay,
+        (unsigned)now.wHour, (unsigned)now.wMinute, (unsigned)now.wSecond,
+        (unsigned)now.wMilliseconds, g_fullscreen_active ? "fullscreen client" : "game output",
+        source_width, SIMCITY_RECOMP_FRAME_HEIGHT,
+        simcity_recomp_stock_world_active(g_game) ? "World Map (stock engine)" :
+            world_active ? "World Map sandbox" : "original game",
+        g_paused ? "yes" : "no", simcity_recomp_failed(g_game) ? "yes" : "no",
+        image_frame, live_frame, image_frame <= live_frame ? live_frame - image_frame : 0u,
+        (unsigned long long)simcity_recomp_master_clock(g_game),
+        (unsigned long long)simcity_recomp_instruction_count(g_game), simcity_recomp_nominal_fps(),
+        g_exact_60hz_presentation ? "buffered 60 Hz" : "original NTSC cadence",
+        g_audio_host_fps, g_presented_host_fps, g_world_frame_ms, g_presentation_work_ms,
+        (unsigned long long)g_host_headroom_over,
+        (unsigned long long)g_host_headroom_samples,
+        g_world_inline_paint_ms, g_world_work_excluding_paint_ms,
+        (unsigned long long)g_host_headroom_over_excluding_paint,
+        (unsigned long long)g_host_headroom_samples,
+        (unsigned long long)g_pacing_skipped_deadlines,
+        (unsigned long long)g_presentation_missed_slots,
+        (unsigned long long)g_presentation_late_exact_paints,
+        g_prepared_video ? "active" : "not active", render_peak_ms,
+        (unsigned long long)g_prepared_queue_full,
+        (unsigned long long)g_prepared_paint_samples, paint_mean_ms, paint_peak_ms,
+        g_prepared_video && simcity_recomp_stock_world_active(g_game) ? "on" : "off",
+        (unsigned long long)g_prepared_older_targets, (unsigned long long)g_prepared_blit_failures,
+        (unsigned long long)g_prepared_checkpoint_blits,
+        simcity_audio_output_is_open(&g_audio_output) ? "open" : "closed",
+        audio->device_sample_rate, audio->queue_depth_frames, audio->target_latency_frames,
+        (double)audio->average_latency_ms, (unsigned long long)audio->underruns,
+        (unsigned long long)audio->queue_failures, (unsigned long long)audio->queue_recoveries,
+        audio_status ? "yes" : "no", (unsigned long long)core_audio.pcm_frames,
+        (unsigned long long)core_audio.pcm_overflows,
+        (unsigned long long)simcity_recomp_audio_dropped_frames(g_game),
+        world_log_wram(0x0040u, 2u), world_log_wram(0x0b53u, 2u), world_log_wram(0x0b55u, 2u),
+        world_log_wram(0x0b9du, 3u), world_log_wram(0x0ba5u, 3u), world_log_wram(0x020du, 2u),
+        world_log_wram(0x0201u, 2u), world_log_wram(0x0205u, 2u), world_log_wram(0x0207u, 2u),
+        (unsigned)current_gameplay_input(), world_active ? "yes" : "no",
+        world->width, world->height, world->cursor_x, world->cursor_y,
+        world->funds, world->plants, world->zones,
+        (unsigned long long)screenshot_wram_hash(),
+        world_log_wram(0x0014u, 2u), (int)(int16_t)world_log_wram(0x01bdu, 2u),
+        (int)(int16_t)world_log_wram(0x01bfu, 2u), world_log_wram(0x012bu, 2u),
+        sampled_city ? "available" : "not available", city.census_visits,
+        city.census_order_errors, city.power_order_errors, city.power_cycles,
+        city.density_cycles, city.environment_cycles, city.crime_cycles, city.fire_cycles,
+        city.traffic_writes, city.traffic_west, city.traffic_east, (unsigned)city.traffic,
+        (unsigned)city.land_value, (unsigned)city.pollution, (unsigned)city.density,
+        (unsigned)city.crime, (unsigned)city.police, (unsigned)city.fire,
+        g_audio_settings.volume_percent, (double)audio->playback_ratio,
+        audio->peak_queue_depth_frames, (unsigned long long)audio->stale_frames_dropped,
+        (unsigned long long)audio->device_reopens, (unsigned)core_audio.current_smp_pc,
+        (unsigned)core_audio.current_epoch, (unsigned)core_audio.route_failed, core_audio.opcode_mismatches,
+        (unsigned long long)core_audio.pcm_known_frames, (unsigned long long)core_audio.pcm_unknown_frames,
+        (unsigned long long)core_audio.pcm_hash);
+    return size > 0 && (size_t)size < capacity;
+}
+
 static void capture_core_screenshot(void) {
     wchar_t path[PATH_CAPACITY];
     wchar_t status[PATH_CAPACITY + 96u];
+    char report[8192];
     uint32_t frame = g_game ? simcity_recomp_current_frame(g_game) : 0u;
+    SimCityWorldMapStatus world = {0};
+    SimCityAudioDiagnostics audio = {0};
+    const int world_active = world_log_status(&world);
+    const int stock_menu = simcity_recomp_world_menu_ready(g_game);
+    if (!g_game) {
+        set_status(L"Load SimCity before taking a screenshot.");
+        return;
+    }
+    simcity_audio_output_get_diagnostics(&g_audio_output, &audio);
     int resume_audio = g_game && !g_paused &&
                        simcity_audio_output_is_open(&g_audio_output);
     if (resume_audio) simcity_audio_output_pause(&g_audio_output);
+    if (simcity_prepared_video_pixels(g_prepared_video, NULL))
+        frame = g_presentation_frame;
+    else if (g_exact_60hz_presentation && g_game && g_presentation_frame != frame) {
+        if (!simcity_recomp_render_presentation_frame(g_game, NULL, 0u)) {
+            if (resume_audio) {
+                simcity_audio_output_resume(&g_audio_output);
+                reset_pacing_clock();
+            }
+            set_status(L"Unable to render the current frame for the screenshot.");
+            return;
+        }
+        g_presentation_frame = frame;
+    }
+    if (g_fullscreen_active && g_game)
+        RedrawWindow(g_window, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+    const int have_report = format_screenshot_state(report, sizeof(report), frame,
+        &world, world_active, &audio);
     if (!(g_fullscreen_active ?
           capture_fullscreen_screenshot_to(
               path, sizeof(path) / sizeof(path[0])) :
@@ -1323,14 +1747,32 @@ static void capture_core_screenshot(void) {
             L"Unable to save the current game-frame screenshot.");
         return;
     }
+    const int report_saved = have_report &&
+        simcity_write_screenshot_report(g_executable_directory, path, report);
     if (resume_audio) {
         simcity_audio_output_resume(&g_audio_output);
         reset_pacing_clock();
     }
+    if (g_world_map_audio_log) {
+        char utf8_path[PATH_CAPACITY * 3u] = {0};
+        (void)wide_to_utf8(path, utf8_path, sizeof(utf8_path));
+        simcity_playback_log_printf(g_world_map_audio_log,
+                "screenshot=\"%s\" frame=%u stock_menu=%d world=%d stock_world=%d auto=%d cursor=(%u,%u) tool=%u funds=%u plants=%u roads=%u powered_roads=%u zones=%u served_zones=%u population=%u commuters=%u congested=%u peak_load=%u queue=%u underruns=%llu dropped=%llu skipped_deadlines=%llu guest_fps=%.2f painted_fps=%.2f frame_work_ms=%.3f video_missed_slots=%llu video_work_ms=%.3f\n",
+                utf8_path, frame, stock_menu, world_active, simcity_recomp_stock_world_active(g_game),
+                simcity_recomp_world_demo_active(g_game),
+                world.cursor_x, world.cursor_y, world.tool, world.funds, world.plants, world.roads,
+                world.powered_roads, world.zones, world.served_zones, world.population,
+                world.commuters, world.congested_roads, world.peak_road_load, audio.queue_depth_frames,
+                (unsigned long long)audio.underruns,
+                (unsigned long long)simcity_recomp_audio_dropped_frames(g_game),
+                (unsigned long long)g_pacing_skipped_deadlines,
+                g_audio_host_fps, g_presented_host_fps, g_world_frame_ms,
+                (unsigned long long)g_presentation_missed_slots,
+                g_presentation_work_ms);
+    }
     (void)_snwprintf(status, sizeof(status) / sizeof(status[0]),
-                     g_fullscreen_active ?
-                         L"Fullscreen screenshot saved at frame %u: %s" :
-                         L"Screenshot saved at frame %u: %s",
+                     report_saved ? L"Screenshot and state report saved at frame %u: %s" :
+                         L"Screenshot saved at frame %u, but the state report could not be written: %s",
                      frame, path);
     status[(sizeof(status) / sizeof(status[0])) - 1u] = L'\0';
     set_status(status);
@@ -1373,6 +1815,8 @@ static void show_frontend_settings(void) {
     if (resume_after) pause_game(L"Paused while Settings is open.");
     if (simcity_frontend_settings_win32_dialog(
             g_window, g_instance, &g_frontend_settings)) {
+        g_exact_60hz_presentation = g_frontend_settings.ntsc_frame_lock;
+        reset_pacing_clock();
         if (!simcity_frontend_settings_win32_save(
                 &g_frontend_settings, g_settings_ini_path))
             set_status(L"Settings changed, but the settings file could not be written.");
@@ -1468,7 +1912,6 @@ static void snapshot_slot_description(int slot, int load_mode,
 static int save_snapshot_slot(int slot) {
     wchar_t path[PATH_CAPACITY];
     wchar_t status[PATH_CAPACITY + 128];
-    char narrow_path[PATH_CAPACITY * 3];
     char error[256];
     if (slot < 1 || slot > 5) slot = 1;
     g_frontend_settings.snapshot_slot = slot;
@@ -1476,18 +1919,28 @@ static int save_snapshot_slot(int slot) {
         &g_frontend_settings, g_settings_ini_path);
     if (!snapshot_slot_path(slot, path,
                             sizeof(path) / sizeof(path[0]))) {
-        set_status(L"The Saves folder could not be created beside Launcher.exe.");
+        set_status(L"The snapshot folder could not be created beside Launcher.exe.");
         return 0;
     }
-    if (!WideCharToMultiByte(CP_UTF8, 0, path, -1, narrow_path,
-                             (int)sizeof(narrow_path), NULL, NULL)) {
-        set_status(L"The snapshot path could not be converted to UTF-8.");
-        return 0;
-    }
-    if (!simcity_recomp_snapshot_save(g_game, narrow_path, error,
-                                      sizeof(error))) {
-        set_status_utf8(error[0] ? error : "Snapshot save failed.");
-        return 0;
+    {
+        wchar_t temporary[PATH_CAPACITY];
+        char temporary_utf8[PATH_CAPACITY * 3];
+        const int n = _snwprintf_s(temporary, ARRAY_COUNT(temporary), _TRUNCATE,
+                                  L"%s.tmp-%lu", path, (unsigned long)GetCurrentProcessId());
+        if (n < 0 || !wide_to_utf8(temporary, temporary_utf8, ARRAY_COUNT(temporary_utf8))) {
+            set_status(L"Unable to create a temporary snapshot path.");
+            return 0;
+        }
+        if (!simcity_recomp_snapshot_save(g_game, temporary_utf8, error, sizeof(error))) {
+            (void)DeleteFileW(temporary);
+            set_status_utf8(error[0] ? error : "Snapshot save failed.");
+            return 0;
+        }
+        if (!MoveFileExW(temporary, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+            (void)DeleteFileW(temporary);
+            set_status(L"Unable to replace the snapshot. The previous slot was kept.");
+            return 0;
+        }
     }
     _snwprintf(status, sizeof(status) / sizeof(status[0]),
                L"Snapshot slot %d saved at frame %u: %s", slot,
@@ -1526,11 +1979,11 @@ static int load_snapshot_slot(int slot) {
        owns the UI thread. Recreating the device here can block in the driver
        or place an audio warning behind the disabled launcher, which makes a
        successful snapshot load look like a frozen application. */
+    close_prepared_video();
     simcity_audio_output_pause(&g_audio_output);
     simcity_audio_output_flush(&g_audio_output);
     (void)simcity_recomp_audio_discard(g_game);
-    if (!simcity_recomp_snapshot_load(g_game, narrow_path, error,
-                                      sizeof(error))) {
+    if (!simcity_recomp_snapshot_load(g_game, narrow_path, error, sizeof(error))) {
         set_status_utf8(error[0] ? error : "Snapshot load failed.");
         return 0;
     }
@@ -1544,6 +1997,8 @@ static int load_snapshot_slot(int slot) {
     g_audio_fps_window_frame = simcity_recomp_current_frame(g_game);
     g_presented_fps_window_count = g_presented_frame_count;
     g_pacing_render_resync_frames = 0u;
+    g_stock_world_active = simcity_recomp_stock_world_active(g_game);
+    g_presentation_frame = UINT32_MAX;
     g_loaded_snapshot_slot = slot;
     _snwprintf(status, sizeof(status) / sizeof(status[0]),
                L"Snapshot slot %d loaded at frame %u.", slot,
@@ -1969,6 +2424,32 @@ static void getting_started_dialog_layout(
                    height > 48 ? height - 48 : 0, 120, 34, TRUE);
 }
 
+static void finish_welcome_close(void) {
+    GettingStartedDialogState *state = &g_getting_started_state;
+    const int reenable = state->parent_was_enabled;
+    const int resume = state->resume_after;
+    const int mark_seen = g_getting_started_mark_seen;
+    HWND previous_focus = state->previous_focus;
+    if (!g_welcome_close_pending) return;
+    g_welcome_close_pending = 0;
+    g_getting_started_mark_seen = 0;
+    state->parent_was_enabled = 0;
+    state->resume_after = 0;
+    state->previous_focus = NULL;
+    if (g_shutting_down || !IsWindow(g_window)) return;
+    if (reenable) EnableWindow(g_window, TRUE);
+    if (mark_seen) {
+        g_frontend_settings.welcome_shown = 1;
+        if (!simcity_frontend_settings_win32_save(&g_frontend_settings, g_settings_ini_path)) {
+            g_frontend_settings.welcome_shown = 0;
+            g_getting_started_save_failed = 1;
+        }
+    }
+    if (resume && g_game) play_game();
+    restore_main_window_focus(previous_focus);
+    if (g_startup_pending) continue_startup_after_welcome();
+}
+
 static LRESULT CALLBACK getting_started_dialog_proc(
     HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     GettingStartedDialogState *state =
@@ -2065,32 +2546,10 @@ static LRESULT CALLBACK getting_started_dialog_proc(
             }
             if (window == g_getting_started_window) {
                 g_getting_started_window = NULL;
-                if (g_getting_started_mark_seen) {
-                    g_frontend_settings.welcome_shown = 1;
-                    if (!simcity_frontend_settings_win32_save(
-                            &g_frontend_settings, g_settings_ini_path)) {
-                        g_frontend_settings.welcome_shown = 0;
-                        g_getting_started_save_failed = 1;
-                    }
-                }
-                g_getting_started_mark_seen = 0;
-                if (state && state->parent_was_enabled &&
-                    !g_shutting_down && IsWindow(g_window))
-                    EnableWindow(g_window, TRUE);
-                if (state && state->resume_after && !g_shutting_down &&
-                    g_game && IsWindow(g_window))
-                    play_game();
-                if (state)
-                    restore_main_window_focus(state->previous_focus);
-                if (state) {
-                    state->parent_was_enabled = 0;
-                    state->resume_after = 0;
-                    state->previous_focus = NULL;
-                }
-                if (g_startup_pending && !g_shutting_down &&
-                    IsWindow(g_window) &&
-                    !PostMessageW(g_window, WM_APP_STARTUP_CONTINUE, 0, 0))
-                    continue_startup_after_welcome();
+                /* Owner activation and startup happen after child teardown. */
+                g_welcome_close_pending = 1;
+                if (!g_shutting_down && IsWindow(g_window))
+                    (void)PostMessageW(g_window, WM_APP_WELCOME_CLOSED, 0, 0);
             }
             return 0;
         default:
@@ -2105,6 +2564,7 @@ static void show_getting_started_window(int mark_seen) {
     MONITORINFO monitor_info;
     int width = 820;
     int height = 720;
+    if (g_welcome_close_pending || g_shutting_down) return;
     if (IsWindow(g_getting_started_window)) {
         ShowWindow(g_getting_started_window, SW_RESTORE);
         SetWindowPos(g_getting_started_window, HWND_TOP, 0, 0, 0, 0,
@@ -2230,27 +2690,64 @@ static int arm_frame_timer(void) {
     LARGE_INTEGER due;
     uint64_t delay_ticks;
     uint64_t delay_100ns;
+    uint64_t deadline = g_next_frame_deadline;
     if (!g_frame_timer || g_qpc_frequency.QuadPart <= 0 ||
         !QueryPerformanceCounter(&now)) return 0;
-    if (g_next_frame_deadline <= (uint64_t)now.QuadPart)
+    if (g_exact_60hz_presentation && g_game && !g_paused &&
+        g_presentation_clock.frequency) {
+        if (g_prepared_video) {
+            const uint64_t current = (uint64_t)now.QuadPart;
+            deadline = simcity_prepared_guest_wakeup(
+                deadline < current ? current : deadline, g_presentation_clock.deadline,
+                g_presentation_clock.frequency, simcity_recomp_stock_world_active(g_game));
+        }
+        if (g_presentation_clock.deadline < deadline) deadline = g_presentation_clock.deadline;
+    }
+    if (deadline <= (uint64_t)now.QuadPart)
         delay_ticks = 1u;
     else
-        delay_ticks = g_next_frame_deadline - (uint64_t)now.QuadPart;
+        delay_ticks = deadline - (uint64_t)now.QuadPart;
     delay_100ns = qpc_ticks_to_100ns_ceil(delay_ticks);
     if (delay_100ns > (uint64_t)INT64_MAX) delay_100ns = (uint64_t)INT64_MAX;
     due.QuadPart = -(LONGLONG)delay_100ns;
-    return SetWaitableTimer(g_frame_timer, &due, 0, NULL, NULL, FALSE) != 0;
+    const int armed = SetWaitableTimer(g_frame_timer, &due, 0, NULL, NULL, FALSE) != 0;
+    g_host_next_timer_due = armed ? deadline : 0u;
+    return armed;
 }
 
-static void schedule_unlocked_poll(uint64_t now_qpc) {
-    uint64_t poll_ticks = (uint64_t)g_qpc_frequency.QuadPart / 1000u;
-    if (!poll_ticks) poll_ticks = 1u;
-    g_qpc_remainder_accumulator = 0u;
-    g_next_frame_deadline = now_qpc + poll_ticks;
+static void close_prepared_video(void) {
+    simcity_prepared_video_close(g_prepared_video);
+    g_prepared_video = NULL;
+}
+
+static const uint32_t *display_pixels(unsigned *width) {
+    const uint32_t *pixels = simcity_prepared_video_pixels(g_prepared_video, width);
+    if (pixels) return pixels;
+    if (width) *width = g_game ? simcity_recomp_frame_width(g_game) : 0u;
+    return g_game ? simcity_recomp_frame_bgra(g_game) : NULL;
+}
+
+static void service_presentation_clock(uint64_t now, int during_guest);
+
+static void begin_prepared_video(uint64_t now) {
+    g_prepared_video = simcity_prepared_video_open();
+    if (!g_prepared_video) return;
+    g_prepared_base_frame = simcity_recomp_current_frame(g_game);
+    /* Three frames survived the ordinary and expanded city timing gates.
+       This is display buffering only; it never changes the guest clock. */
+    g_prepared_origin = now + simcity_prepared_lead_frames(1) * g_qpc_ticks_per_frame_base;
+    g_prepared_slots = 0u;
+    g_prepared_target_bias = 0u;
+    simcity_presentation_reset(&g_presentation_clock, g_prepared_origin,
+                               (uint64_t)g_qpc_frequency.QuadPart);
 }
 
 static void reset_pacing_clock(void) {
     LARGE_INTEGER now;
+    if (g_prepared_video) {
+        close_prepared_video();
+        if (g_game) (void)simcity_recomp_render_presentation_frame(g_game, NULL, 0u);
+    }
     if (g_qpc_frequency.QuadPart <= 0 ||
         !QueryPerformanceCounter(&now)) {
         g_next_frame_deadline = 0u;
@@ -2258,8 +2755,13 @@ static void reset_pacing_clock(void) {
     }
     g_qpc_remainder_accumulator = 0u;
     g_next_frame_deadline = (uint64_t)now.QuadPart;
-    if (!g_frontend_settings.ntsc_frame_lock)
-        schedule_unlocked_poll((uint64_t)now.QuadPart);
+    if (g_exact_60hz_presentation) {
+        simcity_presentation_reset(&g_presentation_clock, (uint64_t)now.QuadPart,
+                                   (uint64_t)g_qpc_frequency.QuadPart);
+        g_presentation_frame = UINT32_MAX;
+        if (g_game && !g_paused)
+            begin_prepared_video((uint64_t)now.QuadPart);
+    }
     (void)arm_frame_timer();
 }
 
@@ -2269,27 +2771,142 @@ static void pump_audio_during_render(SimCityRecomp *game,
     simcity_audio_output_pump_progress(output, game);
 }
 
+static void pump_audio_and_prepared_video(SimCityRecomp *game, void *opaque) {
+    LARGE_INTEGER now;
+    pump_audio_during_render(game, opaque);
+    if (g_prepared_video && QueryPerformanceCounter(&now) &&
+        (uint64_t)now.QuadPart >= g_presentation_clock.deadline &&
+        IsWindowVisible(g_window) && !IsIconic(g_window))
+        service_presentation_clock((uint64_t)now.QuadPart, 1);
+}
+
+static void finish_frame_host_maintenance(void) {
+    LARGE_INTEGER start = {0}, diagnostics_end = {0}, end = {0};
+    const int measure = g_world_map_audio_log && QueryPerformanceCounter(&start);
+    report_audio_diagnostic_events();
+    const int have_boundary = measure && QueryPerformanceCounter(&diagnostics_end);
+    maybe_flush_battery_sram_win32();
+    if (simcity_recomp_audio_overflowed(g_game))
+        simcity_recomp_audio_clear_overflow(g_game);
+    if (measure && QueryPerformanceCounter(&end)) {
+        g_host_maintenance_start = (uint64_t)start.QuadPart;
+        g_host_maintenance_end = (uint64_t)end.QuadPart;
+        g_host_diagnostics_end = have_boundary ? (uint64_t)diagnostics_end.QuadPart : 0u;
+    }
+}
+
 static int advance_one_frame(void) {
     SimCityRecompFrameResult result;
     wchar_t message[512];
     uint16_t input_mask;
+    LARGE_INTEGER start = {0}, core_done = {0}, audio_done;
+    int measure;
     if (!g_game) return 1;
     memset(&result, 0, sizeof(result));
     input_mask = current_gameplay_input();
-    if (!simcity_recomp_advance_streamed(
-            g_game, input_mask, 1u, pump_audio_during_render,
-            &g_audio_output, &result)) {
+    /* A later screenshot report needs these counters even when the user
+       has not enabled the ongoing diagnostic log. Keep them in memory. */
+    measure = (g_exact_60hz_presentation || g_world_map_audio_log != NULL) &&
+        QueryPerformanceCounter(&start);
+    const uint64_t paint_before = g_prepared_inline_paint_ticks;
+    uint16_t routed_input = simcity_recomp_world_demo_active(g_game) ?
+        simcity_recomp_world_demo_input(g_game) : input_mask;
+#ifdef SIMCITY_HEADED_QA
+    if (g_headed_qa_active) {
+        const uint32_t at = simcity_recomp_current_frame(g_game);
+        if (at < g_headed_qa_tape.frames) routed_input = g_headed_qa_tape.input[at];
+        else g_headed_qa_active = 0;
+    }
+#endif
+    if (!(g_exact_60hz_presentation ?
+          simcity_recomp_advance_streamed_headless(
+              g_game, routed_input, 1u, pump_audio_and_prepared_video,
+              &g_audio_output, &result) :
+          simcity_recomp_advance_streamed(
+              g_game, routed_input, 1u, pump_audio_during_render,
+              &g_audio_output, &result))) {
         stop_game_on_core_failure();
         return 0;
     }
     if (keyboard_gameplay_active())
         simcity_input_latch_consume(&g_keyboard_input, input_mask);
+    if (measure) measure = QueryPerformanceCounter(&core_done);
     simcity_audio_output_pump(&g_audio_output, g_game);
-    report_audio_diagnostic_events();
-    maybe_flush_battery_sram_win32();
-    if (simcity_recomp_audio_overflowed(g_game)) {
-        simcity_recomp_audio_clear_overflow(g_game);
+    if (measure && QueryPerformanceCounter(&audio_done) &&
+        audio_done.QuadPart >= core_done.QuadPart && core_done.QuadPart >= start.QuadPart) {
+        const double scale = 1000.0 / (double)g_qpc_frequency.QuadPart;
+        const uint64_t frame_ticks = (uint64_t)(audio_done.QuadPart - start.QuadPart);
+        uint64_t paint_ticks = g_prepared_inline_paint_ticks - paint_before;
+        if (paint_ticks > frame_ticks) paint_ticks = frame_ticks;
+        const uint64_t excluding_paint = frame_ticks - paint_ticks;
+        const uint64_t budget = (uint64_t)g_qpc_frequency.QuadPart / (2u * SIMCITY_HOST_PRESENT_HZ);
+        g_world_frame_ms = (double)frame_ticks * scale;
+        g_world_audio_submit_ms = (double)(audio_done.QuadPart - core_done.QuadPart) * scale;
+        g_world_inline_paint_ms = (double)paint_ticks * scale;
+        g_world_work_excluding_paint_ms = (double)excluding_paint * scale;
+        ++g_host_headroom_samples;
+        g_host_headroom_over += frame_ticks > budget;
+        g_host_headroom_over_excluding_paint += excluding_paint > budget;
+        if (g_world_frame_ms > g_world_peak_ms) g_world_peak_ms = g_world_frame_ms;
     }
+    {
+        const int stock_active = simcity_recomp_stock_world_active(g_game);
+        unsigned selected = 0u;
+        const enum SimCityWorldCatalogScreen catalog = simcity_recomp_world_catalog_view(g_game, &selected);
+        const int catalog_changed = catalog != g_world_catalog_screen || selected != g_world_catalog_selected;
+        if (catalog_changed) {
+            const enum SimCityWorldCatalogScreen prior = g_world_catalog_screen;
+            g_world_catalog_screen = catalog;
+            g_world_catalog_selected = selected;
+            if (catalog == SIMCITY_WORLD_CATALOG_LIST) {
+                const SimCityWorldMapTemplateInfo *map = simcity_recomp_world_map_template_info(selected);
+                if (map) {
+                    wchar_t map_name[48], status[192];
+                    utf8_to_wide(map->name, map_name, ARRAY_COUNT(map_name));
+                    (void)_snwprintf_s(status, ARRAY_COUNT(status), _TRUNCATE,
+                        L"%ls: %u percent land, %u percent sea. Up and Down browse, B selects, X goes back.",
+                        map_name, map->land_percent, 100u - map->land_percent);
+                    set_status(status);
+                }
+            } else if (catalog == SIMCITY_WORLD_CATALOG_FOCUSED) {
+                set_status(L"World Maps selected. Press B to browse maps, or Up to return to Select Scenario.");
+            } else if (catalog == SIMCITY_WORLD_CATALOG_MAIN && prior != SIMCITY_WORLD_CATALOG_HIDDEN) {
+                set_status(L"Main menu. From Select Scenario, press Down to reach World Maps.");
+            }
+        }
+        if (stock_active != g_stock_world_active) {
+            if (stock_active != g_stock_world_active) {
+                LARGE_INTEGER now;
+                set_status(stock_active ?
+                    L"World Map started. F2 saves and F3 opens snapshots." :
+                    L"Original-size city loaded.");
+                close_prepared_video();
+                (void)simcity_recomp_render_presentation_frame(g_game, NULL, 0u);
+                if (g_exact_60hz_presentation && QueryPerformanceCounter(&now))
+                    begin_prepared_video((uint64_t)now.QuadPart);
+            }
+            g_stock_world_active = stock_active;
+            update_running_window_title();
+        } else if (catalog_changed) update_running_window_title();
+    }
+    if (g_prepared_video) {
+        const uint32_t frame = simcity_recomp_current_frame(g_game) - g_prepared_base_frame;
+        if (frame) {
+            const int submitted = simcity_prepared_video_submit(g_prepared_video, g_game, frame);
+            if (!submitted) close_prepared_video();
+            else g_prepared_queue_full += submitted == 2;
+        }
+    }
+#ifdef SIMCITY_HEADED_QA
+    if (g_headed_qa_active) {
+        const uint32_t completed = simcity_recomp_current_frame(g_game);
+        if ((completed >= 1000u && completed % 600u == 0u) || completed == g_headed_qa_tape.frames)
+            (void)PostMessageW(g_window, WM_COMMAND, ID_SCREENSHOT, 0);
+        if (completed >= g_headed_qa_tape.frames) g_headed_qa_active = 0;
+    }
+#endif
+    if (g_exact_60hz_presentation) return 1;
+    finish_frame_host_maintenance();
     if (!result.frame_rendered) {
         utf8_to_wide(result.renderer_error, message,
                      sizeof(message) / sizeof(message[0]));
@@ -2301,6 +2918,116 @@ static int advance_one_frame(void) {
     return 1;
 }
 
+static void service_presentation_clock(uint64_t now, int during_guest) {
+    uint64_t slots;
+    uint32_t frame;
+    LARGE_INTEGER done;
+    if (!g_exact_60hz_presentation || !g_game || g_paused ||
+        (during_guest && !g_prepared_video)) return;
+    const uint64_t initial_deadline = g_presentation_clock.deadline;
+    slots = simcity_presentation_consume(&g_presentation_clock, now);
+    if (!slots) return;
+    g_presentation_missed_slots += slots - 1u;
+    frame = 0u;
+    if (g_prepared_video) {
+        g_prepared_slots += slots;
+        const uint64_t slot = g_prepared_slots - 1u;
+        const uint32_t target = simcity_prepared_biased_target(slot, g_prepared_target_bias);
+        /* A delayed host wake still has only one display slot. A frame
+           already ready when we get that wake is safe for its own slot. */
+        uint64_t ready = 0u;
+        const uint32_t previous = g_world_map_audio_log ?
+            simcity_prepared_video_last_presented(g_prepared_video) : 0u;
+        const int result = simcity_prepared_video_present(g_prepared_video,
+            target, now, &frame, g_world_map_audio_log ? &ready : NULL);
+        int paint_failed = 0;
+        int late_exact_paint = 0;
+        uint64_t paint_done = 0u;
+        if (result) {
+            if (result == 2) {
+                const int older = frame != target;
+                g_prepared_older_targets += older;
+                g_presentation_frame = g_prepared_base_frame + frame;
+                if (IsWindowVisible(g_window) && !IsIconic(g_window)) {
+                    /* UpdateWindow sends only the pending WM_PAINT here.
+                       The paint path is restricted to the immutable buffer;
+                       never pump input, open a dialog, or use the guest. */
+                    const uint64_t painted = g_presented_frame_count;
+                    LARGE_INTEGER paint_start, paint_end;
+                    const BOOL have_start = QueryPerformanceCounter(&paint_start);
+                    g_prepared_only_paint = 1;
+                    if (InvalidateRect(g_window, NULL, FALSE))
+                        (void)UpdateWindow(g_window);
+                    g_prepared_only_paint = 0;
+                    const BOOL have_end = QueryPerformanceCounter(&paint_end);
+                    paint_failed = g_presented_frame_count == painted;
+                    if (have_end && !paint_failed) {
+                        paint_done = (uint64_t)paint_end.QuadPart;
+                        late_exact_paint = !older && simcity_presentation_paint_late(
+                            paint_done, g_presentation_clock.deadline);
+                        g_presentation_late_exact_paints += late_exact_paint;
+                    }
+                    if (have_start && have_end &&
+                        paint_end.QuadPart >= paint_start.QuadPart) {
+                        const uint64_t ticks = (uint64_t)(paint_end.QuadPart - paint_start.QuadPart);
+                        if (during_guest) g_prepared_inline_paint_ticks += ticks;
+                        if (!paint_failed) {
+                            ++g_prepared_paint_samples;
+                            g_prepared_paint_ticks += ticks;
+                            if (ticks > g_prepared_paint_peak) g_prepared_paint_peak = ticks;
+                        }
+                    }
+                    if (!paint_failed) g_prepared_checkpoint_blits += during_guest != 0;
+                }
+                g_prepared_blit_failures += paint_failed;
+                g_presentation_missed_slots += older || paint_failed;
+            } else {
+                ++g_presentation_missed_slots;
+            }
+            const int measured = QueryPerformanceCounter(&done);
+            if (measured)
+                g_presentation_work_ms = 1000.0 * (double)((uint64_t)done.QuadPart - now) /
+                                         (double)g_qpc_frequency.QuadPart;
+            if (g_world_map_audio_log && (slots > 1u || result != 2 || frame != target ||
+                    paint_failed || late_exact_paint ||
+                    (measured && (uint64_t)done.QuadPart >= g_presentation_clock.deadline))) {
+                /* A merge's latency is relative to the oldest unserviced
+                   slot, whereas the image selected above is for the newest. */
+                if (g_host_fault_count < sizeof(g_host_faults) / sizeof(g_host_faults[0])) {
+                    if (result != 2 || frame != target)
+                        ready = simcity_prepared_video_queued_ready_tick(g_prepared_video, target);
+                    g_host_faults[g_host_fault_count++] = (HostPresentFault){initial_deadline, now, ready,
+                        measured ? (uint64_t)done.QuadPart : 0u, slots - 1u,
+                        paint_done, g_presentation_clock.deadline,
+                        g_host_timer_due, g_host_timer_entry, g_host_message_ticks,
+                        g_host_maintenance_start, g_host_diagnostics_end, g_host_maintenance_end,
+                        target, frame, previous, g_host_message_count, during_guest, result, paint_failed,
+                        late_exact_paint, simcity_prepared_video_status(g_prepared_video, target)};
+                } else {
+                    ++g_host_fault_unlogged;
+                }
+            }
+            return;
+        }
+        if (during_guest) {
+            ++g_presentation_missed_slots;
+            return; /* The outer timer/submission path handles worker failure. */
+        }
+        close_prepared_video();
+    }
+    frame = simcity_recomp_current_frame(g_game);
+    if (frame == g_presentation_frame) return;
+    if (simcity_recomp_render_presentation_frame(g_game, NULL, 0u)) {
+        g_presentation_frame = frame;
+        InvalidateRect(g_window, NULL, FALSE);
+    } else {
+        ++g_presentation_missed_slots;
+    }
+    if (QueryPerformanceCounter(&done))
+        g_presentation_work_ms = 1000.0 * (double)((uint64_t)done.QuadPart - now) /
+                                 (double)g_qpc_frequency.QuadPart;
+}
+
 static void service_host_timer(void) {
     LARGE_INTEGER before;
     LARGE_INTEGER after;
@@ -2309,33 +3036,28 @@ static void service_host_timer(void) {
         (void)arm_frame_timer();
         return;
     }
-    if ((uint64_t)before.QuadPart < g_next_frame_deadline) {
-        (void)arm_frame_timer();
-        return;
+    uint64_t now = (uint64_t)before.QuadPart;
+    if (g_world_map_audio_log) {
+        g_host_timer_due = g_host_next_timer_due;
+        g_host_timer_entry = now;
+        g_host_message_ticks = g_host_pending_message_ticks;
+        g_host_message_count = g_host_pending_message_count;
+        g_host_pending_message_ticks = 0u;
+        g_host_pending_message_count = 0u;
     }
-
-    if (!g_frontend_settings.ntsc_frame_lock) {
-        int audio_ready = 1;
-        ++g_pacing_timer_ticks;
-        g_gamepad_input = simcity_gamepad_win32_poll(
-            &g_gamepad, g_frontend_settings.gamepad_bindings);
-        if (g_game && !g_paused &&
-            simcity_audio_output_is_open(&g_audio_output)) {
-            SimCityAudioDiagnostics diagnostics;
-            memset(&diagnostics, 0, sizeof(diagnostics));
-            simcity_audio_output_get_diagnostics(&g_audio_output,
-                                                &diagnostics);
-            /* With the video limiter disabled, retain audio as the safety
-               throttle so an unlocked benchmark cannot overwrite queued PCM. */
-            if (diagnostics.queue_depth_frames >
-                diagnostics.target_latency_frames +
-                    (uint32_t)(diagnostics.device_sample_rate / 30))
-                audio_ready = 0;
-        }
-        if (g_game && !g_paused && audio_ready)
-            (void)advance_one_frame();
-        if (QueryPerformanceCounter(&before))
-            schedule_unlocked_poll((uint64_t)before.QuadPart);
+    const int prepared_due = g_prepared_video && now >= g_presentation_clock.deadline;
+    if (prepared_due) {
+        service_presentation_clock(now, 0);
+        /* A synchronous paint can cross the next guest deadline. Use
+           the real time after it, so work that is now due need not
+           wait for a redundant timer round trip. */
+        if (QueryPerformanceCounter(&after)) now = (uint64_t)after.QuadPart;
+    }
+    if (now < g_next_frame_deadline ||
+        (!prepared_due && g_prepared_video &&
+         simcity_prepared_guest_wakeup(now, g_presentation_clock.deadline,
+             g_presentation_clock.frequency, simcity_recomp_stock_world_active(g_game)) > now)) {
+        if (!prepared_due) service_presentation_clock(now, 0);
         (void)arm_frame_timer();
         return;
     }
@@ -2343,35 +3065,59 @@ static void service_host_timer(void) {
     ++g_pacing_timer_ticks;
     g_gamepad_input = simcity_gamepad_win32_poll(
         &g_gamepad, g_frontend_settings.gamepad_bindings);
+    int finish_prepared_step = 0;
     if (g_game && !g_paused) {
+        const int deferred_maintenance = g_exact_60hz_presentation;
         g_pacing_max_batch = 1u;
-        (void)advance_one_frame();
+        finish_prepared_step = advance_one_frame() && deferred_maintenance;
     }
 
-    /* Mesen and Snes9x both advance one absolute deadline per completed
-       emulated frame.  They never run a host-computed batch of overdue normal
-       frames.  If this frame is materially late, rebase the clock so missed
-       wall-clock time cannot become extra emulation and extra queued PCM. */
+    /* One guest frame per dispatch, even when running behind. In 60 Hz mode,
+       keep short delays on the original guest timeline so repeated spikes
+       do not drain the audio queue by permanently losing emulation time. */
     advance_frame_deadline();
     if (QueryPerformanceCounter(&after)) {
-        late_tolerance = g_qpc_ticks_per_frame_base /
-                         HOST_LATE_REBASE_DIVISOR;
-        if (!late_tolerance) late_tolerance = 1u;
-        if ((uint64_t)after.QuadPart > g_next_frame_deadline +
-            late_tolerance) {
-            g_pacing_skipped_deadlines +=
-                ((uint64_t)after.QuadPart - g_next_frame_deadline) /
-                    (g_qpc_ticks_per_frame_base ?
-                         g_qpc_ticks_per_frame_base : 1u) + 1u;
-            g_qpc_remainder_accumulator = 0u;
-            g_next_frame_deadline = (uint64_t)after.QuadPart;
-            ++g_pacing_resyncs;
+        if (g_exact_60hz_presentation && g_game && !g_paused) {
+            const uint64_t skipped = simcity_guest_limit_debt(
+                (uint64_t)after.QuadPart, g_qpc_ticks_per_frame_base,
+                &g_next_frame_deadline, &g_qpc_remainder_accumulator);
+            if (skipped) {
+                g_pacing_skipped_deadlines += skipped;
+                ++g_pacing_resyncs;
+                if (g_prepared_video) {
+                    /* Count overdue slots using the old target before
+                       recovering the video lead for future slots. */
+                    service_presentation_clock((uint64_t)after.QuadPart, 0);
+                    g_prepared_target_bias = simcity_prepared_recovery_bias(g_prepared_slots,
+                        simcity_recomp_current_frame(g_game) - g_prepared_base_frame,
+                        simcity_prepared_lead_frames(1), g_prepared_target_bias);
+                }
+            }
+        } else {
+            late_tolerance = g_qpc_ticks_per_frame_base / HOST_LATE_REBASE_DIVISOR;
+            if (!late_tolerance) late_tolerance = 1u;
+            if ((uint64_t)after.QuadPart > g_next_frame_deadline + late_tolerance) {
+                g_pacing_skipped_deadlines +=
+                    ((uint64_t)after.QuadPart - g_next_frame_deadline) /
+                        (g_qpc_ticks_per_frame_base ?
+                             g_qpc_ticks_per_frame_base : 1u) + 1u;
+                g_qpc_remainder_accumulator = 0u;
+                g_next_frame_deadline = (uint64_t)after.QuadPart;
+                ++g_pacing_resyncs;
+            }
         }
     } else {
         reset_pacing_clock();
+        if (finish_prepared_step) finish_frame_host_maintenance();
         return;
     }
+    service_presentation_clock((uint64_t)after.QuadPart, 0);
     (void)arm_frame_timer();
+    /* A finished guest step must reach the render worker and any due
+       display slot before the diagnostics and durable save checks run.
+       The next timer can already signal while maintenance is in progress.
+       These writes remain synchronous and may still delay a later slot. */
+    if (finish_prepared_step) finish_frame_host_maintenance();
 }
 
 
@@ -2392,6 +3138,7 @@ static void layout_controls(HWND window) {
     MoveWindow(g_widescreen_checkbox, 610, 10, 108, 26, TRUE);
     MoveWindow(g_auto_run_checkbox, 724, 10,
                width > 820 ? 88 : 82, 26, TRUE);
+    MoveWindow(g_60_fps_checkbox, 818, 10, 82, 26, TRUE);
     MoveWindow(g_status, 12, 48, width - 24, 24, TRUE);
 }
 
@@ -2400,91 +3147,38 @@ static void paint_window(HWND window) {
     HDC dc = BeginPaint(window, &paint);
     RECT client;
     RECT render_area;
-    const uint32_t *pixels = simcity_recomp_frame_bgra(g_game);
+    unsigned image_width = 0u;
+    const uint32_t *pixels = g_prepared_only_paint ?
+        simcity_prepared_video_pixels(g_prepared_video, &image_width) : display_pixels(&image_width);
     GetClientRect(window, &client);
-    FillRect(dc, &client, (HBRUSH)GetStockObject(BLACK_BRUSH));
     render_area.left = 0;
     render_area.top = g_presentation_hidden ? 0 : 80;
     render_area.right = client.right;
     render_area.bottom = client.bottom;
 
     if (g_game && pixels && render_area.bottom > render_area.top) {
-        BITMAPINFO bitmap;
-        int frame_width = (int)simcity_recomp_frame_width(g_game);
-        int source_height = (int)SIMCITY_RECOMP_FRAME_HEIGHT;
-        const uint32_t *bitmap_pixels = pixels;
-        int available_width = render_area.right - render_area.left;
-        int available_height = render_area.bottom - render_area.top;
-        int draw_width = available_width;
-        int draw_height = draw_width * (int)SIMCITY_RECOMP_FRAME_HEIGHT /
-                          frame_width;
-        int x;
-        int y;
-        if (g_fullscreen_active &&
-            simcity_recomp_widescreen_enabled(g_game)) {
-            /* The static core stores seven non-visible rows before the
-               224-line picture and eight after it.  Crop only those rows for
-               borderless widescreen presentation; the 71-pixel side areas
-               themselves are rendered by the SimCity core. */
-            source_height = 224;
-            bitmap_pixels += (size_t)7u * (size_t)frame_width;
-            draw_width = available_width;
-            draw_height = available_height;
-        } else if (g_frontend_settings.integer_scale >= 1 &&
-            g_frontend_settings.integer_scale <= 4) {
-            int scale = g_frontend_settings.integer_scale;
-            while (scale > 1 &&
-                   (frame_width * scale > available_width ||
-                    (int)SIMCITY_RECOMP_FRAME_HEIGHT * scale >
-                        available_height))
-                --scale;
-            if (frame_width * scale <= available_width &&
-                (int)SIMCITY_RECOMP_FRAME_HEIGHT * scale <=
-                    available_height) {
-                draw_width = frame_width * scale;
-                draw_height = (int)SIMCITY_RECOMP_FRAME_HEIGHT * scale;
-            } else {
-                draw_width = available_width;
-                draw_height = draw_width *
-                              (int)SIMCITY_RECOMP_FRAME_HEIGHT / frame_width;
-                if (draw_height > available_height) {
-                    draw_height = available_height;
-                    draw_width = draw_height * frame_width /
-                                 (int)SIMCITY_RECOMP_FRAME_HEIGHT;
-                }
-            }
-        } else if (draw_height > available_height) {
-            draw_height = available_height;
-            draw_width = draw_height * frame_width /
-                         (int)SIMCITY_RECOMP_FRAME_HEIGHT;
+        if (render_area.top > 0) {
+            const RECT controls = {client.left, client.top, client.right, render_area.top};
+            FillRect(dc, &controls, (HBRUSH)GetStockObject(BLACK_BRUSH));
         }
-        x = render_area.left + (available_width - draw_width) / 2;
-        y = render_area.top + (available_height - draw_height) / 2;
-        ZeroMemory(&bitmap, sizeof(bitmap));
-        bitmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bitmap.bmiHeader.biWidth = (LONG)frame_width;
-        bitmap.bmiHeader.biHeight = -(LONG)source_height;
-        bitmap.bmiHeader.biPlanes = 1u;
-        bitmap.bmiHeader.biBitCount = 32u;
-        bitmap.bmiHeader.biCompression = BI_RGB;
-        SetStretchBltMode(dc, COLORONCOLOR);
-        if (StretchDIBits(dc, x, y, draw_width, draw_height,
-                          0, 0,
-                          frame_width,
-                          source_height,
-                          bitmap_pixels, &bitmap, DIB_RGB_COLORS, SRCCOPY) !=
-            GDI_ERROR) {
-            uint32_t emu_frame = simcity_recomp_current_frame(g_game);
+        if (simcity_win32_frame_blit(dc, &render_area, pixels, image_width,
+                g_fullscreen_active && image_width == SIMCITY_RECOMP_WIDESCREEN_WIDTH,
+                g_frontend_settings.integer_scale)) {
+            uint32_t emu_frame = (g_prepared_only_paint || g_exact_60hz_presentation) ?
+                g_presentation_frame : simcity_recomp_current_frame(g_game);
             /* Repaints caused by expose/resize messages do not represent a
                newly presented emulated frame. */
-            if (emu_frame != g_presented_last_emu_frame) {
+            if (emu_frame != UINT32_MAX && emu_frame != g_presented_last_emu_frame) {
                 g_presented_last_emu_frame = emu_frame;
                 ++g_presented_frame_count;
             }
+        } else {
+            FillRect(dc, &render_area, (HBRUSH)GetStockObject(BLACK_BRUSH));
         }
-    } else {
+    } else if (!g_prepared_only_paint) {
         const wchar_t *message =
             L"Browse for the exact SimCity USA/Canada NTSC ROM and choose Run.";
+        FillRect(dc, &client, (HBRUSH)GetStockObject(BLACK_BRUSH));
         SetBkMode(dc, TRANSPARENT);
         SetTextColor(dc, RGB(255, 255, 255));
         render_area.left += 24;
@@ -3071,6 +3765,7 @@ static HMENU create_menu_bar(void) {
                  L"Use &Full Screen When Playing");
     AppendMenuW(settings, MF_STRING, ID_WIDESCREEN,
                  L"Use SimCity &Wide Screen");
+    AppendMenuW(settings, MF_STRING, ID_60_FPS, L"&60 FPS");
     AppendMenuW(settings, MF_STRING, ID_AUTO_RUN,
                 L"&Auto-Run at Startup");
     AppendMenuW(settings, MF_SEPARATOR, 0, NULL);
@@ -3111,7 +3806,7 @@ static void initialize_paths_and_settings(void) {
                    sizeof(g_saves_directory) /
                        sizeof(g_saves_directory[0]),
                    g_executable_directory, L"Saves");
-    g_sram_path[0] = L'\0';
+    join_wide_path(g_sram_path, ARRAY_COUNT(g_sram_path), g_saves_directory, L"In-Game Saves.scwb");
 
     (void)_snwprintf(g_settings_ini_path,
                      sizeof(g_settings_ini_path) /
@@ -3137,6 +3832,7 @@ static void initialize_paths_and_settings(void) {
         !unified_exists && GetFileAttributesW(legacy_frontend_ini) !=
             INVALID_FILE_ATTRIBUTES ? legacy_frontend_ini :
                                       g_settings_ini_path);
+    g_exact_60hz_presentation = g_frontend_settings.ntsc_frame_lock;
     simcity_audio_settings_load(
         &g_audio_settings,
         !unified_exists && GetFileAttributesW(legacy_audio_ini) !=
@@ -3251,7 +3947,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
         case WM_GETOBJECT:
             /* The launcher remains a normal accessible Win32 UI.  While the
                emulated game view is active it has no useful control tree, so
-               do not expose DefWindowProc's synthetic client object to NVDA. */
+               do not expose DefWindowProc's synthetic client object to screen readers. */
             if (g_game && !g_paused) return 0;
             break;
 
@@ -3301,6 +3997,11 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
                 724, 10, 88, 26, window,
                 (HMENU)(INT_PTR)ID_AUTO_RUN, g_instance, NULL);
+            g_60_fps_checkbox = CreateWindowExW(
+                0, L"BUTTON", L"&60 FPS",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+                818, 10, 82, 26, window,
+                (HMENU)(INT_PTR)ID_60_FPS, g_instance, NULL);
             /* The ROM path remains internal. Status is exposed as native
                static text, not as an editable toolbar field. */
             g_rom_path = CreateWindowExW(
@@ -3321,6 +4022,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             set_control_font(g_settings_button);
             set_control_font(g_fullscreen_checkbox);
             set_control_font(g_widescreen_checkbox);
+            set_control_font(g_60_fps_checkbox);
             set_control_font(g_auto_run_checkbox);
             set_control_font(g_rom_path);
             set_control_font(g_status);
@@ -3336,7 +4038,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
 
         case WM_GETMINMAXINFO: {
             MINMAXINFO *info = (MINMAXINFO *)lparam;
-            info->ptMinTrackSize.x = 820;
+            info->ptMinTrackSize.x = 930;
             info->ptMinTrackSize.y = 580;
             return 0;
         }
@@ -3361,6 +4063,17 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                     if (!g_game) start_rom_load(1);
                     return 0;
                 case ID_RESET: reset_game(); return 0;
+                case ID_60_FPS:
+                    g_frontend_settings.ntsc_frame_lock = lparam ?
+                        SendMessageW(g_60_fps_checkbox, BM_GETCHECK, 0, 0) == BST_CHECKED :
+                        !g_frontend_settings.ntsc_frame_lock;
+                    g_exact_60hz_presentation = g_frontend_settings.ntsc_frame_lock;
+                    reset_pacing_clock();
+                    if (!simcity_frontend_settings_win32_save(
+                            &g_frontend_settings, g_settings_ini_path))
+                        set_status(L"60 FPS changed, but settings could not be saved.");
+                    update_controls();
+                    return 0;
                 case ID_PAUSE_PLAY: toggle_pause_play(); return 0;
                 case ID_KEYS: show_key_bindings(); return 0;
                 case ID_FRONTEND_SETTINGS: show_frontend_settings(); return 0;
@@ -3393,6 +4106,8 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                         SendMessageW(g_widescreen_checkbox, BM_GETCHECK,
                                      0, 0) == BST_CHECKED;
                     memset(error, 0, sizeof(error));
+                    const int restart_prepared = g_prepared_video != NULL;
+                    close_prepared_video();
                     if (g_game && !simcity_recomp_set_widescreen(
                             g_game, g_frontend_settings.widescreen,
                             error, sizeof(error))) {
@@ -3411,6 +4126,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                             L"Widescreen disabled: authentic 256-pixel presentation restored.");
                         InvalidateRect(g_window, NULL, TRUE);
                     }
+                    if (restart_prepared) reset_pacing_clock();
                     update_controls();
                     return 0;
                 }
@@ -3441,7 +4157,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                         static const wchar_t about[] =
                             L"F1 - Open the Welcome window\r\n\r\n"
                             L"SimCity (SNES) Static Recompilation\r\n"
-                            L"Version 1.4.0\r\n\r\n"
+                            L"Version 2.0.0\r\n\r\n"
                             L"Title: SimCity\r\n"
                             L"Region: USA/Canada NTSC\r\n"
                             L"File type: .sfc";
@@ -3458,13 +4174,13 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
 
         case WM_KEYDOWN:
             if (wparam == VK_ESCAPE) {
+#ifdef SIMCITY_HEADED_QA
+                g_headed_qa_active = 0;
+#endif
                 if ((lparam & (1L << 30)) == 0) toggle_pause_play();
                 return 0;
             }
-            if (wparam == VK_F1) {
-                show_getting_started_window(0);
-                return 0;
-            }
+            if (wparam == VK_F1) { show_getting_started_window(0); return 0; }
             if (wparam == VK_F2) {
                 show_snapshot_window(1);
                 return 0;
@@ -3550,8 +4266,15 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             }
             close_audio();
             (void)flush_battery_sram_win32(1, NULL, 0u);
+            close_prepared_video();
             simcity_recomp_destroy(g_game);
             g_game = result->game;
+            simcity_recomp_world_catalog_enable(g_game, 1);
+#ifdef SIMCITY_HEADED_QA
+            open_headed_qa_tape();
+#endif
+            g_world_catalog_screen = SIMCITY_WORLD_CATALOG_HIDDEN;
+            g_world_catalog_selected = 0u;
             {
                 char geometry_error[256];
                 memset(geometry_error, 0, sizeof(geometry_error));
@@ -3604,11 +4327,21 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             continue_startup_after_welcome();
             return 0;
 
+        case WM_APP_WELCOME_CLOSED:
+            finish_welcome_close();
+            return 0;
+
         case WM_CLOSE:
             if (InterlockedCompareExchange(&g_loading, 0, 0) != 0) {
                 g_close_requested = 1;
                 set_status(L"Closing after the current ROM load finishes...");
                 update_controls();
+                return 0;
+            }
+            if (!flush_battery_sram_win32(1, NULL, 0u)) {
+                set_status(L"Could not write the in-game saves. The current city is still open.");
+                MessageBoxW(window, L"Could not write the in-game saves. Check the save folder and try closing again.",
+                            APP_TITLE, MB_OK | MB_ICONERROR);
                 return 0;
             }
             g_shutting_down = 1;
@@ -3617,7 +4350,10 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
             return 0;
 
         case WM_ENDSESSION:
-            if (wparam) save_current_settings_on_exit();
+            if (wparam) {
+                (void)flush_battery_sram_win32(1, NULL, 0u);
+                save_current_settings_on_exit();
+            }
             return 0;
 
         case WM_DESTROY:
@@ -3630,6 +4366,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message,
                 CloseHandle(g_loader_thread);
                 g_loader_thread = NULL;
             }
+            close_prepared_video();
             simcity_recomp_destroy(g_game);
             g_game = NULL;
             simcity_gamepad_win32_shutdown(&g_gamepad);
@@ -3754,15 +4491,42 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
             if (wait_result == WAIT_OBJECT_0) {
                 service_host_timer();
             } else if (wait_result == WAIT_OBJECT_0 + 1u) {
+                LARGE_INTEGER message_begin = {0}, message_end;
+                const int measure_messages = g_world_map_audio_log && QueryPerformanceCounter(&message_begin);
                 uint32_t messages_processed = 0u;
-                while (messages_processed < MAX_HOST_MESSAGES_PER_PASS &&
-                       PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
+                int timer_taken = 0;
+                LARGE_INTEGER message_present_at = {0};
+                int present_without_timer = 0;
+                while (messages_processed < MAX_HOST_MESSAGES_PER_PASS) {
+                    const int game_running = g_exact_60hz_presentation && g_game && !g_paused;
+                    timer_taken = simcity_host_take_timer_between_messages(g_frame_timer,
+                        messages_processed, game_running);
+                    if (timer_taken) break;
+                    if (messages_processed && game_running && g_prepared_video &&
+                        QueryPerformanceCounter(&message_present_at) &&
+                        simcity_host_present_between_messages(messages_processed, 1,
+                            g_presentation_clock.deadline, (uint64_t)message_present_at.QuadPart)) {
+                        present_without_timer = 1;
+                        break;
+                    }
+                    if (!PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) break;
                     int root_shortcut;
                     int game_key;
                     ++messages_processed;
                     if (message.message == WM_QUIT) {
                         running = 0;
                         break;
+                    }
+                    if (g_welcome_close_pending && message.message != WM_APP_WELCOME_CLOSED &&
+                        !(message.message == WM_CLOSE && message.hwnd == g_window))
+                        finish_welcome_close();
+                    if (IsWindow(g_getting_started_window) &&
+                        message.message == WM_SYSKEYDOWN && message.wParam == VK_F4 &&
+                        (message.lParam & (1L << 29)) != 0 &&
+                        (message.hwnd == g_window || message.hwnd == g_getting_started_window ||
+                         IsChild(g_getting_started_window, message.hwnd))) {
+                        DestroyWindow(g_getting_started_window);
+                        continue;
                     }
                     if (IsWindow(g_getting_started_window) &&
                         (message.hwnd == g_getting_started_window ||
@@ -3813,7 +4577,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                          message.wParam == VK_F2 || message.wParam == VK_F3 ||
                          message.wParam == VK_F4 || message.wParam == VK_F5 ||
                          message.wParam == VK_F6 || message.wParam == VK_F7 ||
-                         message.wParam == VK_F8 || message.wParam == '1' ||
+                         message.wParam == VK_F8 ||
+                         message.wParam == '1' ||
                          message.wParam == '2');
                     game_key =
                         (message.message == WM_KEYDOWN ||
@@ -3836,6 +4601,22 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
                         DispatchMessageW(&message);
                     }
                 }
+                if (measure_messages && QueryPerformanceCounter(&message_end) &&
+                    message_end.QuadPart >= message_begin.QuadPart) {
+                    g_host_pending_message_ticks += (uint64_t)(message_end.QuadPart - message_begin.QuadPart);
+                    g_host_pending_message_count += messages_processed;
+                }
+                if (timer_taken) service_host_timer();
+                else if (present_without_timer) {
+                    if (g_world_map_audio_log) {
+                        g_host_timer_due = 0u;
+                        g_host_timer_entry = 0u;
+                        g_host_message_ticks = g_host_pending_message_ticks;
+                        g_host_message_count = g_host_pending_message_count;
+                    }
+                    if (QueryPerformanceCounter(&message_end)) message_present_at = message_end;
+                    service_presentation_clock((uint64_t)message_present_at.QuadPart, 0);
+                }
             } else {
                 running = 0;
                 message.wParam = 1;
@@ -3846,6 +4627,10 @@ int WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
         (void)CancelWaitableTimer(g_frame_timer);
         CloseHandle(g_frame_timer);
         g_frame_timer = NULL;
+    }
+    if (g_world_map_audio_log) {
+        flush_host_present_faults();
+        simcity_playback_log_close(g_world_map_audio_log);
     }
     return (int)message.wParam;
 }

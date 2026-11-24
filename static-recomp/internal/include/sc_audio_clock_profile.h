@@ -41,4 +41,56 @@ static inline uint64_t sc_audio_clock_closed_form(uint64_t master_clock,
            (partial * SC_AUDIO_CLOCK_RATIO_NUMERATOR + initial_remainder) /
                SC_AUDIO_CLOCK_RATIO_DENOMINATOR;
 }
+
+/* Most rendezvous are one short bus access. Keep their exact division in
+   32 bits, and use the full-range accumulator for long intervals. */
+static inline uint64_t sc_audio_clock_bus_advance(uint64_t master_delta,
+                                                  uint32_t *remainder) {
+    if (*remainder < SC_AUDIO_CLOCK_RATIO_DENOMINATOR &&
+        master_delta <= (UINT32_MAX - (SC_AUDIO_CLOCK_RATIO_DENOMINATOR - 1u)) /
+                           SC_AUDIO_CLOCK_RATIO_NUMERATOR) {
+        const uint32_t scaled = (uint32_t)master_delta *
+                                SC_AUDIO_CLOCK_RATIO_NUMERATOR + *remainder;
+        /* A short sync with a valid incoming remainder can cross at most
+           one S-SMP tick. Use the exact quotient in {0,1} and subtract
+           that carry instead of computing a general quotient. */
+        if (master_delta <= SC_AUDIO_CLOCK_RATIO_DENOMINATOR / SC_AUDIO_CLOCK_RATIO_NUMERATOR) {
+            const uint32_t carry = scaled >= SC_AUDIO_CLOCK_RATIO_DENOMINATOR;
+            *remainder = scaled - carry * SC_AUDIO_CLOCK_RATIO_DENOMINATOR;
+            return carry;
+        }
+        *remainder = scaled % SC_AUDIO_CLOCK_RATIO_DENOMINATOR;
+        return scaled / SC_AUDIO_CLOCK_RATIO_DENOMINATOR;
+    }
+    return sc_audio_clock_advance(master_delta, remainder);
+}
+
+/* Independently verify the accumulator from absolute master time. Use a
+   single quotient/remainder pair when the product fits; retain the original
+   overflow-safe formulas for very large absolute clocks. */
+static inline uint64_t sc_audio_clock_absolute(uint64_t master_clock,
+                                                 uint32_t *remainder) {
+    if (master_clock <= UINT64_MAX / SC_AUDIO_CLOCK_RATIO_NUMERATOR) {
+        const uint64_t scaled = master_clock * SC_AUDIO_CLOCK_RATIO_NUMERATOR;
+        *remainder = (uint32_t)(scaled % SC_AUDIO_CLOCK_RATIO_DENOMINATOR);
+        return scaled / SC_AUDIO_CLOCK_RATIO_DENOMINATOR;
+    }
+    *remainder = sc_audio_clock_remainder(master_clock);
+    return sc_audio_clock_closed_form(master_clock, 0u);
+}
+
+/* A remainder in [0,D) and q*D+r=n prove the unique Euclidean
+   quotient and remainder. Bound both products and the addition; keep
+   the independent overflow-safe formula outside that fast range. */
+static inline int sc_audio_clock_absolute_matches(uint64_t master_clock,
+                                                   uint64_t cycles, uint32_t remainder) {
+    if (remainder >= SC_AUDIO_CLOCK_RATIO_DENOMINATOR) return 0;
+    if (master_clock <= UINT64_MAX / SC_AUDIO_CLOCK_RATIO_NUMERATOR &&
+        cycles < UINT64_MAX / SC_AUDIO_CLOCK_RATIO_DENOMINATOR)
+        return cycles * SC_AUDIO_CLOCK_RATIO_DENOMINATOR + remainder ==
+               master_clock * SC_AUDIO_CLOCK_RATIO_NUMERATOR;
+    uint32_t expected_remainder;
+    const uint64_t expected_cycles = sc_audio_clock_absolute(master_clock, &expected_remainder);
+    return cycles == expected_cycles && remainder == expected_remainder;
+}
 #endif

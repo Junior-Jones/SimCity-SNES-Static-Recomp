@@ -153,11 +153,13 @@ void sc_v11_smp_power_on(SCV11Runtime *runtime) {
 }
 int sc_v11_smp_sync_to_master(SCV11Runtime *runtime,uint64_t master_clock){
     char error[256];
-    SCStaticApuStatus s;
+    SCStaticApuExecutionStatus s;
     if(!runtime||runtime->route_failed)return 0;
-    if(!sc_static_apu_sync_to_master(master_clock,error,sizeof(error)))
+    const int synced=sc_static_apu_sync_execution(master_clock,runtime->smp_core.cycle,
+        &s,error,sizeof(error));
+    if(!synced)
         return audio_fail(runtime,error);
-    if(sc_static_apu_status(&s)){
+    if(synced==2){
         runtime->scheduler.smp_instructions=s.smp_instructions;
         runtime->smp_core.cycle=s.smp_cycles;
         runtime->smp_core.instructions=s.smp_instructions;

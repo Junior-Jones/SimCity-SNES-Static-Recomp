@@ -28,6 +28,9 @@ endif()
 
 set(SIMCITY_STATIC_RECOMP_SOURCES
     src/simcity_static_recomp.c
+    src/sc_world_map.c
+    src/sc_world_map_template.c
+    src/sc_world_catalog_draw.c
     src/sc_v11_support.c
     src/sc_machine.c
     src/sc_v11_scheduler.c
@@ -63,10 +66,24 @@ set(SIMCITY_STATIC_RECOMP_SOURCES
 
 add_library(simcity-static-recomp STATIC ${SIMCITY_STATIC_RECOMP_SOURCES})
 
+option(SIMCITY_EXPERIMENT_FAST_CPU_CYCLE "A/B test skipping empty DMA and NMI checks" OFF)
+option(SIMCITY_EXPERIMENT_AUDIO_CLOCK_IDENTITY "A/B test an equivalent absolute audio clock check" OFF)
+option(SIMCITY_EXPERIMENT_BATCH_REFRESH "A/B test coalescing event-free DRAM refresh ticks" OFF)
+option(SIMCITY_EXPERIMENT_VIEWPORT_CAPTURE "A/B test capturing only visible World Map tiles and their neighbors" OFF)
+# The Release replay A/B/B/A found a repeatable reduction in guest-thread
+# cycles while retaining the rendezvous hashes, guest state, and native PCM.
+# Keep the switch available for future comparisons against the reference.
+option(SIMCITY_EXPERIMENT_INLINE_AUDIO_TRACE "Inline the equivalent hot audio rendezvous hash" ON)
+# Use a tracked include so incremental MSBuild runs recompile when a
+# candidate is toggled. Source-level definitions alone did not do so.
+configure_file(internal/sc_experiment_config.h.in
+    "${CMAKE_CURRENT_BINARY_DIR}/sc_experiment_config.h" @ONLY)
+
 target_include_directories(simcity-static-recomp
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
     PRIVATE
+        "${CMAKE_CURRENT_BINARY_DIR}"
         "${CMAKE_CURRENT_SOURCE_DIR}/internal/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/generated"
         "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot"
@@ -120,6 +137,37 @@ else()
 endif()
 
 if(BUILD_TESTING)
+    add_executable(simcity-scheduler-cycle-parity
+        tests/test_scheduler_cycle_parity.c src/sc_v11_scheduler.c)
+    target_include_directories(simcity-scheduler-cycle-parity PRIVATE
+        "${CMAKE_CURRENT_BINARY_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/internal/include")
+    add_test(NAME simcity-scheduler-cycle-parity COMMAND simcity-scheduler-cycle-parity)
+    add_executable(simcity-world-map-utilities tests/test_world_map_utilities.c)
+    target_link_libraries(simcity-world-map-utilities PRIVATE simcity-static-recomp)
+    target_include_directories(simcity-world-map-utilities PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/internal/include")
+    add_test(NAME simcity-world-map-utilities COMMAND simcity-world-map-utilities)
+    add_executable(simcity-stock-world-commercial tests/test_stock_world_commercial.c)
+    target_link_libraries(simcity-stock-world-commercial PRIVATE simcity-static-recomp)
+    target_include_directories(simcity-stock-world-commercial PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/internal/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot")
+    add_test(NAME simcity-stock-world-commercial COMMAND simcity-stock-world-commercial)
+    add_executable(simcity-stock-world-ship tests/test_stock_world_ship.c)
+    target_link_libraries(simcity-stock-world-ship PRIVATE simcity-static-recomp)
+    target_include_directories(simcity-stock-world-ship PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/internal/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot")
+    add_test(NAME simcity-stock-world-ship COMMAND simcity-stock-world-ship)
+    if(SIMCITY_TEST_ROM)
+        add_executable(simcity-stock-world-airport tests/test_stock_world_airport.c)
+        target_link_libraries(simcity-stock-world-airport PRIVATE simcity-static-recomp)
+        target_include_directories(simcity-stock-world-airport PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/internal/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot")
+        add_test(NAME simcity-stock-world-airport COMMAND simcity-stock-world-airport "${SIMCITY_TEST_ROM}")
+    endif()
     add_executable(simcity-project-dsp-phase
         tests/test_project_dsp_phase.c)
     target_include_directories(simcity-project-dsp-phase PRIVATE
@@ -141,6 +189,8 @@ if(BUILD_TESTING)
             tests/test_audio_snapshot_continuation.c)
         target_link_libraries(simcity-audio-snapshot-continuation PRIVATE
             simcity-static-recomp)
+        target_include_directories(simcity-audio-snapshot-continuation PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/static-audio/snes9x-bapu-aot")
         if(MSVC)
             target_compile_definitions(simcity-audio-snapshot-continuation PRIVATE
                 _CRT_SECURE_NO_WARNINGS)

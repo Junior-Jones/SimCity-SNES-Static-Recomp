@@ -1,9 +1,9 @@
 {
   "schema": "simcity-source-manifest-v1",
   "platform": "Windows",
-  "version": "1.4.1",
-  "file_count": 286,
-  "total_bytes": 19124020,
+  "version": "2.0.0",
+  "file_count": 332,
+  "total_bytes": 20305219,
   "files": [
     {
       "path": ".gitattributes",
@@ -22,33 +22,23 @@
     },
     {
       "path": ".recomp.json",
-      "size": 952,
-      "sha256": "7453e557e242722b44a429cb85d8e853a0e0467f4df7e9a5ba19ec843e05e521"
-    },
-    {
-      "path": "Audio - 1.4.0.txt",
-      "size": 3804,
-      "sha256": "7a72154cbdc75f20fd7f52e16fa9e1515b7344df1d4d12e4908a88a870507091"
+      "size": 949,
+      "sha256": "4479e506564cb59ae5e20b59eab5443077676b43efbf19e5707b478f6277c90b"
     },
     {
       "path": "CMakeLists.txt",
-      "size": 2301,
-      "sha256": "9efe14e7296d7b1d926d5a4d4aaa27fdede5dc896237241e6c80b7e4404f6b0f"
-    },
-    {
-      "path": "README-FIRST.txt",
-      "size": 1071,
-      "sha256": "fff621c953063bb4c8ed426913371410567c56d3ca22106fce9403fd04e5c046"
+      "size": 17191,
+      "sha256": "d3a63e10aefb306d8418304edba48c6e26b829fa6ad798c870be176ccf19ceb3"
     },
     {
       "path": "README.md",
-      "size": 5857,
-      "sha256": "2e25331280600d4c63eb7a5980453b566ea7344c76f9f3aa97c68eb95d75528c"
+      "size": 12567,
+      "sha256": "36627cb5d7352f1545dd63adc8cea1506fd0a683f7194929c5b3b09dd11cdee3"
     },
     {
-      "path": "ROM-REQUIREMENTS.txt",
-      "size": 266,
-      "sha256": "47b9e9f4e5659c97ea6c6f1657122dda4360f18cc0e67a12e1cf7d5e65b0c19d"
+      "path": "README.txt",
+      "size": 2582,
+      "sha256": "7fbfdc471e376a1fafa5620d0ccf1141f0fdc2dfba4967031018294ab505a6f3"
     },
     {
       "path": "Rom/readme.txt",
@@ -57,8 +47,8 @@
     },
     {
       "path": "Saves/Readme.txt",
-      "size": 149,
-      "sha256": "66cb007f9a0d6cd0cfa1e47d8efcca6236f5d234241fd113eff669fc6275b7aa"
+      "size": 234,
+      "sha256": "d97c50dd513cd5e64b9fc1625d8a6c85d125d2337449eb3301ef0974e985c103"
     },
     {
       "path": "Screenshots/Readme.txt",
@@ -72,13 +62,8 @@
     },
     {
       "path": "VERSION.txt",
-      "size": 3816,
-      "sha256": "b782e3bf53fe8bf66ce77fa6998bd3939fdfbcab169a6065fefe6d69cf349593"
-    },
-    {
-      "path": "Wide Screen - 1.4.0.txt",
-      "size": 6820,
-      "sha256": "787f763bdd1fc2c314c2a06d1014f039e2108eca13ac895207e818c4c97e83ae"
+      "size": 4153,
+      "sha256": "f90069c8b5e3cc8d61f00adbc1d55fc12b152100a5394760cf743ca4ab078050"
     },
     {
       "path": "frontend/common/simcity_input_contract_test.c",
@@ -97,18 +82,18 @@
     },
     {
       "path": "frontend/windows/CMakeLists.txt",
-      "size": 6686,
-      "sha256": "dd374d567c1220e2a2979464c13d01a24e2bb45b77fc6223f74a18f31a990c80"
+      "size": 8051,
+      "sha256": "bb47d52023f8a7a8d60e0f7012bf3aec404bcde60128cb7f22edf6ebb582e82a"
     },
     {
       "path": "frontend/windows/launcher_version.rc",
       "size": 810,
-      "sha256": "98583797c8dc338225a64ff12a917ef438ad44f8860ec0e664328cb18dcd789a"
+      "sha256": "85c89e34d4a875d08c7bfa24d0c34b5c37eb34d4d6f79d4b5d99a49ee4e68d22"
     },
     {
       "path": "frontend/windows/simcity_app_core.c",
       "size": 4151,
-      "sha256": "764e2b3be7451671d0635089c932da2806b35615d3755cfdd9fc79d7e0afe8cd"
+      "sha256": "3ac468bc65a8d6b88b7660ab83e19810cf702e19d6e597ea1197ed2f7f2ce69d"
     },
     {
       "path": "frontend/windows/simcity_app_core.h",
@@ -117,8 +102,8 @@
     },
     {
       "path": "frontend/windows/simcity_audio_output_dsound_win32.c",
-      "size": 38067,
-      "sha256": "fb3bead5a2f920dbf5b75d014f9b005e6c6dd8a1e93a1de7911d606954870b58"
+      "size": 38357,
+      "sha256": "bd242166ba4a695121de0873e6d487e4215f3380a4f33364e8158da3cc41ea52"
     },
     {
       "path": "frontend/windows/simcity_audio_output_dsound_win32.h",
@@ -146,14 +131,29 @@
       "sha256": "0325e251eff8577a3ee30e6bee47439468171ff073064d39f49ab19c45267320"
     },
     {
+      "path": "frontend/windows/simcity_battery_writer.c",
+      "size": 3353,
+      "sha256": "843c68ed64bcba9deb9f9fa8e5d6ecd804d8687226fa75c74bcdd3ec5949861a"
+    },
+    {
+      "path": "frontend/windows/simcity_battery_writer.h",
+      "size": 842,
+      "sha256": "db87f89c05f02911185ea43af10e52368fc0301ecbecf36796af8d829b054d5a"
+    },
+    {
+      "path": "frontend/windows/simcity_battery_writer_test.c",
+      "size": 2946,
+      "sha256": "8a01e9b6db680e42f783aa3c3e8e473718764f9d49859ff3ff047da74ee387f2"
+    },
+    {
       "path": "frontend/windows/simcity_frontend_core_test.c",
       "size": 12791,
       "sha256": "fd824db7e48d4c5fa4d12c2d78c11fd17adad5bea4c216f52a68825b73c546d6"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.c",
-      "size": 34013,
-      "sha256": "4680091f5d60f0a7551e4278bd04a82ee46628113b38f8c887606a3c632ae2bb"
+      "size": 34094,
+      "sha256": "bdda15fe43ff8956f2e4ea2201e7c88f66081de1c15d1a296055e068115ccb6c"
     },
     {
       "path": "frontend/windows/simcity_frontend_settings_win32.h",
@@ -162,18 +162,88 @@
     },
     {
       "path": "frontend/windows/simcity_launcher_win32.c",
-      "size": 160401,
-      "sha256": "44e34dd36720af8db1f7c5204a06908e91ceb61c3e3b096695b48ce497ba40e2"
+      "size": 206183,
+      "sha256": "d8adf2189cb0580728b8ab426e6260568c9b828d1de52576c636ab9445b42107"
+    },
+    {
+      "path": "frontend/windows/simcity_playback_log.c",
+      "size": 3217,
+      "sha256": "ac6b584965d264f022a343ead027b4bc78660504380123c5f8f9674aaaf6b831"
+    },
+    {
+      "path": "frontend/windows/simcity_playback_log.h",
+      "size": 579,
+      "sha256": "87562fd60043ca70ef4fab7e20480f7add6440162fb6d2b5aa128f982138929f"
+    },
+    {
+      "path": "frontend/windows/simcity_playback_log_test.c",
+      "size": 2333,
+      "sha256": "3f4e27df832b5cc89732c044963577759931a3fd95e6454298cf1e92550ae918"
+    },
+    {
+      "path": "frontend/windows/simcity_prepared_video.c",
+      "size": 9751,
+      "sha256": "9836d71bf8920245781674ade82b75c43db6d99649604f6f7f5dba40f04b36a5"
+    },
+    {
+      "path": "frontend/windows/simcity_prepared_video.h",
+      "size": 2221,
+      "sha256": "4334342aba133ca93c9f83c8a5a6e292526a0463600d380183b37e7b7d5e6020"
+    },
+    {
+      "path": "frontend/windows/simcity_presentation_clock.h",
+      "size": 4933,
+      "sha256": "3c7bb2c858812edb5eea95a6d92150505a2db81c05e6ff4a0020382e56258420"
+    },
+    {
+      "path": "frontend/windows/simcity_screenshot_report.c",
+      "size": 1686,
+      "sha256": "b73c536ccdaa46b3c270c3625b9f3f6326fe805bcaedf0133cce91e9de5b90bc"
+    },
+    {
+      "path": "frontend/windows/simcity_screenshot_report.h",
+      "size": 363,
+      "sha256": "241d5833c3f15e9237a512e7673dac6f270d95479a1c3737552eaba6b6756c61"
+    },
+    {
+      "path": "frontend/windows/simcity_screenshot_report_test.c",
+      "size": 2178,
+      "sha256": "7ddd9fbd416e7a4ebf8bde1c71020e79e77f5a62783e7cf701ce655a3cd74fb1"
     },
     {
       "path": "frontend/windows/simcity_settings_input_contract_test.c",
-      "size": 5520,
-      "sha256": "2f82a1b7c28615fd7dd3ddcfc76d057cc2462f4742986b4f26b4af08bd8201c4"
+      "size": 5953,
+      "sha256": "a6bfcc1aec22e41336475fdc8a3e41f1731598325149728c79758b4cb73c3b80"
+    },
+    {
+      "path": "frontend/windows/simcity_win32_frame_blit.h",
+      "size": 6206,
+      "sha256": "bd0bfa15c65c118a4e896e1757daf356e9bd80e619259ca1fc0d2339ad91e127"
+    },
+    {
+      "path": "frontend/windows/simcity_win32_host_dispatch.h",
+      "size": 986,
+      "sha256": "d27c6a615c57b5e6be9548d071e9eac3205593456d70b9c76912d03a7511b109"
+    },
+    {
+      "path": "frontend/windows/simcity_win32_scaled_dib.h",
+      "size": 4116,
+      "sha256": "95d54f4e92860e22468164e64572e6cbb19e4fe31208ad6b1a0137c97b861577"
+    },
+    {
+      "path": "frontend/windows/test_simcity_presentation_clock.c",
+      "size": 5488,
+      "sha256": "aeaff39ce05e8aef2eb0bb21e4a507223e08120a6300219dc3e16ab92fd4a6e8"
+    },
+    {
+      "path": "frontend/windows/test_simcity_win32_frame_blit.c",
+      "size": 6493,
+      "sha256": "3ce9b772f8955332dd7f74c1bd491218c2338a67b8cceab13c22eb0069caa6db"
     },
     {
       "path": "static-recomp/CMakeLists.txt",
-      "size": 8865,
-      "sha256": "1f878e09e2631e8308c76c6167d19bb6067ae4bf7c2f6ae808dd84bd5fa42df4"
+      "size": 12272,
+      "sha256": "0ac041e941801231347c78ab7629b1e3887d327cf22f75f89831d96a168b70fc"
     },
     {
       "path": "static-recomp/generated/SC-COMPACT-GENERATED-RECEIPT.json",
@@ -272,8 +342,8 @@
     },
     {
       "path": "static-recomp/generated/sc_v36_closure_guard_dispatch.c",
-      "size": 149382,
-      "sha256": "d5e7ac602598572a921f6d5315b08d997b54603bd235422cdd6742709845f995"
+      "size": 157355,
+      "sha256": "12b00c87213b41fb1aaad46d8c53aaa530c715ad362d1c5fb4719a490e8b9646"
     },
     {
       "path": "static-recomp/generated/v11-shards/sc_v11_cpu_group_00020.c",
@@ -1177,13 +1247,18 @@
     },
     {
       "path": "static-recomp/include/simcity_static_recomp.h",
-      "size": 10379,
-      "sha256": "855180873c42e6cd317b9c0db720d3dec0391581156091a1ca8eb4041af6c782"
+      "size": 23236,
+      "sha256": "294d599f9fb800f15f470c114bcb759837c214e7af8dde6a2f133688a5b34d18"
     },
     {
       "path": "static-recomp/internal/include/sc_audio_clock_profile.h",
-      "size": 2298,
-      "sha256": "f5a4466d7315f46c2a6e14f3b2aabc122b4a7e61029cd90feac30af08a7cc771"
+      "size": 5277,
+      "sha256": "f0ff8d0c9d94920ca58bb3085b26c1d2aee8c41836ba91da36aeb44aa5a7cddc"
+    },
+    {
+      "path": "static-recomp/internal/include/sc_audio_trace_hash.h",
+      "size": 2193,
+      "sha256": "01dfba2ff6ff45771e8c4f5438b7037d3563844716e76c39f66c8f68986a6f6e"
     },
     {
       "path": "static-recomp/internal/include/sc_audio_transport.h",
@@ -1201,6 +1276,16 @@
       "sha256": "6699dca92f2f0cdf49c843cc684ab5310552a09a849a7ccc205dba0c5b5870f9"
     },
     {
+      "path": "static-recomp/internal/include/sc_stock_map_trace.h",
+      "size": 1377,
+      "sha256": "6ac5d9114cd8e13d7f9ce863f161bfacda7a79b6556eb024f860bc076138ff90"
+    },
+    {
+      "path": "static-recomp/internal/include/sc_v11_cpu_cycle.h",
+      "size": 733,
+      "sha256": "98ee8338ffd873760f73cabb915305da8fedc422964c9967ef5b78cf7dc1c9cf"
+    },
+    {
       "path": "static-recomp/internal/include/sc_v11_runtime.h",
       "size": 10011,
       "sha256": "c50c3ccccf5404ad33e4198edfd92e73efac2b9eb2dba33e1dec06f30c7774a2"
@@ -1212,8 +1297,23 @@
     },
     {
       "path": "static-recomp/internal/include/sc_v28_video.h",
-      "size": 1363,
-      "sha256": "d475c58319c67d73affb55568bb473d7e988d071c83f206a3b808c5ccb175638"
+      "size": 3305,
+      "sha256": "1d544ec33dd5363f456b615acdf11a877e7ab6b52d3c8604be2e402c52930e14"
+    },
+    {
+      "path": "static-recomp/internal/include/sc_world_catalog_draw.h",
+      "size": 276,
+      "sha256": "4216dc45adee283a8fe9db749384e1511bc67cc02bfffd6d2a7d5d7ff26bc7d1"
+    },
+    {
+      "path": "static-recomp/internal/include/sc_world_map.h",
+      "size": 518,
+      "sha256": "a38c4a1b0ea2e2b5f7c80b5521fe755eea7d86d828fdda3a8f4dd1e199339c63"
+    },
+    {
+      "path": "static-recomp/internal/sc_experiment_config.h.in",
+      "size": 327,
+      "sha256": "402dc31dc465c7765a241099687828651506984cee9940d99ec054231b0435d1"
     },
     {
       "path": "static-recomp/src/sc_audio_transport.c",
@@ -1227,23 +1327,23 @@
     },
     {
       "path": "static-recomp/src/sc_v11_bus.c",
-      "size": 28994,
-      "sha256": "ae8f1190cf51c13422a4c9c8a978598ef0065b78061704a1c6a4655e099a3ae5"
+      "size": 77100,
+      "sha256": "00b7384520e8e197d81077384c73806cc433e907ecaaca05a23782e57b418bf7"
     },
     {
       "path": "static-recomp/src/sc_v11_cpu.c",
-      "size": 12342,
-      "sha256": "4d5a4a0f7b7684d035f0bd2692458d56d65625018fe9d864946e115188fa54de"
+      "size": 23491,
+      "sha256": "6a3a7dfdfb7d12bb658c0e459c40ece96d7220d6810a46c84bab6e90262be895"
     },
     {
       "path": "static-recomp/src/sc_v11_scheduler.c",
-      "size": 7461,
-      "sha256": "34a33393cb7fe1583eefc3339724fc087e4956d071644e6f21c3c9ebf4a9b683"
+      "size": 9038,
+      "sha256": "4c972331973d8b9c49e32fc4073328e7c90897790febc8490c44364ccac564a9"
     },
     {
       "path": "static-recomp/src/sc_v11_smp.c",
-      "size": 9804,
-      "sha256": "927a9abdb2062873394ef0c1e276d210df7795afcb8cb0e868c4a7b5225b8915"
+      "size": 9863,
+      "sha256": "8a043922dbebf9d3cc8b86cf50f66092180f4a373331585a6d4b1f9a0760d696"
     },
     {
       "path": "static-recomp/src/sc_v11_support.c",
@@ -1252,13 +1352,28 @@
     },
     {
       "path": "static-recomp/src/sc_v28_video.c",
-      "size": 37708,
-      "sha256": "a85c9c1d04ffb9064afb613759dd2fd44d51d897b04a2e0ada8891030915a446"
+      "size": 58980,
+      "sha256": "6d465c6b72365ddbfaff70e23eda07c0176432d6e2f030b571768cbba06a21e6"
+    },
+    {
+      "path": "static-recomp/src/sc_world_catalog_draw.c",
+      "size": 8821,
+      "sha256": "40f3713d097df64e5302aa6a2bf46a3c7a4882a00e0b1ff08b6dc2eda1731273"
+    },
+    {
+      "path": "static-recomp/src/sc_world_map.c",
+      "size": 16179,
+      "sha256": "d9a59ef46b9515f0546f0fa94c5cdcbbf9548e79feea41e73af1411c3ca93f1e"
+    },
+    {
+      "path": "static-recomp/src/sc_world_map_template.c",
+      "size": 5605,
+      "sha256": "40b74bf273387b497be88d7d57c70fcca52e5146c5349cd44c0942904fd2e761"
     },
     {
       "path": "static-recomp/src/simcity_static_recomp.c",
-      "size": 51968,
-      "sha256": "4fa628f4eb68d00699e47014101c546b5f2855685ae116e34aa010d03026cc5a"
+      "size": 128387,
+      "sha256": "d9211cdf3b8cc7a04394dde46a0208e321e9d381126a6a007c7436dde51903db"
     },
     {
       "path": "static-recomp/static-audio/simcity-project-dsp/gaussian_table_v10_32.inc",
@@ -1297,13 +1412,13 @@
     },
     {
       "path": "static-recomp/static-audio/snes9x-bapu-aot/sc_static_apu.cpp",
-      "size": 19317,
-      "sha256": "9246a4c9193f7e64ecf2229aafe4a38a98fe1f4fe68d73b26ccf9c47ed0a45c1"
+      "size": 21341,
+      "sha256": "1286f77c28de04ae9fb7adb8adbe9534da0fb192bf31221f273cf369276ff9e2"
     },
     {
       "path": "static-recomp/static-audio/snes9x-bapu-aot/sc_static_apu.h",
-      "size": 4144,
-      "sha256": "f6f3f150d65593343b86ea60ba339a525b1a1c491f46027640af3f9f86b7be05"
+      "size": 4833,
+      "sha256": "1d44d60e2724a499789e3ae89bc8a00eb13e750d9786284c9c41162d14b48634"
     },
     {
       "path": "static-recomp/static-audio/snes9x-bapu-aot/smp/algorithms.cpp",
@@ -1382,8 +1497,8 @@
     },
     {
       "path": "static-recomp/static-audio/snes9x-bapu-aot/static_snes.hpp",
-      "size": 609,
-      "sha256": "bd96b998d48170db51bb4dbe1dcb313f278430674ceb42485c9fdc65dc1950be"
+      "size": 608,
+      "sha256": "6f5a8284f583cdc63e7c77fe359d1339f80cef70c4fa1c6527b5c4027842a9dd"
     },
     {
       "path": "static-recomp/static-audio/snes9x-bapu-aot/static_types.hpp",
@@ -1392,13 +1507,38 @@
     },
     {
       "path": "static-recomp/tests/test_audio_snapshot_continuation.c",
-      "size": 4123,
-      "sha256": "54036a98ebbdb248f5f19fa6cdb1a8146aedeaf712be1cc6f28feb74354189b1"
+      "size": 8039,
+      "sha256": "941b837495c4b0ecd75154a5b2e4dbba42b391c5ce5367d5b3be1d0715c4349d"
     },
     {
       "path": "static-recomp/tests/test_project_dsp_phase.c",
       "size": 10628,
       "sha256": "92f0329595ddfbbd78595af1530f6406791273ff1a6b4b3405e6c71942dd67d8"
+    },
+    {
+      "path": "static-recomp/tests/test_scheduler_cycle_parity.c",
+      "size": 8350,
+      "sha256": "793dd2ae45859d3eeec27e69976cdd2a0691cf82c7ed2205feb4e20016d76163"
+    },
+    {
+      "path": "static-recomp/tests/test_stock_world_airport.c",
+      "size": 2825,
+      "sha256": "394732b37d73ec73e7951f8ec358e74f4588a6c6f214bf5cbccd8cbe8dd87992"
+    },
+    {
+      "path": "static-recomp/tests/test_stock_world_commercial.c",
+      "size": 2125,
+      "sha256": "541eb0f6f427dbffad7e117649d95ea1875f36521c697d72c0ed5bf2815fc016"
+    },
+    {
+      "path": "static-recomp/tests/test_stock_world_ship.c",
+      "size": 3372,
+      "sha256": "580dd5922fe5de867b5866cea4f108b30dbb2efa3c918b6beb88447a9b859f81"
+    },
+    {
+      "path": "static-recomp/tests/test_world_map_utilities.c",
+      "size": 3068,
+      "sha256": "cef342c23aec9409c5a8f94423077a990af679d5f2992038493cf809da12576c"
     },
     {
       "path": "third_party/simcity-gamepad/simcity_gamepad_input_win32.c",
@@ -1423,7 +1563,7 @@
     {
       "path": "tools/generate_source_integrity.py",
       "size": 1785,
-      "sha256": "9eacabc260e973dce55cbea0d7f6f7c78113e515ed32a7066979a77d5ddbc02f"
+      "sha256": "2bd85f7d5a67ebe6c7467e23bf4f113007671afb31977de3d061b5c092e2d9a2"
     },
     {
       "path": "tools/prune_shadowed_contexts.py",
@@ -1431,9 +1571,99 @@
       "sha256": "d2dc25fcd67b1d5df31f51e3ed61744b6eac9248f2cd25ff66f59cd23b025e5f"
     },
     {
+      "path": "tools/widescreen/Compare-WorldPipeline.ps1",
+      "size": 4610,
+      "sha256": "c68f6ea9b819ca0d9f64404288e1c9d150cc89d663e6363abd1fe6e33bffbb30"
+    },
+    {
+      "path": "tools/widescreen/Invoke-WorldConstructionSeries.ps1",
+      "size": 6302,
+      "sha256": "d82afc7bdd77c19cec28ac386f3ef4f69a575f5638dc39fd333ea350f91cf06d"
+    },
+    {
+      "path": "tools/widescreen/Measure-WorldPacedReplayAB.ps1",
+      "size": 3442,
+      "sha256": "84506a7af7ad101fa985756077e04892c7cc09b118f4a18d954507ebac044e5a"
+    },
+    {
+      "path": "tools/widescreen/Measure-WorldReplayAB.ps1",
+      "size": 3732,
+      "sha256": "96692afb70bf67d8bb324efe3fe4a3a63f7748d17f8fb0b32c72c431a2013bbb"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldConstructionSeries.ps1",
+      "size": 4029,
+      "sha256": "28f5c1c67a93e4ba5f4ac06351168453cad15274b850ec9b503adc507f4723bb"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldCoreSamples.ps1",
+      "size": 2243,
+      "sha256": "8bd8fbbd62b67fac66ce31ef6c6d4a5ba0d81b61e6675c881ca69fb169e7751b"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldDeadlineFaults.ps1",
+      "size": 3458,
+      "sha256": "f49d577f827f19a40a3a726cfac16726bef432680977d12ece98b63c39aa40fc"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldDisasterTiming.ps1",
+      "size": 4352,
+      "sha256": "4ebd91a91631b1bbc9ed4e45239c22adca7f592a6180263a2d33ede8f4643e87"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldInfillCheckpoint.ps1",
+      "size": 11093,
+      "sha256": "8ae8e308b85bb89159c0cc22cfb0d8cfdb126f6aa0e05d34952969fd1f95f363"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldLiveConstruction.ps1",
+      "size": 10670,
+      "sha256": "ebacdb636a225ea84404a4bd406142cd765a4e9f8efcece48709dbf4183a9658"
+    },
+    {
+      "path": "tools/widescreen/Read-WorldPacedHeadroom.ps1",
+      "size": 4011,
+      "sha256": "9cdbc1c8b4efbecd35171c25504d2879c55b59d12f43cbfd8a8baaad619c107a"
+    },
+    {
+      "path": "tools/widescreen/Stage-WorldInfillResume.ps1",
+      "size": 2998,
+      "sha256": "305a15d0244eb933a979c220d2d5d9868fc690f45423950afa9e5c21ad688fe6"
+    },
+    {
+      "path": "tools/widescreen/Start-HeadedWorldMapDistrict.ps1",
+      "size": 1732,
+      "sha256": "0ec52841063aea80f08d2b0fd9cd989f2abe9da841ddb8b635e917680a79c069"
+    },
+    {
+      "path": "tools/widescreen/Start-WorldConstructionSoak.ps1",
+      "size": 3355,
+      "sha256": "b1cdc9535f5a16cd7953a4d7cddfdf5bd5bf8b90a8e2fe218ea0fc6135bf1b05"
+    },
+    {
+      "path": "tools/widescreen/stock_controller_tape.h",
+      "size": 4113,
+      "sha256": "32b6ddb284d9346e29b0a3fc197d06105d907c5831588b6a5babe6420034c301"
+    },
+    {
+      "path": "tools/widescreen/test_stock_controller_tape.c",
+      "size": 1627,
+      "sha256": "f998ed1aabb40e7a2c4f95f61191716ed65af2140690b5a69c8c5c7783c762b1"
+    },
+    {
+      "path": "tools/widescreen/verify_world_map.cmake",
+      "size": 826,
+      "sha256": "bd95f3a981b8146c6384b2b2b6803c735cc90cea9f48ff7202200c7238a9749c"
+    },
+    {
       "path": "tools/widescreen/widescreen_probe.c",
-      "size": 66456,
-      "sha256": "c8a435eec66331ba92b5fd44e316b8ef4da115eedde17c3086b23153271b7f77"
+      "size": 803431,
+      "sha256": "4d7f71c2592392c8a0cd190aaf6fd7dce4b56b2d64da255977d87d51c992cec6"
+    },
+    {
+      "path": "tools/widescreen/win32_probe_sampling.h",
+      "size": 3212,
+      "sha256": "489aaa0306183d83b8cf1a35693e38a982a6725649d4c22ec24db78b9c52a8a4"
     }
   ]
 }

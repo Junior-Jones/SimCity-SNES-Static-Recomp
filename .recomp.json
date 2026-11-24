@@ -29,7 +29,7 @@
       "url": "https://github.com/Junior-Jones/SimCity-SNES-Static-Recomp/blob/main/README.md"
     }
   ],
-  "notes": "Includes experimental widescreen support; visual correctness has not been fully verified.",
+  "notes": "Includes nine World Maps, widescreen support, and an experimental 60 FPS display mode.",
   "tags": [
     "City-building"
   ]

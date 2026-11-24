@@ -865,6 +865,10 @@ void simcity_audio_output_pump(SimCityAudioOutput *output,
 
 void simcity_audio_output_pump_progress(SimCityAudioOutput *output,
                                        SimCityRecomp *game) {
+    /* Progress callbacks run multiple times per guest frame. If the core
+       has no PCM to submit, there is no reason to poll the driver here.
+       The end-of-frame pump still validates cursors and tracks starvation. */
+    if (!game || !simcity_recomp_audio_available(game)) return;
     pump_audio(output, game, 0);
 }
 

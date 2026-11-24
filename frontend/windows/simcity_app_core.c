@@ -44,7 +44,7 @@ int simcity_recomp_write_diagnostic_log(
         return 0;
     }
     (void)fprintf(file,
-        "SimCity Static Recomp 1.4.0 - Screenshot Static-Core Log\r\n"
+        "SimCity Static Recomp 2.0.0 - Screenshot Static-Core Log\r\n"
         "format=simcity-screenshot-static-log-v1\r\n"
         "screenshot=%s\r\n"
         "authority=closed-static-PBR-PC-E-M-X\r\n"

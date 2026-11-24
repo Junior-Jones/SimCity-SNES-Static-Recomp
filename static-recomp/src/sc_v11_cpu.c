@@ -1,5 +1,6 @@
 #include "sc_v11_runtime.h"
 #include "sc_core_internal.h"
+#include "sc_stock_map_trace.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -98,24 +99,247 @@ static uint16_t sc_mask(unsigned width) { return width == 8u ? 0x00ffu : 0xffffu
 static void sc_set_a(SCCpuState *cpu, uint16_t value, unsigned width) { cpu->a = width == 8u ? (uint16_t)((cpu->a & 0xff00u) | (value & 0x00ffu)) : value; }
 static void sc_nz(SCCpuState *cpu, uint16_t value, unsigned width) { if (width == 8u) sc_v11_set_nz8(cpu, (uint8_t)value); else sc_v11_set_nz16(cpu, value); }
 
-void sc_v11_op_lda(SCV11Runtime *r, uint16_t v, unsigned w) { sc_set_a(&r->machine.cpu, v, w); sc_nz(&r->machine.cpu, v, w); }
+void sc_v11_op_lda(SCV11Runtime *r, uint16_t v, unsigned w) {
+    const uint32_t pc = r->current_instruction_address;
+    /* Native ship entry scans the south and east edges from these starts. */
+    if ((pc == 0x03accfu || pc == 0x03acfeu) && sc_v11_stock_world_traffic_active(r))
+        v = pc == 0x03accfu ? SC_STOCK_WORLD_HEIGHT - 1u : SC_STOCK_WORLD_WIDTH - 1u;
+    if ((pc == 0x02b4bbu || pc == 0x02b4edu) && sc_v11_stock_world_traffic_active(r)) {
+        const uint16_t sp = r->machine.cpu.sp;
+        const uint8_t *wram = r->machine.wram;
+        const unsigned caller = wram[(uint16_t)(sp + 1)] | ((unsigned)wram[(uint16_t)(sp + 2)] << 8u);
+        /* Only the four map-area percentages in City Overview. Keep the
+           16-bit division remainder safe: n*25/12000 equals n*100/48000. */
+        if (caller == 0xb1b7u || caller == 0xb1e5u || caller == 0xb213u || caller == 0xb241u)
+            v = (uint16_t)(v / ((SC_STOCK_WORLD_WIDTH / SC_STOCK_TILE_WIDTH) *
+                                (SC_STOCK_WORLD_HEIGHT / SC_STOCK_TILE_HEIGHT)));
+    }
+    if ((pc == 0x01a08eu || pc == 0x01a0a9u || pc == 0x01a09au || pc == 0x01a0b5u ||
+         pc == 0x01b3aeu || pc == 0x01b3dau || pc == 0x01a69du || pc == 0x01a6b6u) &&
+        sc_v11_stock_world_camera_active(r)) {
+        if (pc == 0x01a08eu || pc == 0x01a0a9u || pc == 0x01b3aeu || pc == 0x01a69du)
+            v = (uint16_t)(v + SC_STOCK_WORLD_WIDTH - SC_STOCK_TILE_WIDTH);
+        else
+            v = (uint16_t)(v + SC_STOCK_WORLD_HEIGHT - SC_STOCK_TILE_HEIGHT);
+    }
+    sc_set_a(&r->machine.cpu, v, w);
+    sc_nz(&r->machine.cpu, v, w);
+    if ((pc == 0x01c776u || pc == 0x01c77fu) && sc_v11_stock_world_camera_active(r)) {
+        /* The next instruction is BMI. Its intended sign is that of the
+           coordinate word, not the low byte (positive tiles 128..239). */
+        const unsigned high = r->machine.wram[pc == 0x01c776u ? 0x1d4u : 0x1d6u];
+        r->machine.cpu.p = high ? (uint8_t)(r->machine.cpu.p | SC_FLAG_N) :
+                                 (uint8_t)(r->machine.cpu.p & ~SC_FLAG_N);
+    }
+}
 void sc_v11_op_ldx(SCV11Runtime *r, uint16_t v, unsigned w) { r->machine.cpu.x = v & sc_mask(w); sc_nz(&r->machine.cpu, v, w); }
 void sc_v11_op_ldy(SCV11Runtime *r, uint16_t v, unsigned w) { r->machine.cpu.y = v & sc_mask(w); sc_nz(&r->machine.cpu, v, w); }
-void sc_v11_op_and(SCV11Runtime *r, uint16_t v, unsigned w) { uint16_t z=(r->machine.cpu.a & sc_mask(w)) & v; sc_set_a(&r->machine.cpu,z,w); sc_nz(&r->machine.cpu,z,w); }
+void sc_v11_op_and(SCV11Runtime *r, uint16_t v, unsigned w) {
+    if (r->current_instruction_address == 0x03b16du && sc_v11_stock_world_power_active(r))
+        v = 0x000fu; /* materialize 16 power bits per bitmap word */
+    uint16_t z=(r->machine.cpu.a & sc_mask(w)) & v;
+    sc_set_a(&r->machine.cpu,z,w); sc_nz(&r->machine.cpu,z,w);
+}
 void sc_v11_op_ora(SCV11Runtime *r, uint16_t v, unsigned w) { uint16_t z=(r->machine.cpu.a & sc_mask(w)) | v; sc_set_a(&r->machine.cpu,z,w); sc_nz(&r->machine.cpu,z,w); }
 void sc_v11_op_eor(SCV11Runtime *r, uint16_t v, unsigned w) { uint16_t z=(r->machine.cpu.a & sc_mask(w)) ^ v; sc_set_a(&r->machine.cpu,z,w); sc_nz(&r->machine.cpu,z,w); }
 
 void sc_v11_op_adc(SCV11Runtime *r, uint16_t v, unsigned w) {
+    if (r->current_instruction_address == 0x03b146u && sc_v11_stock_world_power_active(r))
+        v = (uint16_t)(v * (SC_STOCK_WORLD_WIDTH / SC_STOCK_TILE_WIDTH));
     SCCpuState *c=&r->machine.cpu; uint32_t mask=sc_mask(w), a=c->a&mask, z=a+(v&mask)+((c->p&SC_FLAG_C)!=0u); uint16_t out=(uint16_t)(z&mask);
     c->p=(uint8_t)(c->p&~(SC_FLAG_C|SC_FLAG_V)); if(z>mask)c->p|=SC_FLAG_C; if((~(a^v)&(a^out)&(1u<<(w-1u)))!=0u)c->p|=SC_FLAG_V;
     sc_set_a(c,out,w);sc_nz(c,out,w);
+    /* Stock neighbor lookups add a signed one-cell offset and use BMI
+       before CMP. In an expanded map the sign of the byte is not the
+       sign of the actual coordinate. Keep the near-side underflow check. */
+    if (w == 8u) {
+        int coordinate;
+        switch (r->current_instruction_address) {
+            case 0x01b6d8u: case 0x01b6e6u: case 0x01b711u: case 0x01b71fu:
+                coordinate = (int)a + (int)(int8_t)(uint8_t)v;
+                break;
+            case 0x01b8acu: case 0x01b8bcu:
+                coordinate = (int)(int8_t)(uint8_t)a + (int)(uint8_t)v;
+                break;
+            default: return;
+        }
+        if (sc_v11_stock_world_camera_active(r)) {
+            if (coordinate < 0 || coordinate > 255) c->p |= SC_FLAG_N;
+            else c->p &= (uint8_t)~SC_FLAG_N;
+        }
+    }
 }
 void sc_v11_op_sbc(SCV11Runtime *r, uint16_t v, unsigned w) {
+    const uint32_t pc = r->current_instruction_address;
+    if ((pc == 0x00ac8bu || pc == 0x00aca3u) && sc_v11_stock_world_traffic_active(r))
+        v = pc == 0x00ac8bu ? SC_STOCK_WORLD_WIDTH : SC_STOCK_WORLD_HEIGHT;
     SCCpuState *c=&r->machine.cpu; int32_t mask=(int32_t)sc_mask(w), a=(int32_t)(c->a&mask), b=(int32_t)(v&mask), z=a-b-((c->p&SC_FLAG_C)?0:1); uint16_t out=(uint16_t)(z&mask);
     c->p=(uint8_t)(c->p&~(SC_FLAG_C|SC_FLAG_V)); if(z>=0)c->p|=SC_FLAG_C; if(((a^b)&(a^out)&(1u<<(w-1u)))!=0u)c->p|=SC_FLAG_V;
     sc_set_a(c,out,w);sc_nz(c,out,w);
 }
 void sc_v11_op_compare(SCV11Runtime *r, uint16_t reg, uint16_t v, unsigned w) {
+    const uint32_t pc = r->current_instruction_address;
+    switch (pc) {
+        case 0x03ac8du: case 0x03acecu: /* Ship's north/south edge scans. */
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_WIDTH - 2u;
+            break;
+        case 0x03acbdu: case 0x03ad1fu: /* Ship's west/east edge scans. */
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_HEIGHT - 2u;
+            break;
+        case 0x00b7edu: case 0x00b806u: /* Ship leaves the city when it crosses an edge. */
+            if (sc_v11_stock_world_traffic_active(r))
+                v = pc == 0x00b7edu ? SC_STOCK_WORLD_HEIGHT : SC_STOCK_WORLD_WIDTH;
+            break;
+        case 0x00b8f6u: case 0x00b96bu: case 0x00b9aeu:
+            /* The bus resolves the direction's real (x,y) and checks both axes.
+               The old wrapped byte index is not a valid bounds check. */
+            if (sc_v11_stock_world_traffic_active(r)) v = UINT16_MAX;
+            break;
+        case 0x038291u: case 0x03a1c5u: case 0x03a244u:
+            if (sc_v11_stock_world_traffic_active(r))
+                v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT / 32u;
+            break;
+        case 0x039accu: case 0x039f97u:
+            if (sc_v11_stock_world_traffic_active(r))
+                v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT / 64u;
+            break;
+        case 0x03a17cu: case 0x03a1fbu:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_WIDTH / 8u - 1u;
+            break;
+        case 0x03a18fu: case 0x03a20eu:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_HEIGHT / 8u - 1u;
+            break;
+        case 0x03a1aau: case 0x03a229u:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_WIDTH / 8u;
+            break;
+        case 0x03a1b2u: case 0x03a231u:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_HEIGHT / 8u;
+            break;
+        case 0x039f4du:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_WIDTH / 2u;
+            break;
+        case 0x039f59u:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_HEIGHT / 2u;
+            break;
+        case 0x039b60u:
+            if (sc_v11_stock_world_density_active(r)) v = SC_STOCK_WORLD_WIDTH;
+            break;
+        case 0x039b68u:
+            if (sc_v11_stock_world_density_active(r)) v = SC_STOCK_WORLD_HEIGHT;
+            break;
+        case 0x039b88u: case 0x03a147u:
+            if (sc_v11_stock_world_density_active(r))
+                v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT / 4u;
+            break;
+        case 0x03a057u: case 0x03a0ddu:
+            if (sc_v11_stock_world_density_active(r) || sc_v11_stock_world_environment_active(r))
+                v = SC_STOCK_WORLD_WIDTH / 2u - 1u;
+            break;
+        case 0x03a072u: case 0x03a0f8u:
+            if (sc_v11_stock_world_density_active(r) || sc_v11_stock_world_environment_active(r))
+                v = SC_STOCK_WORLD_HEIGHT / 2u - 1u;
+            break;
+        case 0x03a0a5u: case 0x03a12bu:
+            if (sc_v11_stock_world_density_active(r) || sc_v11_stock_world_environment_active(r))
+                v = SC_STOCK_WORLD_WIDTH / 2u;
+            break;
+        case 0x03a0aeu: case 0x03a134u:
+            if (sc_v11_stock_world_density_active(r) || sc_v11_stock_world_environment_active(r))
+                v = SC_STOCK_WORLD_HEIGHT / 2u;
+            break;
+        case 0x039c44u: case 0x039cb6u:
+            if (sc_v11_stock_world_environment_active(r)) v = SC_STOCK_WORLD_WIDTH / 2u;
+            break;
+        case 0x039c4cu: case 0x039cbfu:
+            if (sc_v11_stock_world_environment_active(r)) v = SC_STOCK_WORLD_HEIGHT / 2u;
+            break;
+        case 0x039fd2u:
+            if (sc_v11_stock_world_environment_active(r)) v = SC_STOCK_WORLD_WIDTH / 4u - 1u;
+            break;
+        case 0x039fedu:
+            if (sc_v11_stock_world_environment_active(r)) v = SC_STOCK_WORLD_HEIGHT / 4u - 1u;
+            break;
+        case 0x03a021u:
+            if (sc_v11_stock_world_environment_active(r)) v = SC_STOCK_WORLD_WIDTH / 4u;
+            break;
+        case 0x03a029u:
+            if (sc_v11_stock_world_environment_active(r)) v = SC_STOCK_WORLD_HEIGHT / 4u;
+            break;
+        case 0x039c28u:
+            if (sc_v11_stock_world_environment_active(r))
+                v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT / 16u;
+            break;
+        case 0x00aefbu:
+            if ((r->machine.cpu.x == 0u || r->machine.cpu.x == 8u) && sc_v11_stock_world_traffic_active(r))
+                v = SC_STOCK_WORLD_WIDTH - 1u;
+            break;
+        case 0x00af6bu:
+            if ((r->machine.cpu.x == 0u || r->machine.cpu.x == 8u) && sc_v11_stock_world_traffic_active(r))
+                v = SC_STOCK_WORLD_HEIGHT - 1u;
+            break;
+        case 0x00ac85u: /* Monster's random roaming destination. */
+        case 0x03a9c8u:
+        case 0x03b420u:
+        case 0x03988fu:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_WIDTH;
+            break;
+        case 0x00ac9du:
+        case 0x03a9cdu:
+        case 0x03b425u:
+        case 0x039886u:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_HEIGHT;
+            break;
+        case 0x03b385u:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_WIDTH - 1u;
+            break;
+        case 0x03b38fu:
+            if (sc_v11_stock_world_traffic_active(r)) v = SC_STOCK_WORLD_HEIGHT - 1u;
+            break;
+        case 0x038919u:
+            if (sc_v11_stock_world_traffic_active(r))
+                v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT / 4u;
+            break;
+        case 0x03900au:
+            if (sc_v11_stock_world_power_active(r) ||
+                (sc_v11_stock_world_census_active(r) && sc_v11_stock_world_traffic_active(r)))
+                v = SC_STOCK_WORLD_WIDTH - 1u;
+            break;
+        case 0x039014u:
+            if (sc_v11_stock_world_power_active(r) ||
+                (sc_v11_stock_world_census_active(r) && sc_v11_stock_world_traffic_active(r)))
+                v = SC_STOCK_WORLD_HEIGHT - 1u;
+            break;
+        case 0x03afc7u: case 0x03b10bu:
+            if (sc_v11_stock_world_power_active(r))
+                v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT / 8u;
+            break;
+        case 0x03b19du:
+            if (sc_v11_stock_world_power_active(r)) v = SC_STOCK_WORLD_WIDTH * SC_STOCK_WORLD_HEIGHT;
+            break;
+        case 0x038349u:
+            if (sc_v11_stock_world_census_active(r)) v = SC_STOCK_WORLD_WIDTH;
+            break;
+        case 0x038356u:
+            if (sc_v11_stock_world_census_active(r)) v = SC_STOCK_WORLD_HEIGHT;
+            break;
+        case 0x01a698u: /* Stock notification camera, east clamp. */
+            if (sc_v11_stock_world_camera_active(r)) v += SC_STOCK_WORLD_WIDTH - SC_STOCK_TILE_WIDTH;
+            break;
+        case 0x01a6b1u: /* Stock notification camera, south clamp. */
+            if (sc_v11_stock_world_camera_active(r)) v += SC_STOCK_WORLD_HEIGHT - SC_STOCK_TILE_HEIGHT;
+            break;
+        case 0x01c28du: case 0x01b3a7u: case 0x01c77bu:
+        case 0x01b447u: case 0x01b492u: case 0x01b551u: case 0x01b7cdu:
+        case 0x01b6ddu: case 0x01b716u: case 0x01b8b1u:
+            if (sc_v11_stock_world_camera_active(r)) v = SC_STOCK_WORLD_WIDTH;
+            break;
+        case 0x01c200u: case 0x01b3d3u: case 0x01c784u:
+        case 0x01b44fu: case 0x01b49au: case 0x01b559u: case 0x01b7e9u:
+        case 0x01b6ebu: case 0x01b724u: case 0x01b8c1u:
+            if (sc_v11_stock_world_camera_active(r)) v = SC_STOCK_WORLD_HEIGHT;
+            break;
+        default: break;
+    }
     SCCpuState *c=&r->machine.cpu; uint16_t mask=sc_mask(w), a=reg&mask, b=v&mask, z=(uint16_t)((a-b)&mask); if(a>=b)c->p|=SC_FLAG_C;else c->p&=(uint8_t)~SC_FLAG_C;sc_nz(c,z,w);
 }
 

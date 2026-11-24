@@ -16,16 +16,22 @@ FetchContent_Declare(simcity_sdl
 FetchContent_MakeAvailable(simcity_sdl)
 FetchContent_GetProperties(simcity_sdl SOURCE_DIR SIMCITY_SDL_SOURCE_DIR)
 if(MSVC)
-    # SDL's __FILE__ strings use native separators, so give MSVC a matching
-    # mapping in addition to the portable mapping configured at the root.
+    # SDL can be supplied from a cache or workspace outside the project.
+    # Remap its native source and build paths in embedded diagnostics.
+    file(TO_NATIVE_PATH "${SIMCITY_SDL_SOURCE_DIR}" SIMCITY_SDL_SOURCE_NATIVE)
     file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}" SIMCITY_BUILD_PATH_NATIVE)
     target_compile_options(SDL3-static PRIVATE
         /experimental:deterministic
+        "/pathmap:${SIMCITY_SDL_SOURCE_NATIVE}=third_party\\SDL"
         "/pathmap:${SIMCITY_BUILD_PATH_NATIVE}=build")
 endif()
 
 add_executable(simcity-launcher WIN32
     simcity_launcher_win32.c
+    simcity_battery_writer.c
+    simcity_prepared_video.c
+    simcity_playback_log.c
+    simcity_screenshot_report.c
     simcity_app_core.c
     launcher_version.rc
     simcity_audio_output_dsound_win32.c
@@ -109,6 +115,18 @@ endif()
 add_test(NAME simcity-audio-settings-contract
     COMMAND simcity-audio-settings-contract-test)
 
+if(BUILD_TESTING)
+    add_executable(simcity-battery-writer-test
+        simcity_battery_writer_test.c simcity_battery_writer.c)
+    add_test(NAME simcity-battery-writer COMMAND simcity-battery-writer-test)
+    add_executable(simcity-playback-log-test
+        simcity_playback_log_test.c simcity_playback_log.c)
+    add_test(NAME simcity-playback-log COMMAND simcity-playback-log-test)
+    add_executable(simcity-screenshot-report-test
+        simcity_screenshot_report_test.c simcity_screenshot_report.c)
+    add_test(NAME simcity-screenshot-report COMMAND simcity-screenshot-report-test)
+endif()
+
 target_include_directories(simcity-launcher PRIVATE
     "${CMAKE_SOURCE_DIR}/frontend/common"
     "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -143,6 +161,14 @@ set_target_properties(simcity-launcher PROPERTIES
     OUTPUT_NAME "Launcher"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/release"
 )
+option(SIMCITY_BUILD_HEADED_QA "Build the isolated controller-playback QA launcher" OFF)
+if(SIMCITY_BUILD_HEADED_QA)
+    target_compile_definitions(simcity-launcher PRIVATE SIMCITY_HEADED_QA=1)
+    target_include_directories(simcity-launcher PRIVATE "${CMAKE_SOURCE_DIR}/tools/widescreen")
+    set_target_properties(simcity-launcher PROPERTIES
+        OUTPUT_NAME "Launcher-Headed-QA"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/headed-qa")
+endif()
 add_custom_command(TARGET simcity-launcher POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E make_directory
         "$<TARGET_FILE_DIR:simcity-launcher>/Saves"
@@ -162,7 +188,9 @@ add_custom_command(TARGET simcity-launcher POST_BUILD
         "$<TARGET_FILE_DIR:simcity-launcher>/THIRD-PARTY-NOTICES.txt"
     VERBATIM
 )
-install(TARGETS simcity-launcher RUNTIME DESTINATION . COMPONENT Runtime)
+if(NOT SIMCITY_BUILD_HEADED_QA)
+    install(TARGETS simcity-launcher RUNTIME DESTINATION . COMPONENT Runtime)
+endif()
 install(FILES "${SIMCITY_SDL_SOURCE_DIR}/LICENSE.txt"
     DESTINATION . RENAME SDL-LICENSE.txt COMPONENT Runtime)
 install(FILES "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"

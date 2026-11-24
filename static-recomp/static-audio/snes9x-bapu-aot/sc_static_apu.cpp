@@ -1,5 +1,7 @@
+#include "sc_experiment_config.h"
 #include "sc_static_apu.h"
 #include "sc_audio_clock_profile.h"
+#include "sc_audio_trace_hash.h"
 #include "static_snes.hpp"
 #include <cstdio>
 #include <cstring>
@@ -33,30 +35,37 @@ struct ApuSnapshotHeader {
 };
 #include "smp/sc_smp_aot_code_bitmap.inc"
 void copy_error(char *out,size_t cap,const char *text){if(out&&cap)std::snprintf(out,cap,"%s",text?text:"");}
-uint64_t mix8(uint64_t h,uint8_t v){h^=v;return h*kFnvPrime;}
-uint64_t mix32(uint64_t h,uint32_t v){for(unsigned i=0;i<4u;++i)h=mix8(h,(uint8_t)(v>>(i*8u)));return h;}
-uint64_t mix64(uint64_t h,uint64_t v){for(unsigned i=0;i<8u;++i)h=mix8(h,(uint8_t)(v>>(i*8u)));return h;}
+#ifdef SIMCITY_EXPERIMENT_INLINE_AUDIO_TRACE
+#define SC_TRACE_CALL SC_AUDIO_HASH_INLINE
+#else
+#define SC_TRACE_CALL
+#endif
+SC_TRACE_CALL uint64_t mix8(uint64_t h,uint8_t v){return sc_audio_trace_hash8(h,v);}
+SC_TRACE_CALL uint64_t mix32(uint64_t h,uint32_t v){return sc_audio_trace_hash32(h,v);}
+SC_TRACE_CALL uint64_t mix64(uint64_t h,uint64_t v){return sc_audio_trace_hash64(h,v);}
 bool is_code_byte(uint16_t address){return(sc_smp_aot_code_bitmap[address>>3]&(uint8)(1u<<(address&7u)))!=0u;}
 uint8_t timer_enable_mask(){return (SC_STATIC_SNES::smp.timer0.enable?1u:0u)|(SC_STATIC_SNES::smp.timer1.enable?2u:0u)|(SC_STATIC_SNES::smp.timer2.enable?4u:0u);}
-template <typename TimerT> void mix_timer(uint64_t &h,const TimerT &timer){h=mix8(h,timer.target);h=mix8(h,timer.stage1_ticks);h=mix8(h,timer.stage2_ticks);h=mix8(h,timer.stage3_ticks);}
+template <typename TimerT> SC_TRACE_CALL void mix_timer(uint64_t &h,const TimerT &timer){
+  h=sc_audio_trace_hash_timer(h,timer.target,timer.stage1_ticks,timer.stage2_ticks,timer.stage3_ticks);
+}
 template <typename TimerT> void store_timer(uint8_t *target,uint8_t *stage1,uint8_t *stage2,uint8_t *stage3,unsigned index,const TimerT &timer){target[index]=timer.target;stage1[index]=timer.stage1_ticks;stage2[index]=timer.stage2_ticks;stage3[index]=timer.stage3_ticks;}
 void drain_samples(){
   int16_t samples[512u*2u];
   uint8_t known[512u];
   size_t count;
-  do {
+  while(SC_STATIC_SNES::dsp.core.pcm_count){
     count=simcity_dsp_pcm_read_with_knownness(&SC_STATIC_SNES::dsp.core,samples,known,512u);
     for(size_t i=0;i<count;++i){
       if(g_sink) g_sink(g_sink_context,samples[i*2u],samples[i*2u+1u]);
       ++g_pcm_frames;
     }
-  } while(count==512u);
+  }
   if(SC_STATIC_SNES::dsp.core.last_stop!=SIMCITY_DSP_STOP_NONE){
     sc_static_sdsp_report_failure((uint32_t)SC_STATIC_SNES::dsp.core.last_stop,
                                   SC_STATIC_SNES::dsp.core.phase);
   }
 }
-void record_rendezvous(uint64_t master,uint64_t target_cycles,uint64_t master_delta){
+SC_TRACE_CALL void record_rendezvous(uint64_t master,uint64_t target_cycles,uint64_t master_delta){
   const uint32_t bounded_delta=(uint32_t)(master_delta>UINT32_MAX?UINT32_MAX:master_delta);
   if(g_sync_calls==0u)g_first_sync_master_delta=bounded_delta;
   else if(master_delta>g_max_followup_sync_master_delta)g_max_followup_sync_master_delta=bounded_delta;
@@ -72,6 +81,7 @@ void record_rendezvous(uint64_t master,uint64_t target_cycles,uint64_t master_de
   mix_timer(h,SC_STATIC_SNES::smp.timer2);
   g_rendezvous_hash=h;
 }
+#undef SC_TRACE_CALL
 void record_cpu_port(uint8_t direction,uint64_t master,unsigned port,uint8_t value){
   ++g_cpu_port_event_count;
   uint64_t h=g_cpu_port_event_hash;
@@ -110,19 +120,31 @@ int sync_impl(uint64_t master,char *error,size_t cap){
   if(SC_STATIC_SNES::smp.sc_aot_failed_value)return fail_message(error,cap);
   if(g_sdsp_static_failed){copy_error(error,cap,"Static S-DSP program failure.");return 0;}
   const uint64_t master_delta=master-g_master;
-  uint64_t delta=sc_audio_clock_advance(master_delta,&g_phase_remainder);
+  uint64_t delta=sc_audio_clock_bus_advance(master_delta,&g_phase_remainder);
   const uint64_t target=g_cycles+delta;
-  const uint64_t closed_form=sc_audio_clock_closed_form(master,0u);
-  const uint32_t closed_remainder=sc_audio_clock_remainder(master);
+#ifdef SIMCITY_EXPERIMENT_AUDIO_CLOCK_IDENTITY
+  if(!sc_audio_clock_absolute_matches(master,target,g_phase_remainder)){copy_error(error,cap,"Static S-SMP AOT clock accumulator invariant failed.");return 0;}
+#else
+  uint32_t closed_remainder=0u;
+  const uint64_t closed_form=sc_audio_clock_absolute(master,&closed_remainder);
   if(target!=closed_form||g_phase_remainder!=closed_remainder){copy_error(error,cap,"Static S-SMP AOT clock accumulator invariant failed.");return 0;}
+#endif
+  auto &smp=SC_STATIC_SNES::smp;
+  auto &dsp=SC_STATIC_SNES::dsp;
   while(delta){
     unsigned chunk=(delta>131072u)?131072u:(unsigned)delta;
-    SC_STATIC_SNES::smp.clock-=(int32)chunk;
-    SC_STATIC_SNES::smp.enter();
-    if(SC_STATIC_SNES::smp.sc_aot_failed_value)return fail_message(error,cap);
-    SC_STATIC_SNES::dsp.synchronize();drain_samples();g_cycles+=chunk;delta-=chunk;
+    smp.clock-=(int32)chunk;
+    /* These calls already do nothing in the following states. Keep the
+       phase update and trace, but avoid entering idle audio components. */
+    if(smp.clock<0)smp.enter();
+    if(smp.sc_aot_failed_value)return fail_message(error,cap);
+    if(dsp.clock>0)dsp.synchronize();
+    if(dsp.core.pcm_count)drain_samples();
+    g_cycles+=chunk;delta-=chunk;
   }
-  g_master=master;record_rendezvous(master,target,master_delta);copy_error(error,cap,"");return 1;
+  g_master=master;record_rendezvous(master,target,master_delta);
+  if(error&&cap)error[0]='\0';
+  return 1;
 }
 }
 extern "C" int sc_static_apu_acquire(char *error,size_t cap){
@@ -167,6 +189,23 @@ extern "C" void sc_static_sdsp_report_failure(uint32_t reason,uint8_t phase){
   if(!g_sdsp_static_failed){g_sdsp_static_failed=1u;g_sdsp_fail_reason=(uint8_t)(reason&0xffu);g_sdsp_fail_phase=phase;}
 }
 extern "C" int sc_static_apu_sync_to_master(uint64_t m,char *e,size_t c){return sync_impl(m,e,c);}
+extern "C" int sc_static_apu_execution_status(SCStaticApuExecutionStatus *s){
+  if(!s||!g_acquired)return 0;
+  const auto &smp=SC_STATIC_SNES::smp;
+  s->smp_cycles=g_cycles;s->smp_instructions=smp.instruction_count;
+  s->aot_validated_instructions=smp.sc_aot_instructions;s->code_write_barriers=g_code_write_barriers;
+  s->smp_pc=smp.regs.pc;s->current_epoch=(uint8_t)(smp.status.iplrom_enable?0u:1u);
+  s->aot_failed=(uint8_t)(smp.sc_aot_failed_value!=0u);
+  return 1;
+}
+extern "C" int sc_static_apu_sync_execution(uint64_t master,uint64_t mirrored_cycle,
+    SCStaticApuExecutionStatus *status,char *error,size_t capacity){
+  if(!sync_impl(master,error,capacity))return 0;
+  /* A sub-tick rendezvous updates oscillator phase and the trace, but
+     cannot execute an SMP instruction or change the cached counters/PC. */
+  if(g_cycles==mirrored_cycle)return 1;
+  return sc_static_apu_execution_status(status)?2:0;
+}
 extern "C" int sc_static_apu_cpu_write_port(uint64_t m,unsigned p,uint8_t v,char *e,size_t c){
   if(p>=4u){copy_error(e,c,"Invalid static APUIO port.");return 0;}if(!sync_impl(m,e,c))return 0;
   SC_STATIC_SNES::cpu.port_write((uint8)p,v);record_cpu_port(1u,m,p,v);return 1;
@@ -246,7 +285,15 @@ extern "C" int sc_static_apu_snapshot_save(void *data,size_t capacity){
   h.current_instruction_pc=g_current_instruction_pc;h.code_write_barriers=g_code_write_barriers;
   h.sdsp_primitive_steps=g_sdsp_primitive_steps;h.sdsp_primitive_hash=g_sdsp_primitive_hash;h.sdsp_brr_steps=g_sdsp_brr_steps;h.sdsp_brr_hash=g_sdsp_brr_hash;
   h.sdsp_static_failed=g_sdsp_static_failed;h.sdsp_fail_reason=g_sdsp_fail_reason;h.sdsp_fail_phase=g_sdsp_fail_phase;h.program_started=g_program_started?1u:0u;
-  std::memcpy(out,&h,sizeof(h));out+=sizeof(h);std::memcpy(out,&SC_STATIC_SNES::smp,sizeof(SC_STATIC_SNES::smp));out+=sizeof(SC_STATIC_SNES::smp);
+  std::memcpy(out,&h,sizeof(h));out+=sizeof(h);
+  const auto &smp=SC_STATIC_SNES::smp;
+  const auto *smp_bytes=reinterpret_cast<const unsigned char *>(&smp);
+  std::memcpy(out,smp_bytes,sizeof(smp));
+  /* The loader always rebinds these pointers to its own backing arrays.
+     Keep the existing snapshot layout, but do not persist process addresses. */
+  std::memset(out+(reinterpret_cast<const unsigned char *>(&smp.apuram)-smp_bytes),0,sizeof(smp.apuram));
+  std::memset(out+(reinterpret_cast<const unsigned char *>(&smp.aram_known)-smp_bytes),0,sizeof(smp.aram_known));
+  out+=sizeof(smp);
   std::memcpy(out,SC_STATIC_SNES::smp.apuram,65536u);out+=65536u;
   std::memcpy(out,SC_STATIC_SNES::smp.aram_known,8192u);out+=8192u;
   dsp_state=SC_STATIC_SNES::dsp.core;dsp_state.aram=nullptr;dsp_state.aram_known=nullptr;

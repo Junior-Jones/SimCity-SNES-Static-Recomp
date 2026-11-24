@@ -100,6 +100,7 @@ void simcity_frontend_settings_win32_defaults(SimCityFrontendSettingsWin32 *s) {
     if (!s) return;
     memset(s, 0, sizeof(*s));
     s->pause_on_focus_loss = 0;
+    s->auto_run_on_load = 1;
     s->ntsc_frame_lock = 1;
     s->widescreen = 1;
     s->snapshot_slot = 1;
@@ -129,15 +130,16 @@ void simcity_frontend_settings_win32_load(SimCityFrontendSettingsWin32 *s,
     if (!path || !*path) return;
     s->integer_scale=GetPrivateProfileIntW(L"General",L"IntegerScale",0,path);
     s->pause_on_focus_loss=GetPrivateProfileIntW(L"General",L"PauseOnFocusLoss",0,path)!=0;
-    s->auto_run_on_load=GetPrivateProfileIntW(L"General",L"AutoRunOnLoad",0,path)!=0;
+    s->auto_run_on_load=GetPrivateProfileIntW(
+        L"General",L"AutoRunOnLoad",s->auto_run_on_load,path)!=0;
     s->fullscreen_on_play=GetPrivateProfileIntW(
         L"General",L"FullScreenOnPlay",0,path)!=0;
     s->show_fps_counter=GetPrivateProfileIntW(
         L"General",L"ShowFpsCounter",0,path)!=0;
     s->ntsc_frame_lock=GetPrivateProfileIntW(
-        L"General",L"NtscFrameLock",1,path)!=0;
+        L"General",L"NtscFrameLock",s->ntsc_frame_lock,path)!=0;
     s->widescreen=GetPrivateProfileIntW(
-        L"Display",L"Widescreen",1,path)!=0;
+        L"Display",L"Widescreen",s->widescreen,path)!=0;
     s->snapshot_slot=GetPrivateProfileIntW(
         L"General",L"SnapshotSlot",1,path);
     s->welcome_shown=GetPrivateProfileIntW(
@@ -390,7 +392,7 @@ static LRESULT CALLBACK settings_proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){
         SendMessageW(scale,CB_SETCURSEL,c->value.integer_scale,0);
         set_font(CreateWindowW(L"BUTTON",L"Use full screen when Play starts",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,202,320,24,w,(HMENU)ID_FULLSCREEN_SETTING,NULL,NULL));
         set_font(CreateWindowW(L"BUTTON",L"Show live FPS counter in the game title bar",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,234,390,24,w,(HMENU)ID_FPS_COUNTER,NULL,NULL));
-        set_font(CreateWindowW(L"BUTTON",L"Lock game speed to natural NTSC (60.0988 FPS)",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,266,410,24,w,(HMENU)ID_NTSC_FRAME_LOCK,NULL,NULL));
+        set_font(CreateWindowW(L"BUTTON",L"60 FPS display (keep original game speed)",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,32,266,410,24,w,(HMENU)ID_NTSC_FRAME_LOCK,NULL,NULL));
 
         set_font(CreateWindowW(L"BUTTON",L"Apply",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,350,324,80,30,w,(HMENU)ID_APPLY,NULL,NULL));
         set_font(CreateWindowW(L"BUTTON",L"Close",WS_CHILD|WS_VISIBLE|WS_TABSTOP,440,324,80,30,w,(HMENU)ID_CANCEL,NULL,NULL));
